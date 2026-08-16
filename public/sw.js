@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v3';
-const CACHE_DATA_NAME = 'malamusic-api-v3';
+const CACHE_STATIC_NAME = 'malamusic-static-v4';
+const CACHE_DATA_NAME = 'malamusic-api-v4';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/banner.png',
-  '/app.js?v=16',
+  '/app.js?v=17',
   '/player.js',
   '/fullplayer.js',
   '/miniplayer.js',
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   '/search.js',
   '/album.js',
   '/artist.js',
-  '/profile.js?v=16',
+  '/profile.js?v=17',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
