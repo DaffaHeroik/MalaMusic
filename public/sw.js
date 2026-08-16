@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v14';
-const CACHE_DATA_NAME = 'malamusic-api-v14';
+const CACHE_STATIC_NAME = 'malamusic-static-v15';
+const CACHE_DATA_NAME = 'malamusic-api-v15';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/banner.png',
-  '/app.js?v=28',
+  '/app.js?v=30',
   '/player.js',
   '/fullplayer.js',
   '/miniplayer.js',
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   '/search.js',
   '/album.js',
   '/artist.js',
-  '/profile.js?v=28',
+  '/profile.js?v=30',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -107,7 +107,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Static Assets (JS, PNG, WebP, CSS, Manifest, CDN scripts) -> Cache first, fallback to network
+  // 3. HTML dan JavaScript -> network first agar deploy terbaru selalu tampil saat online
+  const isFreshAppAsset = url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('.js');
+  if (isFreshAppAsset) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, networkResponse.clone()));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('/index.html', { ignoreSearch: true })))
+    );
+    return;
+  }
+
+  // 4. Other static assets -> cache first, fallback to network
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
