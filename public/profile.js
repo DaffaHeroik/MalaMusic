@@ -71,7 +71,7 @@ var Profile = {
             }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru.<button onclick="App.switch(\'home\')" class="block mx-auto mt-3 rounded-full bg-white/10 border border-white/15 px-4 py-2 text-xs font-bold text-white">Buka Beranda</button></div>';
         }
 
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
         EmailAuth.renderAuthActions(false);
         Profile.renderPublicPlaylistSettings();
         Profile.refreshListeningStats();
@@ -88,7 +88,7 @@ var Profile = {
         var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
         if (!playlists.length) { el.innerHTML = '<div class="p-5 text-sm text-white/50">Belum ada playlist untuk diatur.</div>'; return; }
         el.innerHTML = playlists.map(function(pl) { var isPublic = Boolean(pl.isPublic || pl.publicId); return '<div class="flex items-center gap-3 p-4"><img src="'+(pl.image || (pl.songs[0] && pl.songs[0].cover) || FI)+'" class="w-11 h-11 rounded-xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(pl.name)+'</strong><span class="block text-xs text-white/50 mt-1">'+(isPublic ? 'Dapat dibagikan publik' : 'Hanya kamu')+'</span></div><button onclick="Profile.togglePlaylistPublic(\''+String(pl.id).replace(/'/g,'')+'\')" class="shrink-0 rounded-full px-3 py-2 text-[11px] font-black '+(isPublic ? 'bg-amber-300 text-black' : 'bg-white/10 text-white')+'">'+(isPublic ? 'Publik' : 'Jadikan publik')+'</button></div>'; }).join('');
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     togglePlaylistPublic: async function(id) {
         var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [], pl = playlists.find(function(item){return item.id === id;}); if (!pl) return;
@@ -252,7 +252,7 @@ var EmailAuth = {
             if (collection) collection.innerHTML = '<button onclick="EmailAuth.open()" class="w-full h-full min-h-[150px] text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Login / Daftar</span><span class="text-white/60 text-xs mt-1">Gmail dan password</span></button>';
             if (secondary) secondary.innerHTML = '<button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Login atau buat akun dengan Gmail dan password</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>';
         }
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     choose: function(mode) {
         this.entryMode = mode === 'register' ? 'register' : 'login';
@@ -262,7 +262,7 @@ var EmailAuth = {
         var panel = document.getElementById('profile-account-panel');
         if (!panel) return;
         panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-5 sm:p-6"><div class="flex items-start gap-3 mb-5"><i data-lucide="user-round" class="w-6 h-6 text-rose-400 mt-0.5"></i><div><strong class="block text-base text-white">Akun MalaMusic</strong><span class="block text-xs text-white/50 mt-1">Masuk untuk menyimpan koleksi, playlist, dan aktivitas musik kamu.</span></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="EmailAuth.choose(\'login\')" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100 transition-colors">Login</button><button onclick="EmailAuth.choose(\'register\')" class="rounded-xl border border-white/20 bg-white/[.06] px-5 py-3 text-sm font-black text-white hover:bg-white/[.12] transition-colors">Daftar</button></div><button onclick="EmailAuth.renderResetForm()" class="w-full mt-3 rounded-xl border border-white/10 bg-white/[.03] px-4 py-3 text-xs font-bold text-white/70 hover:text-white hover:bg-white/[.08]"><i data-lucide="key-round" class="w-4 h-4 inline mr-1"></i>Lupa password?</button>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     renderEmailForm: function(message) {
         var panel = document.getElementById('profile-account-panel');
@@ -271,12 +271,12 @@ var EmailAuth = {
         var title = register ? 'Daftar dengan Gmail' : 'Login dengan Gmail';
         var helper = register ? 'Buat akun permanen dengan email dan password.' : 'Masuk ke akun MalaMusic kamu.';
         panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/50 mt-1">' + helper + ' Hanya alamat @gmail.com yang diterima.</span></div></div>' + (register ? '<input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Nama tampilan (opsional)" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" />' : '') + '<input id="auth-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><input id="auth-password" type="password" autocomplete="' + (register ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" placeholder="Password minimal 8 karakter" class="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.submit()" class="w-full mt-3 rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">' + (register ? 'Buat Akun' : 'Login') + '</button>' + (!register ? '<button onclick="EmailAuth.renderResetForm()" class="w-full mt-3 text-xs font-bold text-cyan-200 hover:text-white">Lupa password?</button>' : '') + '<button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke pilihan Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     renderResetForm: function(message) {
         var panel = document.getElementById('profile-account-panel'); if (!panel) return;
         panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="key-round" class="w-5 h-5 text-cyan-300 mt-0.5"></i><div><strong class="block text-sm text-white">Reset password</strong><span class="block text-xs text-white/50 mt-1">Masukkan Gmail. Jika akun terdaftar, link reset akan dikirim ke inbox.</span></div></div><input id="auth-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-cyan-300" /><button onclick="EmailAuth.submitReset()" class="w-full mt-3 rounded-xl bg-cyan-300 text-black px-5 py-3 text-sm font-black hover:bg-cyan-200">Kirim link reset</button><button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-cyan-200">' + this.escape(message) + '</p>' : '') + '</div>';
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     submitReset: async function() {
         var email = ((document.getElementById('auth-email') || {}).value || '').trim().toLowerCase();
@@ -286,7 +286,7 @@ var EmailAuth = {
     renderVerificationForm: function(email, message) {
         var panel = document.getElementById('profile-account-panel'); if (!panel) return;
         panel.innerHTML = '<div class="rounded-2xl bg-amber-500/10 border border-amber-300/20 p-4"><div class="flex items-start gap-3"><i data-lucide="mail-warning" class="w-5 h-5 text-amber-200 mt-0.5"></i><div class="min-w-0"><strong class="block text-sm text-amber-100">Email belum terverifikasi</strong><span class="block text-xs text-white/60 mt-1">Kirim ulang link verification ke ' + this.escape(email) + '.</span></div></div><input id="verify-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="Masukkan password untuk konfirmasi" class="w-full mt-3 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-amber-300" /><button onclick="EmailAuth.sendVerification(\'' + this.escape(email) + '\')" class="w-full mt-3 rounded-xl bg-amber-200 text-black px-4 py-3 text-xs font-black">Kirim ulang verification</button><button onclick="Profile.render()" class="w-full mt-2 text-xs font-bold text-white/50 hover:text-white">Kembali</button>' + (message ? '<p class="mt-3 text-xs text-amber-100">' + this.escape(message) + '</p>' : '') + '</div>';
-        lucide.createIcons();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     sendVerification: async function(email) {
         var password = (document.getElementById('verify-password') || {}).value || '';
@@ -315,8 +315,9 @@ var EmailAuth = {
     },
     refresh: async function() {
         var requestId = ++this.refreshSeq;
+        var response = null;
         try {
-            var response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin', cache: 'no-store' });
+            response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin', cache: 'no-store' });
             var data = await response.json();
             if (requestId !== this.refreshSeq) return;
             var name = document.getElementById('profile-name');
@@ -345,12 +346,13 @@ var EmailAuth = {
                 this.renderChoice();
                 this.renderAuthActions(false);
             }
-            lucide.createIcons();
+            if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
         } catch (_) {
             if (requestId !== this.refreshSeq) return;
             this.remoteProfile = null;
-            this.renderChoice('Server autentikasi belum siap.');
-            this.renderAuthActions(false);
+            this.applyAvatar(null);
+            if (response && response.ok) { this.renderChoice(); this.renderAuthActions(false); }
+            else { this.renderChoice('Server autentikasi belum siap.'); this.renderAuthActions(false); }
         }
     }
 };
