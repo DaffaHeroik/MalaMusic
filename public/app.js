@@ -453,6 +453,7 @@ var App={
                 <div class="spotify-section-label">Menu utama</div>
                 <button onclick="App.switch('home')" id="nav-home" class="spotify-nav-item" aria-label="Beranda"><i data-lucide="home"></i><span>Beranda</span></button>
                 <button onclick="App.switch('search')" id="nav-search" class="spotify-nav-item" aria-label="Cari"><i data-lucide="search"></i><span>Cari</span></button>
+                <button onclick="App.switch('leaderboard')" id="nav-leaderboard" class="spotify-nav-item" aria-label="Leaderboard"><i data-lucide="trophy"></i><span>Leaderboard</span></button>
             </div>
             <div class="spotify-nav-section">
                 <div class="spotify-section-label">Koleksi kamu</div>
@@ -553,6 +554,10 @@ var App={
                 }, 300);
             }
         }
+        else if(path.startsWith('/playlist-public/')){
+            var publicId = path.split('/playlist-public/')[1];
+            if(publicId) setTimeout(function(){ App.openPublicPlaylist(publicId); }, 300);
+        }
         else if(path.startsWith('/artist/')){
             var artistId = path.split('/artist/')[1];
             if(artistId) {
@@ -573,6 +578,15 @@ var App={
             else if(search){setTimeout(function(){var si=gid('search-input');if(si){si.value=decodeURIComponent(search);gid('search-form').dispatchEvent(new Event('submit'));}App.switch('search');},300);}
         }
     },
+    openPublicPlaylist(id){
+        fetch('/api/stats?action=public-playlist&id=' + encodeURIComponent(id)).then(function(r){return r.json();}).then(function(data){
+            if(!data.status || !data.playlist) throw new Error();
+            var pl=data.playlist, songs=pl.songs||[], modal=document.createElement('div'); modal.className='fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/70 px-0 sm:px-4';
+            modal.innerHTML='<div class="w-full sm:max-w-lg max-h-[88vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="p-5 flex items-center gap-4 border-b border-white/10"><img src="'+(pl.image||((songs[0]&&songs[0].cover)||FI))+'" class="w-20 h-20 rounded-2xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><p class="text-[10px] uppercase tracking-widest text-amber-200/70 font-black">Playlist Publik</p><h2 class="text-xl font-black text-white truncate mt-1">'+es(pl.name)+'</h2><p class="text-xs text-white/50 mt-1">Oleh '+es(pl.owner_name||'Pendengar MalaMusic')+' · '+songs.length+' lagu</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[48vh] overflow-y-auto p-3">'+(songs.length?songs.map(function(s,i){return '<button onclick="App.playPublicPlaylist('+i+')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-left"><img src="'+(s.cover||FI)+'" class="w-10 h-10 rounded-lg object-cover" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(s.title||'Lagu')+'</strong><span class="text-xs text-white/50 truncate">'+es(s.artist||'MalaMusic')+'</span></span></button>';}).join(''):'<p class="p-8 text-center text-sm text-white/50">Playlist ini belum memiliki lagu.</p>')+'</div><div class="p-4 border-t border-white/10"><button onclick="App.playPublicPlaylist(0)" class="w-full rounded-full bg-white text-black py-3 font-black text-sm">Putar Playlist</button></div></div>';
+            document.body.appendChild(modal); window.__publicPlaylistSongs=songs; lucide.createIcons();
+        }).catch(function(){showToast('Playlist publik tidak ditemukan.');});
+    },
+    playPublicPlaylist(index){ var songs=window.__publicPlaylistSongs||[]; if(!songs[index]) return; S.pl=songs; S.pi=index; S.ps='public-playlist'; S.ct=songs[index]; UU(); MP.show(); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); },
     autoPlayTrack(videoId){
         fetch(API.search+'?query=https://youtube.com/watch?v='+videoId).then(function(r){return r.json();}).then(function(d){
             var title='Lagu',artist='MalaMusic',cover=toHDCover('', videoId),artistId='';
@@ -614,7 +628,7 @@ var App={
             if(el.id !== 'v2-popup' && el.id !== 'mini-player') el.remove();
         });
 
-        var tabs = ['home', 'search', 'library', 'offline', 'liked', 'dev'];
+        var tabs = ['home', 'search', 'leaderboard', 'library', 'offline', 'liked', 'dev'];
         var prevTab = S.at || 'home';
         var prevIndex = tabs.indexOf(prevTab);
         var nextIndex = tabs.indexOf(t);
@@ -642,6 +656,7 @@ var App={
             }
         }
         if(t==='search'){Search.onShow();}
+        if(t==='leaderboard' && typeof Leaderboard !== 'undefined'){Leaderboard.render();}
         if(t==='liked'){Liked.render();}
 
         var targetEl = gid('view-' + t);
@@ -656,7 +671,7 @@ var App={
             }
         }
 
-        ['home','search','library','offline','liked','dev'].forEach(function(n){
+        ['home','search','leaderboard','library','offline','liked','dev'].forEach(function(n){
             var b=gid('nav-'+n);
             var mobileB = n === 'dev' ? gid('nav-dev-mobile') : null;
             if(!b && !mobileB)return;

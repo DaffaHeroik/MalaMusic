@@ -145,10 +145,15 @@ var Library={
         popup.innerHTML='<div class="w-full max-w-md rounded-t-3xl p-6 border-t border-white/10 glass-strong" style="animation:slideUp 0.3s ease-out forwards; background: var(--bg-color);">'+
             '<div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div>'+
             '<div class="flex items-center gap-3 mb-5"><img src="'+(pl.image||(pl.songs.length>0?pl.songs[0].cover:FI))+'" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\''+FI+'\'" /><div class="truncate"><h3 class="font-bold text-white truncate">'+es(pl.name)+'</h3><p class="text-white/70 text-xs">'+pl.songs.length+' lagu</p></div></div>'+
+            '<button onclick="this.closest(\'.fixed\').remove();Library.publishPublic(\''+id+'\')" class="w-full text-left p-4 rounded-xl hover:bg-amber-500/10 flex items-center gap-3 mb-1"><i data-lucide="globe-2" class="w-5 h-5 text-amber-300"></i><span class="font-medium text-white">Jadikan Playlist Publik</span></button>'+
             '<button onclick="this.closest(\'.fixed\').remove();Library.editPlaylist(\''+id+'\')" class="w-full text-left p-4 rounded-xl hover:bg-white/5 flex items-center gap-3 mb-1"><i data-lucide="pencil" class="w-5 h-5 text-white"></i><span class="font-medium text-white">Edit Playlist</span></button>'+
             '<button onclick="this.closest(\'.fixed\').remove();Library.confirmDelete(\''+id+'\')" class="w-full text-left p-4 rounded-xl hover:bg-red-500/10 flex items-center gap-3"><i data-lucide="trash-2" class="w-5 h-5 text-red-400"></i><span class="font-medium text-red-400">Hapus Playlist</span></button>'+
         '</div>';
         document.body.appendChild(popup);lucide.createIcons();
+    },
+    async publishPublic(id){
+        var pl=getUserPlaylists().find(function(item){return item.id===id;}); if(!pl) return;
+        try { var response=await fetch('/api/stats?action=publish-playlist',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pl.id,name:pl.name,image:pl.image||'',songs:pl.songs||[]})}); var data=await response.json(); if(!response.ok||!data.status) throw new Error(); var link=location.origin+'/playlist-public/'+data.id; if(navigator.clipboard) await navigator.clipboard.writeText(link); showToast('Playlist publik dibuat. Link sudah disalin.'); } catch(e) { showToast('Login diperlukan untuk membuat playlist publik.'); }
     },
     editPlaylist(id){
         var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===id;});if(!pl)return;

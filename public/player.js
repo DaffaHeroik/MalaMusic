@@ -94,14 +94,15 @@ AU.addEventListener('timeupdate',function(){
         S.pd=AU.duration||0;
         renderProgress();
         if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
+        if(typeof StatsTracker !== 'undefined' && S.ct) StatsTracker.tick(S.ct, AU.currentTime);
         checkAndPreloadNext();
     }
 });
 AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();ST();}});
+AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
 AU.addEventListener('waiting',function(){S.il=true;UB();});
 AU.addEventListener('playing',function(){S.il=false;UB();});
-AU.addEventListener('ended',function(){ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
+AU.addEventListener('ended',function(){if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
 AU.addEventListener('error',function(){if(AU.src){S.il=false;S.ip=false;UB();}});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
