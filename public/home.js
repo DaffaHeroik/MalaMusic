@@ -598,7 +598,15 @@ var Home = {
                 '<button onclick="App.switch(\'offline\')" class="mt-2 btn-chrome px-4 py-2 text-xs font-bold rounded-xl active:scale-95 transition inline-flex items-center gap-1.5"><i data-lucide="disc" class="w-4 h-4"></i> Buka Lagu Offline</button>'+
             '</div>';
         } else {
-            g.innerHTML = (S.ht || []).slice(0, 6).map(function(t, i) {
+            var quickSongs = (S.ht || []).slice(0, 6);
+            if (!quickSongs.length) {
+                g.innerHTML = '<div class="col-span-2 md:col-span-4 rounded-2xl bg-gradient-to-br from-[#252837] to-[#171820] border border-white/10 p-5 flex flex-col sm:flex-row items-center gap-4 shadow-xl">'+
+                    '<div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0"><i data-lucide="headphones" class="w-8 h-8 text-white/80"></i></div>'+
+                    '<div class="flex-1 text-center sm:text-left"><h3 class="text-white font-black text-base">Temukan musik untuk harimu</h3><p class="text-white/60 text-xs mt-1">Cari lagu favorit atau muat rekomendasi baru untuk mengisi Quick Picks.</p></div>'+
+                    '<div class="flex gap-2 shrink-0"><button onclick="App.switch(\'search\')" class="rounded-xl bg-white text-black px-4 py-2.5 text-xs font-black active:scale-95 transition">Cari Lagu</button><button onclick="Home.refresh()" class="rounded-xl bg-white/10 border border-white/15 text-white px-4 py-2.5 text-xs font-bold active:scale-95 transition">Muat Ulang</button></div>'+
+                '</div>';
+            } else {
+            g.innerHTML = quickSongs.map(function(t, i) {
                 var isCur = S.ct && (
                     S.ct.id === t.id ||
                     S.ct.videoId === t.id ||
@@ -630,6 +638,7 @@ var Home = {
                     '<div class="home-grid-icon shrink-0">'+playIconHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
+            }
         }
 
         var pls = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
@@ -643,8 +652,10 @@ var Home = {
 
         if (S.hp && S.hp.length > 0) {
             S.hp.slice(0, 8).forEach(function(p, i) {
-                plHtml += '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\''+FI+'\'" /></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.title)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div></div>';
+                plHtml += '<div onclick="Album.open(&quot;'+p.id+'&quot;)" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=&quot;/logo.png&quot;" /></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.title)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div></div>';
             });
+        } else if (!pls.length) {
+            plHtml += '<div class="flex-shrink-0 w-64 rounded-2xl bg-gradient-to-br from-[#252837] to-[#171820] border border-white/10 p-4 flex items-center gap-3"><div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="list-music" class="w-6 h-6 text-purple-300"></i></div><div class="min-w-0"><h3 class="text-sm font-black text-white">Playlist populer segera hadir</h3><p class="text-xs text-white/55 mt-1">Cari lagu lalu simpan ke playlist pertamamu.</p></div></div>';
         }
 
         s.innerHTML = plHtml;
@@ -659,7 +670,8 @@ var Home = {
                 a.innerHTML = artHtml;
                 a.parentElement.style.display = 'block';
             } else {
-                a.parentElement.style.display = 'none';
+                a.parentElement.style.display = 'block';
+                a.innerHTML = '<div class="w-full rounded-2xl bg-gradient-to-r from-[#252837] to-[#171820] border border-white/10 p-4 flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-6 h-6 text-rose-300"></i></div><div class="min-w-0"><h3 class="text-sm font-black text-white">Jelajahi artis favoritmu</h3><p class="text-xs text-white/55 mt-1">Cari artis atau lagu untuk membangun rekomendasi MalaMusic.</p></div><button onclick="App.switch(\'search\')" class="ml-auto rounded-xl bg-white text-black px-3 py-2 text-xs font-black shrink-0">Cari</button></div>';
             }
         }
         lucide.createIcons();
