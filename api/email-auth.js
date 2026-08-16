@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const { getAuth } = require('./firebase-admin.js');
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
+const AUTH_RATE_LIMITS = { register: 4, login: 8 };
+const authRateBuckets = new Map();
 const FIREBASE_SIGN_IN_ENDPOINT = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 
 function secret() {
@@ -61,6 +64,43 @@ function bodyOf(req) {
 
 function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
+}
+
+function requestOriginAllowed(req) {
+    const origin = String(req.headers && req.headers.origin || '');
+    if (!origin) return true;
+    try {
+        const originUrl = new URL(origin);
+        const host = String(req.headers && (req.headers['x-forwarded-host'] || req.headers.host) || '').split(',')[0].trim();
+        return !host || originUrl.host === host;
+    } catch (_) { return false; }
+}
+
+function rateLimitKey(req, action, email) {
+    const forwarded = String(req.headers && (req.headers['x-forwarded-for'] || '')).split(',')[0].trim();
+    const ip = forwarded || String(req.socket && req.socket.remoteAddress || 'unknown');
+    return action + ':' + ip + ':' + email;
+}
+
+function enforceAuthRateLimit(req, action, email) {
+    const max = AUTH_RATE_LIMITS[action];
+    if (!max) return { allowed: true };
+    const now = Date.now();
+    const key = rateLimitKey(req, action, email);
+    const current = authRateBuckets.get(key);
+    if (!current || now - current.startedAt >= AUTH_RATE_WINDOW_MS) {
+        authRateBuckets.set(key, { startedAt: now, count: 1 });
+        return { allowed: true };
+    }
+    current.count += 1;
+    const remaining = Math.max(1, Math.ceil((AUTH_RATE_WINDOW_MS - (now - current.startedAt)) / 1000));
+    if (current.count > max) return { allowed: false, retryAfter: remaining };
+    return { allowed: true };
+}
+
+function cleanupAuthRateBuckets() {
+    const now = Date.now();
+    authRateBuckets.forEach(function(bucket, key) { if (now - bucket.startedAt >= AUTH_RATE_WINDOW_MS) authRateBuckets.delete(key); });
 }
 
 function isGmail(email) {
@@ -133,6 +173,8 @@ module.exports = async function emailAuth(req, res) {
     }
 
     const action = (req.query && req.query.action) || 'me';
+    cleanupAuthRateBuckets();
+    if ((action === 'register' || action === 'login') && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
     const cookies = parseCookies(req);
     const now = Date.now();
 
@@ -153,6 +195,11 @@ module.exports = async function emailAuth(req, res) {
     const password = body.password;
     const validationError = validateCredentials(email, password);
     if (validationError) return res.status(400).json({ status: false, message: validationError });
+    const rate = enforceAuthRateLimit(req, action, email);
+    if (!rate.allowed) {
+        res.setHeader('Retry-After', String(rate.retryAfter));
+        return res.status(429).json({ status: false, message: 'Terlalu banyak percobaan. Coba lagi setelah beberapa menit.' });
+    }
 
     try {
         const auth = getAuth();
