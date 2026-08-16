@@ -3,7 +3,7 @@ const { getAuth } = require('./firebase-admin.js');
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
-const AUTH_RATE_LIMITS = { register: 4, login: 8, 'password-reset': 3, 'send-verification': 3 };
+const AUTH_RATE_LIMITS = { register: 4, login: 8, 'google-login': 8, 'password-reset': 3, 'send-verification': 3 };
 const authRateBuckets = new Map();
 const FIREBASE_SIGN_IN_ENDPOINT = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 
@@ -186,7 +186,7 @@ module.exports = async function emailAuth(req, res) {
 
     const action = (req.query && req.query.action) || 'me';
     cleanupAuthRateBuckets();
-    if (['register', 'login', 'password-reset', 'send-verification'].includes(action) && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
+    if (['register', 'login', 'google-login', 'password-reset', 'send-verification'].includes(action) && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
     const cookies = parseCookies(req);
     const now = Date.now();
 
@@ -209,6 +209,23 @@ module.exports = async function emailAuth(req, res) {
 
     if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method tidak didukung.' });
     const body = bodyOf(req);
+    if (action === 'google-login') {
+        const rate = enforceAuthRateLimit(req, action, 'google-provider');
+        if (!rate.allowed) { res.setHeader('Retry-After', String(rate.retryAfter)); return res.status(429).json({ status: false, message: 'Terlalu banyak percobaan Google Login. Coba lagi setelah beberapa menit.' }); }
+        try {
+            const decoded = await verifyFirebaseToken(body.idToken);
+            const provider = String(decoded.firebase && decoded.firebase.sign_in_provider || '');
+            if (provider !== 'google.com') return res.status(401).json({ status: false, message: 'Token bukan berasal dari Google Sign-In.' });
+            const firebaseUser = await getAuth().getUser(decoded.uid);
+            const user = createSession(res, firebaseUser);
+            return res.status(200).json({ status: true, authenticated: true, user });
+        } catch (error) {
+            const code = String(error && (error.code || error.message) || '');
+            if (code.includes('Hanya akun Gmail') || code.includes('Token Firebase') || code.includes('Token bukan')) return res.status(401).json({ status: false, message: code });
+            console.error('[email-auth/google-login]', error && error.stack ? error.stack : error);
+            return res.status(401).json({ status: false, message: 'Google Login gagal. Silakan coba lagi.' });
+        }
+    }
     const email = normalizeEmail(body.email);
     const password = body.password;
     if (!isGmail(email)) return res.status(400).json({ status: false, message: 'Gunakan alamat Gmail yang valid (@gmail.com).' });
