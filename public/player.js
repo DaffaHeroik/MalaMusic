@@ -93,6 +93,7 @@ AU.addEventListener('timeupdate',function(){
         S.pt=AU.currentTime||0;
         S.pd=AU.duration||0;
         renderProgress();
+        if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
         checkAndPreloadNext();
     }
 });

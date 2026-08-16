@@ -27,6 +27,7 @@ var Profile = {
 
             <div class="max-w-5xl mx-auto px-5 sm:px-8 py-6">
                 <div id="profile-account-panel" class="mb-7"></div>
+                <div id="profile-streak-card"></div>
 
                 <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
                     <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${liked.length}</strong><span class="text-[11px] text-white/50">Lagu disukai</span></div>
@@ -69,6 +70,7 @@ var Profile = {
 
         lucide.createIcons();
         EmailAuth.refresh();
+        if (typeof Streak !== 'undefined') Streak.refreshProfileCard();
     },
     showHistory: function() {
         var recent = typeof getRecentTracks === 'function' ? getRecentTracks() : [];
