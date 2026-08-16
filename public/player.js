@@ -77,6 +77,20 @@ function fm(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),se=Math.floor(s
 function es(t){if(!t)return'';const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 function esJs(t){if(!t)return'';return String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ').replace(/\r/g,'');}
 function cn(t){if(!t)return'Unknown';return t.replace(/[^\x20-\x7E\xA0-\xFF\u0100-\uFFFF]/g,'').replace(/\s*-\s*Topic$/i,'').trim()||'Unknown';}
+function normalizeTrack(track){
+    track = track || {};
+    var id = String(track.videoId || track.id || track.video_id || '').trim();
+    return {
+        id: id,
+        videoId: id,
+        title: cn(track.title || track.name || 'Lagu'),
+        artist: cn(track.artist || track.author || 'MalaMusic'),
+        artistId: track.artistId || track.artist_id || '',
+        cover: toHDCover(track.cover || track.thumbnail || track.image || '', id),
+        ytUrl: track.ytUrl || track.url || (id ? 'https://youtube.com/watch?v=' + id : '')
+    };
+}
+function trackId(track){return String(track && (track.videoId || track.id || track.video_id) || '').trim();}
 function gid(id){return document.getElementById(id);}
 
 function updateOG(title,image){
@@ -891,6 +905,7 @@ function PK(s,i){
     else if(s==='rec2')l=(S.rec2||[]).slice(0,6);
     else if(s==='liked')l=typeof getLikedSongs==='function'?getLikedSongs():[];
     else if(s==='offline')l=typeof getOfflineSongs==='function'?getOfflineSongs():[];
+    else if(s==='queue')l=S.pl||[];
     else if(S.pl && S.pl.length > 0)l=S.pl;
 
     if((!l || !l[i]) && S.pl && S.pl[i]){
@@ -1033,9 +1048,10 @@ async function fetchAutoNextRecommendations(track) {
             var currId = track.videoId || track.id;
             var newSongs = d.result.songs.filter(function(s) {
                 return (s.videoId || s.id) !== currId;
-            });
+            }).map(normalizeTrack);
             if (newSongs.length > 0) {
                 S.pl = S.pl.concat(newSongs);
+                S.ps = 'queue';
                 return true;
             }
         }
@@ -1786,12 +1802,15 @@ function addCurrentToPlaylist(){if(!S.ct)return;var pls=getUserPlaylists();if(pl
 function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
 
 var trackContextRegistry = {};
+var trackContextSequence = 0;
 
 function trackMenuButton(track) {
-    var id = String(track && (track.videoId || track.id) || '').replace(/'/g, '');
+    var normalized = normalizeTrack(track);
+    var id = trackId(normalized);
     if (!id) return '';
-    trackContextRegistry[id] = track;
-    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + id + '\')" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-none flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class=\"w-4 h-4 sm:w-5 sm:h-5\"></i></button>';
+    var key = id + '_' + (++trackContextSequence);
+    trackContextRegistry[key] = normalized;
+    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + key + '\')" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-none flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class=\"w-4 h-4 sm:w-5 sm:h-5\"></i></button>';
 }
 
 function closeTrackContextMenu() {
