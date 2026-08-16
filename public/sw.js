@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v22';
-const CACHE_DATA_NAME = 'malamusic-api-v22';
+const CACHE_STATIC_NAME = 'malamusic-static-v23';
+const CACHE_DATA_NAME = 'malamusic-api-v23';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,12 +7,12 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/banner.png',
-  '/app.js?v=37',
-  '/player.js?v=37',
+  '/app.js?v=38',
+  '/player.js?v=38',
   '/fullplayer.js',
   '/miniplayer.js',
-  '/home.js',
-  '/library.js',
+  '/home.js?v=38',
+  '/library.js?v=38',
   '/liked.js',
   '/search.js',
   '/album.js',

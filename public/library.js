@@ -18,22 +18,23 @@ var Library={
             '</div>' +
             
             '<!-- Tabs Navigation -->' +
-            '<div class="flex gap-2 p-1.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/15">' +
-                '<button onclick="Library.setTab(\'playlists\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isPlaylistsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
+            '<div class="grid grid-cols-4 gap-1 p-1.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/15">' +
+                '<button onclick="Library.setTab(\'playlists\')" class="min-w-0 min-h-[56px] py-2 px-1 rounded-xl font-bold text-[11px] leading-tight flex flex-col items-center justify-center gap-1 transition-all ' + (isPlaylistsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="list-music" class="w-4 h-4 ' + (isPlaylistsTab ? 'text-blue-600' : '') + '"></i>' +
                     '<span>Playlists</span>' +
                 '</button>' +
-                '<button onclick="Library.setTab(\'artists\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isArtistsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
+                '<button onclick="Library.setTab(\'artists\')" class="min-w-0 min-h-[56px] py-2 px-1 rounded-xl font-bold text-[11px] leading-tight flex flex-col items-center justify-center gap-1 transition-all ' + (isArtistsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="user" class="w-4 h-4 ' + (isArtistsTab ? 'text-amber-600' : '') + '"></i>' +
                     '<span>Artis</span>' +
                 '</button>' +
-                '<button onclick="Library.setTab(\'songs\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isSongsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
+                '<button onclick="Library.setTab(\'songs\')" class="min-w-0 min-h-[56px] py-2 px-1 rounded-xl font-bold text-[11px] leading-tight flex flex-col items-center justify-center gap-1 transition-all ' + (isSongsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="heart" class="w-4 h-4 ' + (isSongsTab ? 'text-rose-500' : '') + '"></i>' +
                     '<span>Lagu Disukai</span>' +
                 '</button>' +
-            '</div>' +
-            '<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">' +
-                '<button onclick="App.switch(\'offline\')" class="shrink-0 px-4 py-2 rounded-full bg-cyan-500/15 border border-cyan-400/20 text-cyan-200 text-xs font-bold flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Mode Offline</button>' +
+                '<button onclick="App.switch(\'offline\')" class="min-w-0 min-h-[56px] py-2 px-1 rounded-xl font-bold text-[11px] leading-tight flex flex-col items-center justify-center gap-1 transition-all text-cyan-200 hover:text-cyan-100 hover:bg-cyan-500/15">' +
+                    '<i data-lucide="download" class="w-4 h-4 text-cyan-300"></i>' +
+                    '<span>Mode Offline</span>' +
+                '</button>' +
             '</div>' +
         '</div>' +
         '<div class="px-4 mt-4 pb-12">';

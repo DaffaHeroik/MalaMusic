@@ -1788,7 +1788,7 @@ function trackMenuButton(track) {
     var id = String(track && (track.videoId || track.id) || '').replace(/'/g, '');
     if (!id) return '';
     trackContextRegistry[id] = track;
-    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + id + '\')" class="w-9 h-9 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>';
+    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + id + '\')" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-none flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class=\"w-4 h-4 sm:w-5 sm:h-5\"></i></button>';
 }
 
 function closeTrackContextMenu() {
