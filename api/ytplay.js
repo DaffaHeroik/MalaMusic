@@ -4,6 +4,16 @@ const crypto = require('crypto');
 // Memory cache for audio stream URLs (valid 1.5 hours)
 const ytCache = new Map();
 const CACHE_TTL = 90 * 60 * 1000;
+const rateBuckets = new Map();
+function allowRequest(req){
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const now = Date.now();
+  const bucket = rateBuckets.get(ip) || { start: now, count: 0 };
+  if (now - bucket.start > 60000) { bucket.start = now; bucket.count = 0; }
+  bucket.count += 1; rateBuckets.set(ip, bucket);
+  if (rateBuckets.size > 1000) rateBuckets.clear();
+  return bucket.count <= 30;
+}
 
 async function getDownload(url) {
   const idMatch = [
@@ -106,8 +116,11 @@ module.exports = async (req, res) => {
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
     body = body || {};
 
-    const url = (body.query || body.url || '').trim();
-    if (!url) { res.status(400).json({ status: false, message: 'Parameter query wajib diisi' }); return; }
+    const url = String(body.query || body.url || '').trim();
+    if (!url || url.length > 300) { res.status(400).json({ status: false, message: 'Parameter query tidak valid' }); return; }
+    if (!allowRequest(req)) { res.status(429).json({ status: false, message: 'Terlalu banyak permintaan. Coba lagi sebentar.' }); return; }
+    const validYoutube = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}(?:[&#?].*)?$/i.test(url) || /^[a-zA-Z0-9_-]{11}$/.test(url);
+    if (!validYoutube) { res.status(400).json({ status: false, message: 'Hanya URL atau ID YouTube yang didukung.' }); return; }
 
     console.log(`[EXTRACT] Starting extraction for: ${url}`);
 
