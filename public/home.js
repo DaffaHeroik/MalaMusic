@@ -61,6 +61,7 @@ var Home = {
         </div>
         <div class="px-4 mt-4" id="home-main-content">
             <div id="home-default-view">
+                <div id="home-streak-card"></div>
                 <div class="space-y-6">
                     ${recentHtml}
                     <div>
@@ -89,8 +90,8 @@ var Home = {
             <div id="home-category-view" style="display:none;"></div>
         </div>`;
 
-        lucide.createIcons();
-
+                lucide.createIcons();
+        if (typeof Streak !== 'undefined') Streak.refreshHomeCard();
         if (Home.activeCategory && Home.activeCategory !== 'Semua') {
             if (Home.activeCategory === 'Developer Profile') {
                 Home.renderDeveloperProfileView();
