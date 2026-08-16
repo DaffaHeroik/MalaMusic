@@ -406,9 +406,9 @@ var Artist={
                     var last = s.thumbnails[s.thumbnails.length-1];
                     sim = typeof last==='string'?last:(last.url||last.src||FI);
                 }
-                return {
-                    id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist || a.name, cover: toHDCover(sim, s.videoId), artistId: Artist.currentArtistId || '', ytUrl: 'https://youtube.com/watch?v='+s.videoId
-                };
+                return normalizeTrack({
+                    id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist || a.name, thumbnail: sim, artistId: Artist.currentArtistId || '', ytUrl: 'https://youtube.com/watch?v='+s.videoId
+                });
             });
             idx = topSongs.findIndex(function(x) { return x.videoId === vid; });
             if (idx !== -1) isTopSong = true;
@@ -420,7 +420,7 @@ var Artist={
             S.pl = topSongs;
             S.pi = idx;
         } else {
-            S.ct={id:vid,videoId:vid,title:title,artist:artist,cover:cov,artistId:Artist.currentArtistId || '',ytUrl:'https://youtube.com/watch?v='+vid};
+            S.ct=normalizeTrack({id:vid,videoId:vid,title:title,artist:artist,cover:cov,artistId:Artist.currentArtistId || '',ytUrl:'https://youtube.com/watch?v='+vid});
             S.ps='artist';S.pl=[S.ct];S.pi=0;
         }
         

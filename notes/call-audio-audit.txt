@@ -1,0 +1,442 @@
+=== AUDIO/FOCUS REFERENCES ===
+public/app.js:19:    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[600] bg-zinc-900/95 text-white text-xs font-semibold px-4 py-2.5 rounded-full border border-white/15 shadow-2xl backdrop-blur-md flex items-center space-x-2 transition-all duration-300 transform -translate-y-4 opacity-0 pointer-events-none';
+public/app.js:52:    localStorage.removeItem('pwa_audio_cache');
+public/app.js:54:    if (typeof audioUrlCache !== 'undefined') audioUrlCache = {};
+public/app.js:93:    modal.className = 'fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in';
+public/app.js:97:            '<i data-lucide="smartphone" class="w-6 h-6 text-white"></i>'+
+public/app.js:205:        if (typeof audioUrlCache !== 'undefined' && !audioUrlCache[vid]) {
+public/app.js:213:            if (d && d.result && d.result.download && d.result.download.audio) {
+public/app.js:214:                audioUrlCache[vid] = d.result.download.audio;
+public/app.js:291:                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
+public/app.js:411:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center bg-black/80 backdrop-blur-md">
+public/app.js:549:                            // Playlists are stored locally on-device, so a shared link only
+public/app.js:718:                            <p class="text-[#b3b3b3] text-xs leading-relaxed">Sesuaikan Bass, Mid, Treble, dan gunakan berbagai Preset Keren untuk kualitas audio musik terbaik.</p>
+public/app.js:728:                            <p class="text-[#b3b3b3] text-xs leading-relaxed">Bagikan lagu favorit Anda menggunakan link audio langsung untuk kemudahan berbagi musik.</p>
+public/app.js:768:                            <p class="text-[#b3b3b3] text-xs leading-relaxed">Kustomisasi getaran audio dengan mengubah kecepatan musik secara instan ke gaya favorit Anda.</p>
+public/artist.js:203:                                <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md rounded-full p-1.5"><i data-lucide="play" class="w-4 h-4 fill-current text-white"></i></div>
+public/fullplayer.js:13:                <img id="full-bg-artwork" src="" class="player-bg-blur-img" alt="" />
+public/fullplayer.js:14:                <img id="full-bg-artwork-next" src="" class="player-bg-blur-img transition-opacity duration-300" style="opacity:0; z-index:2;" alt="" />
+public/fullplayer.js:29:                        <i data-lucide="audio-waveform" class="w-5 h-5"></i>
+public/fullplayer.js:37:                <div class="inline-flex items-center bg-black/40 backdrop-blur-xl p-1 rounded-full border border-white/15 shadow-inner">
+public/fullplayer.js:60:                        <div id="full-cover-overlay" class="absolute inset-0 rounded-2xl flex flex-col items-center justify-center bg-black/65 backdrop-blur-md p-4 transition-opacity duration-200 opacity-0 pointer-events-none z-20">
+public/fullplayer.js:67:                    <div id="full-lyrics-view" class="hidden w-full h-full relative rounded-2xl bg-black/50 backdrop-blur-2xl border border-white/15 p-3.5 overflow-hidden flex flex-col shadow-2xl">
+public/fullplayer.js:100:                            <button onclick="toggleLyrics()" class="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md flex items-center gap-1.5 transition-all shadow-md cursor-pointer" title="Buka Lirik Penuh">
+public/fullplayer.js:198:                <img id="lyrics-bg-blur" src="" class="player-bg-blur-img" alt="" />
+public/fullplayer.js:204:            <div class="md:hidden flex justify-between items-center p-4 pt-safe flex-shrink-0 bg-black/30 backdrop-blur-md border-b border-white/10 relative z-20">
+public/fullplayer.js:216:            <button id="lyrics-bg-glow-toggle" onclick="FullPlayer.toggleBgGlow()" class="md:hidden absolute top-[100px] left-6 z-30 bg-black/40 backdrop-blur-md w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all" title="Matikan/Nyalakan Latar Bergerak">
+public/fullplayer.js:217:                <i data-lucide="audio-waveform" class="w-4 h-4"></i>
+public/fullplayer.js:221:            <div class="md:hidden absolute top-[100px] right-6 z-30 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+public/fullplayer.js:228:            <button onclick="toggleLyrics()" class="hidden md:flex absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white p-3 rounded-full active:scale-90 transition-all cursor-pointer">
+public/fullplayer.js:493:            ['full-bg-artwork', 'lyrics-bg-blur'].forEach(function(id) {
+public/home.js:32:                : 'bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 border border-white/15 font-medium';
+public/home.js:40:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/home.js:46:                    <button onclick="Home.refresh()" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Muat lagu lain" aria-label="Muat lagu lain">
+public/home.js:49:                    <button onclick="App.switch('search')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Cari">
+public/home.js:52:                    <button onclick="App.switch('dev')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Profil">
+public/home.js:128:                        : 'bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 border border-white/15 font-medium');
+public/home.js:148:                    : 'bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 border border-white/15 font-medium');
+public/home.js:605:                    '<div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0"><i data-lucide="headphones" class="w-8 h-8 text-white/80"></i></div>'+
+public/home.js:649:            plHtml += '<div onclick="Library.open(\''+p.id+'\')" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\''+FI+'\'" /><div class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all shadow-black/40"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></div></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.name)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+p.songs.length+' lagu</p></div></div>';
+public/leaderboard.js:15:                    return '<div class="flex items-center gap-3 rounded-2xl bg-white/[.04] border border-white/10 p-3 sm:p-4"><div class="w-9 text-center text-lg font-black '+medal+'">'+row.rank+'</div><div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400/30 to-rose-500/30 flex items-center justify-center shrink-0"><i data-lucide="headphones" class="w-5 h-5 text-white/80"></i></div><div class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(row.name)+'</strong><span class="text-xs text-white/45">'+row.activeDays+' hari aktif · rekor streak '+row.bestStreak+' hari</span></div><div class="text-right shrink-0"><strong class="block text-sm text-amber-200">'+row.streak+' hari</strong><span class="text-[10px] text-white/45">'+row.hours+' jam dengar</span></div></div>';
+public/library.js:15:        var html = '<div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url(\'/banner.png\') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">' +
+public/library.js:21:            '<div class="grid grid-cols-4 gap-1 p-1.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/15">' +
+public/library.js:44:                html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-500/10 flex items-center justify-center"><i data-lucide="heart" class="w-8 h-8 text-rose-400"></i></div><h3 class="text-white font-bold text-lg mb-1">Belum Ada Lagu Disukai</h3><p class="text-xs text-white/70 max-w-xs mx-auto mb-5">Tekan ikon hati saat menemukan lagu yang ingin kamu simpan.</p><button onclick="App.switch(\'search\')" class="bg-white/10 hover:bg-white/20 px-6 py-3 font-bold rounded-full text-xs text-white border border-white/20"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i> Cari Lagu</button></div>';
+public/library.js:51:                html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2">' +
+public/library.js:77:                html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2">' +
+public/library.js:88:                            '<button onclick="event.stopPropagation();Library.showActions(\'' + p.id + '\')" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full p-2 active:scale-90 transition-all" title="Opsi Playlist"><i data-lucide="more-vertical" class="w-4 h-4 text-white"></i></button>' +
+public/library.js:89:                            (p.songs.length > 0 ? '<button onclick="event.stopPropagation();Library.playSong(\'' + p.id + '\',0)" class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 shadow-black/40 active:scale-90" title="Putar"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></button>' : '') +
+public/library.js:132:        popup.innerHTML='<div class="glass-strong w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-4">Buat Playlist Baru</h3><input id="pl-name" class="w-full glass-input text-white rounded-xl px-4 py-3 mb-3 focus:outline-none" placeholder="Nama Playlist" /><input id="pl-image" type="file" accept="image/*" class="w-full text-sm text-white/70 mb-4" /><div class="flex gap-3"><button id="pl-create" class="flex-1 btn-chrome font-bold py-3 rounded-full">Buat</button><button onclick="this.closest(\'.fixed\').remove()" class="px-6 py-3 glass glass-hover text-white rounded-full">Batal</button></div></div>';
+public/library.js:161:        popup.innerHTML='<div class="glass-strong w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-4">Edit Playlist</h3><input id="pl-edit-name" class="w-full glass-input text-white rounded-xl px-4 py-3 mb-3 focus:outline-none" placeholder="Nama Playlist" value="'+es(pl.name).replace(/"/g,'&quot;')+'" /><input id="pl-edit-image" type="file" accept="image/*" class="w-full text-sm text-white/70 mb-4" /><div class="flex gap-3"><button id="pl-edit-save" class="flex-1 btn-chrome font-bold py-3 rounded-full">Simpan</button><button onclick="this.closest(\'.fixed\').remove()" class="px-6 py-3 glass glass-hover text-white rounded-full">Batal</button></div></div>';
+public/liked.js:51:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/liked.js:53:            <div class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-rose-400 shadow-lg">
+public/miniplayer.js:5:            <div id="mini-player-inner" onclick="FullPlayer.open()" class="rounded-2xl px-3.5 py-2.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden bg-white/[0.12] backdrop-blur-2xl border border-white/20 shadow-2xl group">
+public/miniplayer.js:8:                <div id="mini-next-overlay" class="absolute inset-0 pointer-events-none opacity-0 z-20 flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#121318]/95 border border-white/30 backdrop-blur-2xl overflow-hidden">
+public/player.js:102:// ---- AUDIO ENGINE (elemen <audio> native, sumber stream dari /api/ytplay) ----
+public/player.js:103:var AU=gid('audio-player');
+public/player.js:104:if(!AU){AU=document.createElement('audio');AU.id='audio-player';AU.preload='auto';AU.style.display='none';document.body.appendChild(AU);}
+public/player.js:123:if('mediaSession' in navigator){
+public/player.js:125:        navigator.mediaSession.setActionHandler('play',function(){TP();});
+public/player.js:126:        navigator.mediaSession.setActionHandler('pause',function(){TP();});
+public/player.js:127:        navigator.mediaSession.setActionHandler('previoustrack',function(){navigateFromMediaSession('previous');});
+public/player.js:128:        navigator.mediaSession.setActionHandler('nexttrack',function(){navigateFromMediaSession('next');});
+public/player.js:129:        navigator.mediaSession.setActionHandler('stop',function(){try{AU.pause();}catch(e){}});
+public/player.js:130:        navigator.mediaSession.setActionHandler('seekto',function(details){
+public/player.js:134:        navigator.mediaSession.setActionHandler('seekbackward',function(details){
+public/player.js:137:        navigator.mediaSession.setActionHandler('seekforward',function(details){
+public/player.js:170:    if(!('mediaSession' in navigator) || !track) return;
+public/player.js:173:        navigator.mediaSession.metadata = new MediaMetadata({
+public/player.js:187:    if(!('mediaSession' in navigator)) return;
+public/player.js:189:        navigator.mediaSession.playbackState = S.ip ? 'playing' : 'paused';
+public/player.js:191:            navigator.mediaSession.setPositionState({
+public/player.js:261:var audioUrlCache = {};
+public/player.js:263:    var storedAudio = localStorage.getItem('pwa_audio_cache');
+public/player.js:264:    if (storedAudio) audioUrlCache = JSON.parse(storedAudio);
+public/player.js:279:        var aKeys = Object.keys(audioUrlCache);
+public/player.js:280:        if (aKeys.length > 80) delete audioUrlCache[aKeys[0]];
+public/player.js:281:        localStorage.setItem('pwa_audio_cache', JSON.stringify(audioUrlCache));
+public/player.js:287:var audioUrlFetchPromises = {};
+public/player.js:295:    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
+public/player.js:296:    if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
+public/player.js:297:    if (!navigator.onLine) return Promise.reject(new Error('Offline dan audio belum tersimpan'));
+public/player.js:299:    audioUrlFetchPromises[vid] = fetch(API.ytplay, {
+public/player.js:302:        var url = d && d.status && d.result && d.result.download && d.result.download.audio;
+public/player.js:303:        if (!url) throw new Error('URL audio tidak tersedia');
+public/player.js:304:        audioUrlCache[vid] = url;
+public/player.js:307:    }).finally(function(){ delete audioUrlFetchPromises[vid]; });
+public/player.js:308:    return audioUrlFetchPromises[vid];
+public/player.js:316:        var source = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(rawUrl)) : rawUrl;
+public/player.js:317:        var audio = new Audio();
+public/player.js:318:        audio.preload = 'auto';
+public/player.js:319:        audio.src = source;
+public/player.js:320:        audio.load();
+public/player.js:321:        prefetchAudioElements[vid] = audio;
+public/player.js:879:    var mc=gid('mini-cover'),mt=gid('mini-title'),ma=gid('mini-artist'),fc=gid('full-cover'),ft=gid('full-title'),fa=gid('full-artist'),fh=gid('full-header-artist'),fb=gid('full-bg-blur'),fba=gid('full-bg-artwork');
+public/player.js:961:        var audioUrl = audioUrlCache[vid];
+public/player.js:962:        if (!audioUrl) {
+public/player.js:968:            audioUrl = await resolveAudioUrl(track);
+public/player.js:971:        if(audioUrl){
+public/player.js:973:            var nextSrc = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl;
+public/player.js:978:            if (typeof audioCtx !== 'undefined' && audioCtx) {
+public/player.js:1006:            if(typeof showToast === 'function') showToast('Gagal memuat audio lagu ini');
+public/player.js:1189:        ['lyrics-header-cover', 'lyrics-desktop-cover', 'lyrics-bg-blur'].forEach(function(id){
+public/player.js:1570:            ['lyrics-header-cover', 'lyrics-desktop-cover', 'lyrics-bg-blur'].forEach(function(id){
+public/player.js:1865:var audioCtx = null;
+public/player.js:1870:    if (audioCtx) return;
+public/player.js:1872:        var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+public/player.js:1873:        if (!AudioContextClass) return;
+public/player.js:1874:        audioCtx = new AudioContextClass();
+public/player.js:1875:        var AU_el = gid('audio-player');
+public/player.js:1878:        sourceNode = audioCtx.createMediaElementSource(AU_el);
+public/player.js:1883:            var filter = audioCtx.createBiquadFilter();
+public/player.js:1892:        lastNode.connect(audioCtx.destination);
+public/player.js:1904:            if (audioCtx && audioCtx.state === 'suspended') {
+public/player.js:1905:                audioCtx.resume();
+public/player.js:2140:    var hadAudioCtx = !!audioCtx;
+public/player.js:2142:    if (!hadAudioCtx && audioCtx && S.ct && !AU.paused) {
+public/player.js:2491:            if(d&&d.status&&d.result&&d.result.download&&d.result.download.audio){
+public/player.js:2492:                var audioUrl=d.result.download.audio;
+public/player.js:2494:                a.href='/api/proxy-audio?url='+encodeURIComponent(audioUrl);
+public/profile.js:14:                <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+public/profile.js:162:        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/50 mt-1">' + helper + ' Hanya alamat @gmail.com yang diterima.</span></div></div>' + (register ? '<input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Nama tampilan (opsional)" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" />' : '') + '<input id="auth-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><input id="auth-password" type="password" autocomplete="' + (register ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" placeholder="Password minimal 8 karakter" class="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.submit()" class="w-full mt-3 rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">' + (register ? 'Buat Akun' : 'Login') + '</button><button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke pilihan Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+public/search.js:4:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/search.js:8:                <input type="text" id="search-input" class="w-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium rounded-2xl pl-12 pr-20 py-3.5 focus:outline-none placeholder:text-white/50" placeholder="Cari lagu, artis, atau album..." autocomplete="off" />
+public/index.html:126:        .glass-input:focus-within, .glass-input:focus {
+public/index.html:159:        .nav-blur {
+public/index.html:227:            filter: blur(15px); z-index: -1;
+public/index.html:284:        .player-bg-blur-img {
+public/index.html:290:            filter: blur(24px) brightness(0.65) contrast(1.1);
+public/index.html:291:            -webkit-filter: blur(24px) brightness(0.65) contrast(1.1);
+public/index.html:304:            filter: blur(34px);
+public/index.html:342:        #lyrics-overlay .player-bg-blur-img {
+public/index.html:343:            filter: blur(60px) brightness(0.18) contrast(1.2) saturate(110%) !important;
+public/index.html:344:            -webkit-filter: blur(60px) brightness(0.18) contrast(1.2) saturate(110%) !important;
+public/index.html:492:        .nav-blur {
+public/index.html:525:            .spotify-sidebar { inset:auto 0 0; width:100%; height:calc(76px + env(safe-area-inset-bottom)); padding:7px 5px env(safe-area-inset-bottom); box-sizing:border-box; display:flex; flex-direction:row; align-items:stretch; gap:0; background:rgba(8,9,13,.96); border-right:0; border-top:1px solid rgba(255,255,255,.1); box-shadow:0 -14px 35px rgba(0,0,0,.45); backdrop-filter:blur(18px); }
+public/index.html:598:    <div id="pwa-offline-banner" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-[500] bg-amber-500/90 text-black font-bold text-xs px-4 py-1.5 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 border border-amber-400/50">
+public/index.html:609:    <audio id="audio-player" preload="auto" style="display:none;"></audio>
+public/index.html:627:  document.addEventListener('visibilitychange', function () {
+=== PLAYER AUDIO BLOCK ===
+103:var AU=gid('audio-player');
+105:AU.addEventListener('timeupdate',function(){
+115:AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
+116:AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+117:AU.addEventListener('waiting',function(){S.il=true;UB();});
+118:AU.addEventListener('playing',function(){S.il=false;UB();});
+119:AU.addEventListener('ended',function(){if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
+120:AU.addEventListener('error',function(){if(AU.src){S.il=false;S.ip=false;UB();}});
+943:function loadTrack(track,resumeAt){
+1013:function TP(){
+1209:function setupLyricScrollListener() {
+1869:function setupWebAudioEQ() {
+=== MINIPLAYER/FULLPLAYER ===
+var MP={
+    init(){
+        gid('mini-container').innerHTML=`
+        <div id="mini-player" class="hidden fixed left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-[160]" style="bottom:82px;transition:transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);will-change:transform;transform:translate3d(0,150px,0);">
+            <div id="mini-player-inner" onclick="FullPlayer.open()" class="rounded-2xl px-3.5 py-2.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden bg-white/[0.12] backdrop-blur-2xl border border-white/20 shadow-2xl group">
+                
+                <!-- Overlay for Next Song Transition (AutoNext last 10s) -->
+                <div id="mini-next-overlay" class="absolute inset-0 pointer-events-none opacity-0 z-20 flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#121318]/95 border border-white/30 backdrop-blur-2xl overflow-hidden">
+                    <div class="relative w-11 h-11 shrink-0 flex items-center justify-center">
+                        <div class="w-[34px] h-[34px] rounded-full overflow-hidden border border-white/20">
+                            <img id="mini-cover-next" src="" class="w-full h-full object-cover rounded-full spin-record" style="animation-play-state: paused;" />
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div id="mini-title-next" class="font-bold text-xs sm:text-sm text-white truncate"></div>
+                        <div id="mini-artist-next" class="text-white/70 text-[11px] truncate mt-0.5"></div>
+                    </div>
+                    <span id="mini-next-badge" class="text-[9px] font-black text-white bg-white/20 px-2 py-0.5 rounded-full border border-white/20 shrink-0 mr-12">NEXT</span>
+                </div>
+                
+                <!-- Beat Visualizer Ambient Background (Khusus Beat) -->
+                <div id="mini-beats-bg" class="absolute inset-0 pointer-events-none opacity-40 transition-opacity duration-500 overflow-hidden rounded-full z-0 hidden">
+                    <div id="mini-beats-bg-gradient" class="absolute inset-0 transition-all duration-700"></div>
+                </div>
+
+                <!-- Thumbnail Bulat Berputar + Circular Progress Bar (Lingkaran Hitam) -->
+                <div class="relative w-11 h-11 shrink-0 flex items-center justify-center z-10" onclick="FullPlayer.open(); if(typeof event !== 'undefined') event.stopPropagation();">
+                    <svg class="w-11 h-11 -rotate-90 pointer-events-none absolute inset-0 z-10" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="21" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2.5"></circle>
+                        <circle id="mini-circle-progress" cx="24" cy="24" r="21" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="131.95" stroke-dashoffset="131.95" stroke-linecap="round" class="transition-all duration-150"></circle>
+                    </svg>
+                    <div class="w-[34px] h-[34px] rounded-full overflow-hidden  z-0 border border-white/10">
+                        <img id="mini-cover" src="" class="w-full h-full object-cover rounded-full spin-record" style="animation-play-state: paused;" />
+                    </div>
+                </div>
+
+                <!-- Meta Info Judul & Artis (Lingkaran Putih Area) -->
+                <div class="flex-1 min-w-0 z-10">
+                    <div id="mini-title" class="font-bold text-xs sm:text-sm text-white truncate drop-shadow-sm">Pilih lagu</div>
+                    <div id="mini-artist" class="text-[#a0a5b0] text-[11px] truncate mt-0.5"></div>
+                </div>
+
+                <!-- Controls: Play/Pause and Heart -->
+                <div class="flex items-center gap-1.5 z-10 shrink-0">
+                    <button onclick="TP(); if(typeof event !== 'undefined') event.stopPropagation();" class="text-white active:scale-90 p-0.5 cursor-pointer" title="Putar/Jeda">
+                        <div id="mini-play-btn" class="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-white/10 border border-white/20 hover:bg-white/20">
+                            <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>
+                        </div>
+                    </button>
+                    <button id="mini-like-btn" onclick="toggleCurrentLike(); if(typeof event !== 'undefined') event.stopPropagation();" class="text-[#a0a5b0] hover:text-rose-400 active:scale-90 p-1.5 cursor-pointer" title="Sukai Lagu">
+                        <i data-lucide="heart" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        lucide.createIcons();
+    },
+    show(){
+        if (!S || !S.ct || (!S.ct.id && !S.ct.videoId && !S.ct.title)) {
+            return;
+        }
+        var mp=gid('mini-player');
+        if(!mp) return;
+        mp.classList.remove('hidden');
+        void mp.offsetHeight;
+        mp.style.transform='translate3d(0,0,0)';
+        if (typeof S !== 'undefined' && S.ct) {
+            MP.updateBeats(S.ct);
+        }
+    },
+    hide(){
+        var mp=gid('mini-player');
+        if(!mp) return;
+        mp.style.transform='translate3d(0,150px,0)';
+        setTimeout(function(){mp.classList.add('hidden');},300);
+    },
+    getTrackColors(track) {
+        if (!track) return ['#ff2a5f', '#7c3aed', '#2563eb', '#059669', '#d97706'];
+        var str = (track.videoId || '') + (track.title || '') + (track.artist || '');
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        hash = Math.abs(hash);
+        var baseHue = hash % 360;
+        return [
+            'hsl(' + baseHue + ', 88%, 50%)',
+            'hsl(' + ((baseHue + 55) % 360) + ', 92%, 55%)',
+            'hsl(' + ((baseHue + 140) % 360) + ', 82%, 46%)',
+            'hsl(' + ((baseHue + 215) % 360) + ', 86%, 49%)',
+            'hsl(' + ((baseHue + 295) % 360) + ', 84%, 48%)'
+        ];
+    },
+    applyColors(colors) {
+        if (!colors || !colors.length) return;
+        var primary = colors[0];
+        var secondary = colors[1] || primary;
+        var tertiary = colors[2] || primary;
+        var inner = gid("mini-player-inner");
+        if (inner) inner.style.background = "linear-gradient(to right, " + "color-mix(in srgb, " + tertiary + " 30%, #12131b), #12131b 80%)";
+        if (typeof S !== 'undefined') S.currentAccentColor = primary;
+
+        var circleProgress = gid('mini-circle-progress');
+        if (circleProgress) circleProgress.style.stroke = primary;
+
+        var playBtn = gid('mini-play-btn');
+        if (playBtn) {
+            playBtn.style.borderColor = "color-mix(in srgb, " + primary + " 40%, transparent)";
+        }
+
+        var beatBars = document.querySelectorAll('.mini-beat-bar');
+        beatBars.forEach(function(bar, idx) {
+            bar.style.backgroundColor = (idx % 2 === 0) ? primary : secondary;
+        });
+
+        var beatsGradient = gid('mini-beats-bg-gradient');
+        if (beatsGradient) {
+            beatsGradient.style.background = 'linear-gradient(to right, color-mix(in srgb, ' + primary + ' 25%, transparent), color-mix(in srgb, ' + secondary + ' 15%, transparent), transparent)';
+        }
+
+        if (typeof FullPlayer !== 'undefined' && FullPlayer.applyColors) {
+            FullPlayer.applyColors(colors);
+        }
+    },
+    extractFromImage(img) {
+        try {
+            var canvas = document.createElement('canvas');
+            var size = 32;
+            canvas.width = size;
+            canvas.height = size;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            var imgData = ctx.getImageData(0, 0, size, size).data;
+
+            var regions = [
+                { x0: 0, x1: 16, y0: 0, y1: 16 },   // Top-Left region
+                { x0: 16, x1: 32, y0: 0, y1: 16 },  // Top-Right region
+                { x0: 8, x1: 24, y0: 8, y1: 24 },   // Center region
+                { x0: 0, x1: 16, y0: 16, y1: 32 },  // Bottom-Left region
+                { x0: 16, x1: 32, y0: 16, y1: 32 }  // Bottom-Right region
+            ];
+
+            function rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                var max = Math.max(r, g, b), min = Math.min(r, g, b);
+                var h, s, l = (max + min) / 2;
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    var d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+                    else if (max === g) h = (b - r) / d + 2;
+                    else h = (r - g) / d + 4;
+                    h /= 6;
+                }
+                return [h * 360, s * 100, l * 100];
+            }
+
+            function hslToRgb(h, s, l) {
+                h /= 360; s /= 100; l /= 100;
+                var r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    var hue2rgb = function(p, q, t) {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    var p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+            }
+
+            // Only invent extra vividness where the source pixels actually carry
+            // real color signal. On near-gray input, forcing a saturation floor
+            // amplifies hue noise into a random, unrelated-looking color — so we
+            // keep low-chroma regions close to their true (muted/neutral) tone.
+            function formatColor(r, g, b, chroma) {
+                var hsl = rgbToHsl(r, g, b);
+                var h = hsl[0], s = hsl[1], l = hsl[2];
+                var hasRealColor = chroma > 18;
+                if (hasRealColor) {
+                    s = Math.max(s, 45);
+                    s = Math.min(s, 88);
+                } else {
+                    s = Math.min(s, 18);
+                }
+                l = Math.max(l, 28);
+                l = Math.min(l, 60);
+                var rgb = hslToRgb(h, s, l);
+                return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+            }
+
+            function getRegionColor(reg) {
+                var pixels = [];
+                for (var y = reg.y0; y < reg.y1; y++) {
+                    for (var x = reg.x0; x < reg.x1; x++) {
+                        var idx = (y * size + x) * 4;
+                        var r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2];
+                        var maxC = Math.max(r, g, b), minC = Math.min(r, g, b);
+                        pixels.push([r, g, b, maxC - minC]);
+                    }
+                }
+                if (!pixels.length) return null;
+
+                // Average the most colorful pixels in the region (weighted by how
+                // saturated each one is) instead of trusting a single max pixel,
+                // which is too easily thrown off by one noisy/outlier pixel.
+                pixels.sort(function(a, b) { return b[3] - a[3]; });
+                var top = pixels.slice(0, Math.max(3, Math.round(pixels.length * 0.15)));
+        }
+    },
+    isOpen: false,
+    open(){
+        var fp=gid('full-player');
+        if(!fp) return;
+        FullPlayer.isOpen = true;
+        fp.style.display='flex';
+        document.body.style.overflow='hidden';
+        void fp.offsetHeight;
+        fp.style.transform='translate3d(0,0,0)';
+        if(typeof MP !== 'undefined' && MP.hide) MP.hide();
+        requestAnimationFrame(function(){
+            try{
+                updateSleepBadge();
+                updateSpeedBadge();
+                if(typeof UB==='function')UB();
+                if(typeof updateLikeButtons==='function')updateLikeButtons();
+                if(typeof updateOfflineButtons==='function')updateOfflineButtons();
+                if(typeof updateVolumeUI==='function')updateVolumeUI();
+                if(S.ct && typeof FullPlayer.updateBeats === 'function') FullPlayer.updateBeats(S.ct);
+            }catch(e){}
+        });
+    },
+    close(){
+        var fp=gid('full-player');
+        if(!fp) return;
+        FullPlayer.isOpen = false;
+        fp.style.transform='translate3d(0,100%,0)';
+        document.body.style.overflow='';
+        setTimeout(function(){
+            fp.style.display='none';
+            if(typeof S!=='undefined'&&!S.lo&&typeof MP!=='undefined')MP.show();
+        },350);
+    },
+    openArtist(){if(S.ct&&S.ct.artistId){FullPlayer.close();setTimeout(function(){Artist.open(S.ct.artistId,S.ct.artist);},400);}},
+    openMoreSheet() {
+        var existing = gid('full-more-sheet');
+        if (existing) existing.remove();
+
+        var sheet = document.createElement('div');
+        sheet.id = 'full-more-sheet';
+        sheet.className = 'fixed inset-0 z-[250] flex items-end justify-center bg-black/60 ';
+        sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
+
+        sheet.innerHTML = `
+        <div class="bg-[#181922] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.25s ease-out forwards;">
+            <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5"></div>
+            
+            <div class="flex items-center gap-3 mb-6 p-3 rounded-2xl bg-white/5">
+                <img src="${(S.ct && S.ct.cover) ? S.ct.cover : FI}" class="w-12 h-12 rounded-xl object-cover" onerror="this.src='${FI}'" />
+                <div class="min-w-0 flex-1">
+                    <h4 class="font-bold text-white text-sm truncate">${(S.ct && S.ct.title) ? es(S.ct.title) : 'Pilih Lagu'}</h4>
+                    <p class="text-xs text-[#a0a5b0] truncate">${(S.ct && S.ct.artist) ? es(S.ct.artist) : ''}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-3 mb-4">
+                <button onclick="toggleAutoNext(); gid('full-more-sheet').remove();" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition cursor-pointer" style="opacity: ${S.autoNext ? '1' : '0.5'};">
+                    <i data-lucide="skip-forward" class="w-5 h-5 ${S.autoNext ? 'text-rose-400' : 'text-white'}"></i>
+                    <span class="text-xs font-semibold ${S.autoNext ? 'text-rose-400' : 'text-white/90'}">Auto Next</span>
+                </button>
+                <button onclick="gid('full-more-sheet').remove();openEqualizer();" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition cursor-pointer">
+                    <i data-lucide="sliders" class="w-5 h-5 text-white"></i>
+                    <span class="text-xs font-semibold text-white/90">EQ</span>
+                </button>
+                <button onclick="gid('full-more-sheet').remove();openSleepTimer();" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition cursor-pointer">
+                    <i data-lucide="clock" class="w-5 h-5 text-white"></i>
+                    <span class="text-xs font-semibold text-white/90">Timer</span>
+                </button>
+                <button onclick="gid('full-more-sheet').remove();addCurrentToPlaylist();" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 transition cursor-pointer">

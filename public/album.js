@@ -107,9 +107,9 @@ var Album = {
                         sim = typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null);
                     }
                     if (!sim) sim = im;
-                    return {
-                        id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist, artistId: s.artistId, cover: sim, ytUrl: 'https://youtube.com/watch?v='+s.videoId
-                    };
+                    return normalizeTrack({
+                        id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist, artistId: s.artistId, thumbnail: sim, ytUrl: 'https://youtube.com/watch?v='+s.videoId
+                    });
                 });
                 
                 html += '<div id="album-songs-list" class="space-y-1 pb-10">';

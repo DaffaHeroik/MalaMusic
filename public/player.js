@@ -102,6 +102,13 @@ function updateOG(title,image){
 // ---- AUDIO ENGINE (elemen <audio> native, sumber stream dari /api/ytplay) ----
 var AU=gid('audio-player');
 if(!AU){AU=document.createElement('audio');AU.id='audio-player';AU.preload='auto';AU.style.display='none';document.body.appendChild(AU);}
+// Keep playback as a normal Android media session. The browser/Android audio
+// policy owns telephony focus; web code must not try to inject media into a call.
+try {
+    AU.setAttribute('playsinline','');
+    AU.setAttribute('x-webkit-airplay','allow');
+    AU.setAttribute('disableRemotePlayback','');
+} catch(e) {}
 AU.addEventListener('timeupdate',function(){
     if(!AU.paused){
         S.pt=AU.currentTime||0;
@@ -113,9 +120,9 @@ AU.addEventListener('timeupdate',function(){
     }
 });
 AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
 AU.addEventListener('waiting',function(){S.il=true;UB();});
-AU.addEventListener('playing',function(){S.il=false;UB();});
+AU.addEventListener('playing',function(){S.il=false;UB();updateMediaSessionPlaybackState();});
 AU.addEventListener('ended',function(){if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
 AU.addEventListener('error',function(){if(AU.src){S.il=false;S.ip=false;UB();}});
 
@@ -284,6 +291,7 @@ function savePwaCaches() {
 
 var hasPrefetchedNext = false;
 var isPreloadingNext = false;
+var audioLoadSequence = 0;
 var audioUrlFetchPromises = {};
 var prefetchAudioElements = {};
 
@@ -942,6 +950,7 @@ function getRecentTracks(){
 
 function loadTrack(track,resumeAt){
     if(!track)return;
+    var loadSequence = ++audioLoadSequence;
     saveRecentTrack(track);
     if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
@@ -949,13 +958,14 @@ function loadTrack(track,resumeAt){
     ST();
     try{AU.pause();}catch(e){}
     updateMediaSessionMetadata(track);
-    fetchAudioAndPlay(track,resumeAt);
+    fetchAudioAndPlay(track,resumeAt,loadSequence);
     // Resolusi URL lagu sekitar dilakukan di background agar Next/Previous tidak menunggu dari awal.
     setTimeout(preloadAdjacentTracks, 80);
 }
 
-async function fetchAudioAndPlay(track,resumeAt){
+async function fetchAudioAndPlay(track,resumeAt,loadSequence){
     S.il=true;UB();
+    function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
     var vid = track.videoId || track.id;
     try{
         var audioUrl = audioUrlCache[vid];
@@ -967,7 +977,7 @@ async function fetchAudioAndPlay(track,resumeAt){
             }
             audioUrl = await resolveAudioUrl(track);
         }
-        if(S.ct!==track)return;
+        if(!isCurrentLoad())return;
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
             var nextSrc = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl;
@@ -988,25 +998,29 @@ async function fetchAudioAndPlay(track,resumeAt){
             var p = AU.play();
             if(p !== undefined && p.then){
                 p.then(function(){
+                    if(!isCurrentLoad()) return;
                     S.il = false;
                     S.ip = true;
                     UB();
                 }).catch(function(err){
+                    if(!isCurrentLoad()) return;
                     // Browser blocked autoplay or requires user interaction
                     S.il = false;
                     S.ip = false;
                     UB();
                 });
             } else {
+                if(!isCurrentLoad()) return;
                 S.il = false;
                 UB();
             }
-        }else{
+            }else{
+            if(!isCurrentLoad()) return;
             S.il=false;S.ip=false;UB();
             if(typeof showToast === 'function') showToast('Gagal memuat audio lagu ini');
         }
     }catch(e){
-        if(S.ct===track){S.il=false;S.ip=false;UB();}
+        if(isCurrentLoad()){S.il=false;S.ip=false;UB();}
     }
 }
 
