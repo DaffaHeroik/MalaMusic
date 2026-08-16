@@ -479,7 +479,7 @@ var App={
                 <div class="spotify-section-label">Menu utama</div>
                 <button onclick="App.switch('home')" id="nav-home" class="spotify-nav-item" aria-label="Beranda"><i data-lucide="home"></i><span>Beranda</span></button>
                 <button onclick="App.switch('search')" id="nav-search" class="spotify-nav-item" aria-label="Cari"><i data-lucide="search"></i><span>Cari</span></button>
-                <button onclick="App.switch('leaderboard')" id="nav-leaderboard" class="spotify-nav-item" aria-label="Leaderboard"><i data-lucide="trophy"></i><span>Leaderboard</span></button>
+                <button onclick="App.switch('leaderboard')" id="nav-leaderboard" class="spotify-nav-item mobile-secondary-nav" aria-label="Leaderboard"><i data-lucide="trophy"></i><span>Leaderboard</span></button>
             </div>
             <div class="spotify-nav-section">
                 <div class="spotify-section-label">Koleksi kamu</div>

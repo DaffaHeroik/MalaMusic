@@ -1,8 +1,39 @@
 var Library={
     activeTab: 'playlists',
+    query: (function(){ try { return localStorage.getItem('malamusic_library_query') || ''; } catch(e) { return ''; } })(),
+    sort: (function(){ try { return localStorage.getItem('malamusic_library_sort') || 'recent'; } catch(e) { return 'recent'; } })(),
+    layout: (function(){ try { return localStorage.getItem('malamusic_library_layout') || 'grid'; } catch(e) { return 'grid'; } })(),
     setTab(t){
         Library.activeTab = t;
         Library.render();
+    },
+    setQuery(value){
+        Library.query = String(value || '').trim().toLowerCase();
+        try { localStorage.setItem('malamusic_library_query', Library.query); } catch(e) {}
+        Library.render();
+        var input = gid('library-collection-search'); if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    },
+    setSort(value){
+        Library.sort = value || 'recent';
+        try { localStorage.setItem('malamusic_library_sort', Library.sort); } catch(e) {}
+        Library.render();
+    },
+    toggleLayout(){
+        Library.layout = Library.layout === 'grid' ? 'list' : 'grid';
+        try { localStorage.setItem('malamusic_library_layout', Library.layout); } catch(e) {}
+        Library.render();
+    },
+    matches(item){
+        if (!Library.query) return true;
+        var text = [item.name, item.title, item.artist].filter(Boolean).join(' ').toLowerCase();
+        return text.indexOf(Library.query) !== -1;
+    },
+    sortItems(items){
+        return items.slice().sort(function(a,b){
+            if (Library.sort === 'name') return String(a.name || a.title || '').localeCompare(String(b.name || b.title || ''), 'id');
+            if (Library.sort === 'artist') return String(a.artist || a.name || '').localeCompare(String(b.artist || b.name || ''), 'id');
+            return Number(b.updatedAt || b.createdAt || b.savedAt || 0) - Number(a.updatedAt || a.createdAt || a.savedAt || 0);
+        });
     },
     render(){
         var pls = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
@@ -11,6 +42,10 @@ var Library={
         var isArtistsTab = Library.activeTab === 'artists';
         var isSongsTab = Library.activeTab === 'songs';
         var likedSongs = typeof getLikedSongs === 'function' ? getLikedSongs() : [];
+        pls = Library.sortItems(pls.filter(Library.matches));
+        likedArtists = Library.sortItems(likedArtists.filter(Library.matches));
+        likedSongs = Library.sortItems(likedSongs.filter(Library.matches));
+        var collectionPlaceholder = isPlaylistsTab ? 'Cari playlist kamu' : (isArtistsTab ? 'Cari artis yang diikuti' : 'Cari lagu disukai');
 
         var html = '<div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url(\'/banner.png\') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">' +
             '<div class="flex items-center justify-between mb-3">' +
@@ -36,6 +71,7 @@ var Library={
                     '<span>Mode Offline</span>' +
                 '</button>' +
             '</div>' +
+            '<div class="flex items-center gap-2 mt-3"><div class="relative flex-1"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/45"></i><input id="library-collection-search" value="' + es(Library.query) + '" oninput="Library.setQuery(this.value)" placeholder="' + collectionPlaceholder + '" class="w-full bg-black/35 border border-white/15 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-white/40 outline-none focus:border-white/40" /></div><select onchange="Library.setSort(this.value)" class="bg-black/35 border border-white/15 rounded-xl px-2.5 py-2.5 text-xs text-white outline-none"><option value="recent" ' + (Library.sort === 'recent' ? 'selected' : '') + '>Terbaru</option><option value="name" ' + (Library.sort === 'name' ? 'selected' : '') + '>A-Z</option><option value="artist" ' + (Library.sort === 'artist' ? 'selected' : '') + '>Artis</option></select><button onclick="Library.toggleLayout()" class="w-10 h-10 rounded-xl bg-black/35 border border-white/15 text-white flex items-center justify-center" title="Ubah tampilan"><i data-lucide="' + (Library.layout === 'grid' ? 'list' : 'grid-2x2') + '" class="w-4 h-4"></i></button></div>' +
         '</div>' +
         '<div class="px-4 mt-4 pb-12">';
 
@@ -57,10 +93,10 @@ var Library={
                     '<button onclick="App.switch(\'search\')" class="bg-white/10 hover:bg-white/20 px-6 py-3 font-bold rounded-full text-xs active:scale-95 inline-flex items-center gap-1.5 text-white border border-white/20 transition-all"><i data-lucide="search" class="w-4 h-4"></i> Cari Artist</button>' +
                 '</div>';
             } else {
-                html += '<div class="grid grid-cols-2 gap-3">';
+                html += '<div class="' + (Library.layout === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2') + '">';
                 likedArtists.forEach(function(a){
-                    html += '<div onclick="Artist.open(\'' + es(a.artistId) + '\', \'' + esJs(a.name) + '\')" class="p-3.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group">' +
-                        '<div class="relative w-20 h-20 mb-3 rounded-full overflow-hidden border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300">' +
+                    html += '<div onclick="Artist.open(\'' + es(a.artistId) + '\', \'' + esJs(a.name) + '\')" class="' + (Library.layout === 'grid' ? 'p-3.5 text-center flex-col items-center justify-center' : 'p-3 items-center') + ' rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all flex gap-3 group">' +
+                        '<div class="relative w-20 h-20 ' + (Library.layout === 'grid' ? 'mb-3' : 'shrink-0') + ' rounded-full overflow-hidden border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300">' +
                             '<img src="' + safeMediaUrl(a.thumbnail || FI, FI) + '" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" />' +
                         '</div>' +
                         '<h3 class="font-bold text-sm truncate text-white w-full px-1">' + es(a.name) + '</h3>' +
@@ -80,16 +116,16 @@ var Library={
                     '<p class="text-xs text-white/70 max-w-xs mx-auto mb-5">Buat playlist pertamamu dan kumpulkan lagu-lagu favoritmu di satu tempat.</p>' +
                 '</div>';
             } else {
-                html += '<div class="grid grid-cols-2 gap-3">';
+                html += '<div class="' + (Library.layout === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2') + '">';
                 pls.forEach(function(p){
-                    html += '<div onclick="Library.open(\'' + p.id + '\')" class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex flex-col">' +
-                        '<div class="relative w-full aspect-square mb-2.5 rounded-xl overflow-hidden shadow-md">' +
+                    html += '<div onclick="Library.open(\'' + p.id + '\')" class="' + (Library.layout === 'grid' ? 'p-2.5 flex-col' : 'p-2.5 flex-row items-center') + ' rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex gap-3">' +
+                        '<div class="relative ' + (Library.layout === 'grid' ? 'w-full aspect-square mb-2.5' : 'w-16 h-16 shrink-0') + ' rounded-xl overflow-hidden shadow-md">' +
                             '<img src="' + safeMediaUrl(p.image || (p.songs.length > 0 ? p.songs[0].cover : FI), FI) + '" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\'' + FI + '\'" />' +
                             '<button onclick="event.stopPropagation();Library.showActions(\'' + p.id + '\')" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full p-2 active:scale-90 transition-all" title="Opsi Playlist"><i data-lucide="more-vertical" class="w-4 h-4 text-white"></i></button>' +
                             (p.songs.length > 0 ? '<button onclick="event.stopPropagation();Library.playSong(\'' + p.id + '\',0)" class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 shadow-black/40 active:scale-90" title="Putar"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></button>' : '') +
                         '</div>' +
-                        '<h3 class="font-semibold text-sm truncate text-white px-0.5">' + es(p.name) + '</h3>' +
-                        '<p class="text-white/60 text-xs mt-0.5 px-0.5">' + p.songs.length + ' lagu</p>' +
+                        '<div class="min-w-0 flex-1"><h3 class="font-semibold text-sm truncate text-white px-0.5">' + es(p.name) + '</h3>' +
+                        '<p class="text-white/60 text-xs mt-0.5 px-0.5">' + p.songs.length + ' lagu</p></div>' +
                     '</div>';
                 });
                 html += '</div>';
