@@ -1646,9 +1646,30 @@ function toggleLyrics(){
 function getLikedSongs(){
     return typeof readJsonArray === 'function' ? readJsonArray('malamusic_liked_songs') : (function(){ try { var x=JSON.parse(localStorage.getItem('malamusic_liked_songs')||'[]'); return Array.isArray(x)?x:[]; } catch (_) { return []; } })();
 }
+var librarySyncTimer = null;
+function loadLibraryRemote(){
+    return fetch('/api/library',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(data){
+        var lib=data&&data.status&&data.library; if(!lib) return;
+        var hasRemote=lib.likedSongs.length||lib.likedArtists.length||lib.playlists.length;
+        if(hasRemote){
+            if(typeof writeJsonArray==='function'){writeJsonArray('malamusic_liked_songs',lib.likedSongs);writeJsonArray('malamusic_liked_artists',lib.likedArtists);writeJsonArray('malamusic_playlists',lib.playlists);} else {localStorage.setItem('malamusic_liked_songs',JSON.stringify(lib.likedSongs));localStorage.setItem('malamusic_liked_artists',JSON.stringify(lib.likedArtists));localStorage.setItem('malamusic_playlists',JSON.stringify(lib.playlists));}
+            if(typeof Library!=='undefined'&&Library.render) Library.render();
+        } else syncLibraryRemote();
+    }).catch(function(){});
+}
+function syncLibraryRemote(){
+    clearTimeout(librarySyncTimer);
+    librarySyncTimer = setTimeout(function(){
+        if (typeof EmailAuth === 'undefined') return;
+        fetch('/api/email-auth?action=me',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(me){
+            if (!me.authenticated) return;
+            return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists()})});
+        }).catch(function(){});
+    }, 700);
+}
 function saveLikedSongs(songs){
-    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_liked_songs', songs); return; }
-    try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(Array.isArray(songs)?songs:[]));}catch(e){}
+    if (typeof writeJsonArray === 'function') writeJsonArray('malamusic_liked_songs', songs); else try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(Array.isArray(songs)?songs:[]));}catch(e){}
+    syncLibraryRemote();
 }
 function isLikedSong(videoId){
     if(!videoId) return false;
@@ -1696,8 +1717,8 @@ function getLikedArtists(){
     return typeof readJsonArray === 'function' ? readJsonArray('malamusic_liked_artists') : (function(){ try { var x=JSON.parse(localStorage.getItem('malamusic_liked_artists')||'[]'); return Array.isArray(x)?x:[]; } catch (_) { return []; } })();
 }
 function saveLikedArtists(artists){
-    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_liked_artists', artists); return; }
-    try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(Array.isArray(artists)?artists:[]));}catch(e){}
+    if (typeof writeJsonArray === 'function') writeJsonArray('malamusic_liked_artists', artists); else try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(Array.isArray(artists)?artists:[]));}catch(e){}
+    syncLibraryRemote();
 }
 function isArtistLiked(artistId){
     if(!artistId) return false;
@@ -1789,8 +1810,8 @@ function getUserPlaylists(){
     }catch(e){return[];}
 }
 function saveUserPlaylists(pls){
-    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_playlists', pls); return; }
-    try{localStorage.setItem('malamusic_playlists',JSON.stringify(Array.isArray(pls)?pls:[]));}catch(e){ }
+    if (typeof writeJsonArray === 'function') writeJsonArray('malamusic_playlists', pls); else try{localStorage.setItem('malamusic_playlists',JSON.stringify(Array.isArray(pls)?pls:[]));}catch(e){}
+    syncLibraryRemote();
 }
 function createPlaylist(name,image){var pls=getUserPlaylists();var id='pl_'+Date.now();pls.push({id:id,name:name,image:image||'',songs:[]});saveUserPlaylists(pls);return id;}
 function updateUserPlaylist(id,name,image){var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===id;});if(!pl)return;if(name)pl.name=name;if(image)pl.image=image;saveUserPlaylists(pls);}

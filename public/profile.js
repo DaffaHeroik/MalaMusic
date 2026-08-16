@@ -309,6 +309,7 @@ var EmailAuth = {
                 if (name) name.textContent = user.name || 'Profil Saya';
                 if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
                 this.applyAvatar(user);
+                if (typeof loadLibraryRemote === 'function') loadLibraryRemote();
                 fetch('/api/profile', { credentials: 'same-origin', cache: 'no-store' }).then(function(profileResponse) { return profileResponse.ok ? profileResponse.json() : null; }).then(function(profileData) {
                     if (requestId !== EmailAuth.refreshSeq || !profileData || !profileData.status) return;
                     Profile.remoteProfile = profileData.profile || null;
