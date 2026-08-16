@@ -6,6 +6,7 @@ var Streak = {
         var card = document.getElementById('home-streak-card');
         if (!card) return;
         if (!document.getElementById('streak-celebration-style')) { var style = document.createElement('style'); style.id = 'streak-celebration-style'; style.textContent = '@keyframes malaStreakPop{0%{transform:scale(1);box-shadow:0 0 0 rgba(251,191,36,0)}45%{transform:scale(1.025);box-shadow:0 0 38px rgba(251,191,36,.34)}100%{transform:scale(1);box-shadow:0 0 0 rgba(251,191,36,0)}}@keyframes malaSpark{0%{opacity:0;transform:translateY(10px) scale(.5)}25%{opacity:1}100%{opacity:0;transform:translate(var(--x),-48px) scale(1.2)}}.mala-streak-pop{animation:malaStreakPop .8s ease-out}.mala-streak-spark{position:absolute;bottom:18px;left:50%;width:7px;height:7px;border-radius:999px;background:#fbbf24;pointer-events:none;animation:malaSpark .9s ease-out forwards}'; document.head.appendChild(style); }
+        if (window.MalaFirebase) MalaFirebase.log('streak_increased', { surface: 'home' });
         card.classList.remove('mala-streak-pop'); void card.offsetWidth; card.classList.add('mala-streak-pop'); card.style.position = 'relative';
         for (var i = 0; i < 10; i++) { var spark = document.createElement('span'); spark.className = 'mala-streak-spark'; spark.style.setProperty('--x', ((i % 2 ? 1 : -1) * (18 + Math.random() * 54)) + 'px'); spark.style.animationDelay = (i * 35) + 'ms'; card.appendChild(spark); setTimeout(function(node) { if (node && node.remove) node.remove(); }, 1100, spark); }
     },

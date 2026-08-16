@@ -928,6 +928,7 @@ function getRecentTracks(){
 function loadTrack(track,resumeAt){
     if(!track)return;
     saveRecentTrack(track);
+    if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
     isPreloadingNext = false;
     ST();
