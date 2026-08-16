@@ -135,6 +135,7 @@ var Dev = Profile;
 
 var EmailAuth = {
     entryMode: 'login',
+    refreshSeq: 0,
     escape: function(value) {
         return String(value || '').replace(/[&<>"']/g, function(char) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[char]; });
     },
@@ -197,9 +198,11 @@ var EmailAuth = {
         Profile.render();
     },
     refresh: async function() {
+        var requestId = ++this.refreshSeq;
         try {
-            var response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin' });
+            var response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin', cache: 'no-store' });
             var data = await response.json();
+            if (requestId !== this.refreshSeq) return;
             var name = document.getElementById('profile-name');
             var subtitle = document.getElementById('profile-subtitle');
             var avatar = document.getElementById('profile-avatar');
@@ -219,6 +222,10 @@ var EmailAuth = {
                 this.renderAuthActions(false);
             }
             lucide.createIcons();
-        } catch (_) { this.renderChoice('Server autentikasi belum siap.'); this.renderAuthActions(false); }
+        } catch (_) {
+            if (requestId !== this.refreshSeq) return;
+            this.renderChoice('Server autentikasi belum siap.');
+            this.renderAuthActions(false);
+        }
     }
 };
