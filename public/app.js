@@ -394,8 +394,8 @@ var App={
             <div class="spotify-nav-section">
                 <div class="spotify-section-label">Koleksi kamu</div>
                 <button onclick="App.switch('library')" id="nav-library" class="spotify-nav-item" aria-label="Koleksi"><i data-lucide="library"></i><span>Koleksi</span></button>
-                <button onclick="App.switch('liked')" id="nav-liked" class="spotify-nav-item mobile-secondary-nav" aria-label="Lagu disukai"><i data-lucide="heart"></i><span>Lagu Disukai</span></button>
-                <button onclick="App.switch('offline')" id="nav-offline" class="spotify-nav-item mobile-secondary-nav" aria-label="Mode offline"><i data-lucide="download"></i><span>Mode Offline</span></button>
+                <button onclick="App.switch('liked')" id="nav-liked" class="spotify-nav-item mobile-secondary-nav" aria-label="Lagu disukai"><i data-lucide="heart"></i><span>Disukai</span></button>
+                <button onclick="App.switch('offline')" id="nav-offline" class="spotify-nav-item mobile-secondary-nav" aria-label="Mode offline"><i data-lucide="download"></i><span>Offline</span></button>
                 <button onclick="App.switch('dev')" id="nav-dev-mobile" class="spotify-nav-item mobile-only-nav" aria-label="Profil"><i data-lucide="user-circle-2"></i><span>Profil</span></button>
             </div>
             <div class="spotify-user">
@@ -600,10 +600,10 @@ var App={
             var isCurrent = (n === t);
 
             if(isCurrent){
-                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none active' : 'spotify-nav-item active';
+                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none active' : ('spotify-nav-item active' + ((n === 'liked' || n === 'offline') ? ' mobile-secondary-nav' : ''));
                 if(mobileB) mobileB.className = 'spotify-nav-item mobile-only-nav active';
             } else {
-                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none' : 'spotify-nav-item';
+                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none' : ('spotify-nav-item' + ((n === 'liked' || n === 'offline') ? ' mobile-secondary-nav' : ''));
                 if(mobileB) mobileB.className = 'spotify-nav-item mobile-only-nav';
             }
         });
