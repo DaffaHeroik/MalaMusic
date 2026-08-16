@@ -96,6 +96,11 @@ app.get('/api/proxy-audio', (req, res) => {
     } catch (e) {
         return res.status(400).send('Invalid url parameter');
     }
+    const hostName = String(parsed.hostname || '').toLowerCase();
+    const allowedMediaHost = hostName === 'googlevideo.com' || hostName.endsWith('.googlevideo.com') || hostName === 'youtube.com' || hostName.endsWith('.youtube.com') || hostName === 'youtu.be' || hostName.endsWith('.youtu.be');
+    if (parsed.protocol !== 'https:' || !allowedMediaHost) {
+        return res.status(400).send('Audio source tidak diizinkan');
+    }
 
     const options = {
         headers: {
@@ -131,6 +136,7 @@ app.get('/api/proxy-audio', (req, res) => {
         
         proxyRes.pipe(res);
     });
+    proxyReq.setTimeout(15000, () => proxyReq.destroy(new Error('Audio source timeout')));
     
     proxyReq.on('error', (err) => {
         if (!res.headersSent) {
