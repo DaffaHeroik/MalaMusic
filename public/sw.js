@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v34';
-const CACHE_DATA_NAME = 'malamusic-api-v34';
+const CACHE_STATIC_NAME = 'malamusic-static-v35';
+const CACHE_DATA_NAME = 'malamusic-api-v35';
 
 const STATIC_ASSETS = [
   '/',
@@ -8,22 +8,22 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=49',
-  '/app.js?v=49',
-  '/player.js?v=49',
-  '/listen-together.js?v=49',
+  '/firebase.js?v=50',
+  '/app.js?v=50',
+  '/player.js?v=50',
+  '/listen-together.js?v=50',
   '/fullplayer.js',
   '/miniplayer.js',
-  '/home.js?v=49',
-  '/library.js?v=49',
+  '/home.js?v=50',
+  '/library.js?v=50',
   '/liked.js',
   '/search.js',
   '/album.js',
   '/artist.js',
-  '/profile.js?v=49',
-  '/streak.js?v=49',
-  '/leaderboard.js?v=49',
-  '/stats.js?v=49',
+  '/profile.js?v=50',
+  '/streak.js?v=50',
+  '/leaderboard.js?v=50',
+  '/stats.js?v=50',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -84,8 +84,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. API Routes -> Network first, save success to cache, fallback to cache on offline
+  // Offline binary audio is explicitly cached and must never fall back to network.
+  if (url.pathname.startsWith('/offline-audio/')) {
+    event.respondWith(caches.match(request).then((cached) => cached || new Response('Offline audio tidak tersedia', { status: 404 })));
+    return;
+  }
+
+  // 2. API Routes -> network first only for public, non-session data.
+  // Auth, stats, streak, room, and write endpoints must never enter shared cache.
   if (url.pathname.startsWith('/api/')) {
+    const privateApi = /\/api\/(email-auth|google-auth|stats|streak|listen-together)(\/|$)/.test(url.pathname) || request.method !== 'GET' || request.headers.has('cookie');
+    if (privateApi) {
+      event.respondWith(fetch(request).catch(() => new Response(JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline' }), { headers: { 'Content-Type': 'application/json' } })));
+      return;
+    }
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {

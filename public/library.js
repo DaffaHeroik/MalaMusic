@@ -43,7 +43,7 @@ var Library={
             if (!likedSongs.length) {
                 html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-500/10 flex items-center justify-center"><i data-lucide="heart" class="w-8 h-8 text-rose-400"></i></div><h3 class="text-white font-bold text-lg mb-1">Belum Ada Lagu Disukai</h3><p class="text-xs text-white/70 max-w-xs mx-auto mb-5">Tekan ikon hati saat menemukan lagu yang ingin kamu simpan.</p><button onclick="App.switch(\'search\')" class="bg-white/10 hover:bg-white/20 px-6 py-3 font-bold rounded-full text-xs text-white border border-white/20"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i> Cari Lagu</button></div>';
             } else {
-                html += '<div class="space-y-2">' + likedSongs.map(function(s, i){ return '<div class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10 text-left hover:bg-white/[.08]"><button onclick="Library.playLikedIndex(' + i + ')" class="flex items-center gap-3 flex-1 min-w-0"><img src="' + (s.cover || FI) + '" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(s.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(s.artist || '') + '</span></span></button>' + trackMenuButton(s) + '</div>'; }).join('') + '</div>';
+                html += '<div class="space-y-2">' + likedSongs.map(function(s, i){ return '<div class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10 text-left hover:bg-white/[.08]"><button onclick="Library.playLikedIndex(' + i + ')" class="flex items-center gap-3 flex-1 min-w-0"><img src="' + safeMediaUrl(s.cover || FI, FI) + '" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(s.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(s.artist || '') + '</span></span></button>' + trackMenuButton(s) + '</div>'; }).join('') + '</div>';
             }
         } else if (isArtistsTab) {
             // ARTISTS TAB CONTENT
@@ -61,7 +61,7 @@ var Library={
                 likedArtists.forEach(function(a){
                     html += '<div onclick="Artist.open(\'' + es(a.artistId) + '\', \'' + esJs(a.name) + '\')" class="p-3.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group">' +
                         '<div class="relative w-20 h-20 mb-3 rounded-full overflow-hidden border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300">' +
-                            '<img src="' + a.thumbnail + '" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" />' +
+                            '<img src="' + safeMediaUrl(a.thumbnail || FI, FI) + '" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" />' +
                         '</div>' +
                         '<h3 class="font-bold text-sm truncate text-white w-full px-1">' + es(a.name) + '</h3>' +
                         '<p class="text-white/60 text-[10px] mt-0.5 uppercase tracking-wider font-semibold">Artist</p>' +
@@ -84,7 +84,7 @@ var Library={
                 pls.forEach(function(p){
                     html += '<div onclick="Library.open(\'' + p.id + '\')" class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex flex-col">' +
                         '<div class="relative w-full aspect-square mb-2.5 rounded-xl overflow-hidden shadow-md">' +
-                            '<img src="' + (p.image || (p.songs.length > 0 ? p.songs[0].cover : FI)) + '" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\'' + FI + '\'" />' +
+                            '<img src="' + safeMediaUrl(p.image || (p.songs.length > 0 ? p.songs[0].cover : FI), FI) + '" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\'' + FI + '\'" />' +
                             '<button onclick="event.stopPropagation();Library.showActions(\'' + p.id + '\')" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full p-2 active:scale-90 transition-all" title="Opsi Playlist"><i data-lucide="more-vertical" class="w-4 h-4 text-white"></i></button>' +
                             (p.songs.length > 0 ? '<button onclick="event.stopPropagation();Library.playSong(\'' + p.id + '\',0)" class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 shadow-black/40 active:scale-90" title="Putar"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></button>' : '') +
                         '</div>' +

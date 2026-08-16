@@ -1,0 +1,719 @@
+=== STATUS ===
+[31m??[m notes/all-fixes-audit.txt
+=== FILES ===
+api/album.js
+api/artist.js
+api/email-auth.js
+api/firebase-admin.js
+api/google-auth.js
+api/index.js
+api/listen-together.js
+api/lyrics.js
+api/lyrics1.js
+api/lyrics2.js
+api/search.js
+api/stats.js
+api/streak.js
+api/suggest.js
+api/transcribe.js
+api/translate.js
+api/ytplay.js
+public/album.js
+public/app.js
+public/artist.js
+public/banner.png
+public/firebase.js
+public/fullplayer.js
+public/home.js
+public/index.html
+public/leaderboard.js
+public/library.js
+public/liked.js
+public/listen-together.js
+public/logo-mark.png
+public/logo.png
+public/manifest.json
+public/miniplayer.js
+public/player.js
+public/profile.js
+public/search.js
+public/stats.js
+public/streak.js
+public/sw.js
+=== OFFLINE ===
+            if(btn)btn.classList.add('hidden');
+        });
+    }else if(isIOSDevice){
+        showToast('Tap ikon Bagikan lalu pilih "Add to Home Screen"');
+    }else{
+        showToast('Petunjuk: Buka menu browser lalu pilih "Tambah ke Layar Utama" / "Install Aplikasi"');
+    }
+}
+
+// Offline PWA Storage Helper
+function getOfflineSongs() {
+    try {
+        var data = localStorage.getItem('pwa_offline_tracks');
+        return data ? JSON.parse(data) : [];
+    } catch(e) {
+        return [];
+    }
+}
+
+function isOfflineSong(track) {
+    if (!track) return false;
+    var vid = track.videoId || track.id;
+    var list = getOfflineSongs();
+    return list.some(function(s) {
+        return (s.videoId === vid || s.id === vid);
+    });
+}
+
+async function saveTrackForOffline(track, options) {
+    options = options || {};
+    if (!isPwaInstalled()) {
+        showPwaRequiredModal();
+        return false;
+    }
+    if (!track) return;
+    var vid = track.videoId || track.id;
+    if (!vid) return;
+
+    var list = getOfflineSongs();
+    var existingIndex = list.findIndex(function(s) { return (s.videoId === vid || s.id === vid); });
+
+    if (existingIndex !== -1) {
+        if (options.keepExisting) {
+            if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: track });
+            return true;
+        }
+        // Remove from offline
+        list.splice(existingIndex, 1);
+        try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+        showToast('Lagu dihapus dari Mode Offline PWA');
+        updateOfflineButtons();
+        if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+        return false;
+    }
+
+    if (!options.silent) showToast('Menyimpan lagu ke Mode Offline PWA...');
+
+    // 1. Add track metadata to list
+    var songObj = {
+        id: vid,
+        videoId: vid,
+        title: track.title || 'Lagu',
+        artist: track.artist || 'Unknown Artist',
+        cover: track.cover || (typeof toHDCover==='function'?toHDCover('', vid):''),
+        artistId: track.artistId || '',
+        ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vid),
+        savedAt: Date.now(),
+        offlinePlaylistId: options.playlistId || '',
+        offlinePlaylistName: options.playlistName || ''
+    };
+    list.unshift(songObj);
+    try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+
+    // 2. Pre-fetch & cache Audio URL
+    try {
+        if (typeof audioUrlCache !== 'undefined' && !audioUrlCache[vid]) {
+            var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+            var r = await fetch(API.ytplay, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: ytUrl })
+            });
+            var d = await r.json();
+            if (d && d.result && d.result.download && d.result.download.audio) {
+                audioUrlCache[vid] = d.result.download.audio;
+                if (typeof savePwaCaches === 'function') savePwaCaches();
+            }
+        }
+    } catch(e) {}
+
+    // 3. Pre-fetch & cache Lyrics
+    try {
+        var cachedLyric = (typeof lyricsCache !== 'undefined' && lyricsCache[vid]) ? lyricsCache[vid] : null;
+        if (!cachedLyric && typeof S !== 'undefined' && S.ld && S.ld.vid === vid && S.ld.lines && S.ld.lines.length > 0) {
+            cachedLyric = S.ld;
+        }
+
+        if (!cachedLyric) {
+            var tParam = (songObj && songObj.title) ? '&title=' + encodeURIComponent(songObj.title) : '';
+            var aParam = (songObj && songObj.artist) ? '&artist=' + encodeURIComponent(songObj.artist) : '';
+            var lr = await fetch(API.lyrics + '?id=' + vid + tParam + aParam);
+            var ld = await lr.json();
+            if (ld && ld.status && ld.result && ld.result.lyrics) {
+                cachedLyric = {
+                    vid: vid,
+                    type: ld.result.lyrics.type || 'none',
+                    lines: ld.result.lyrics.lines || []
+                };
+            }
+        }
+
+        if (cachedLyric) {
+            if (typeof lyricsCache !== 'undefined') {
+                lyricsCache[vid] = cachedLyric;
+            }
+            songObj.lyrics = cachedLyric;
+            if (typeof savePwaCaches === 'function') savePwaCaches();
+            try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+        }
+    } catch(e) {}
+
+    if (typeof options.onProgress === 'function') options.onProgress({ status: 'saved', track: track });
+    if (!options.silent) showToast('Lagu "' + track.title + '" tersimpan untuk Mode Offline!');
+    updateOfflineButtons();
+    if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+    return true;
+}
+
+var offlinePlaylistJob = null;
+
+function downloadPlaylistOffline(playlistId) {
+    if (!isPwaInstalled()) { showPwaRequiredModal(); return; }
+    var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
+    var playlist = playlists.find(function(p) { return p.id === playlistId; });
+    if (!playlist || !playlist.songs || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return; }
+    if (offlinePlaylistJob) { showToast('Download playlist sedang berjalan'); return; }
+
+    var modal = document.createElement('div');
+    modal.id = 'offline-playlist-progress';
+    modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
+    modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><button id="offline-playlist-cancel" class="w-full mt-4 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button></div>';
+    document.body.appendChild(modal); lucide.createIcons();
+    offlinePlaylistJob = { cancelled: false };
+    var job = offlinePlaylistJob;
+    var bar = modal.querySelector('#offline-playlist-progress-bar');
+    var text = modal.querySelector('#offline-playlist-progress-text');
+    var count = modal.querySelector('#offline-playlist-progress-count');
+    var detail = modal.querySelector('#offline-playlist-progress-detail');
+    modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; this.disabled = true; this.textContent = 'Membatalkan...'; };
+
+    (async function() {
+        var done = 0, failed = 0, already = 0;
+        for (var i = 0; i < playlist.songs.length; i++) {
+            if (job.cancelled) break;
+            var track = playlist.songs[i];
+            text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length;
+            detail.textContent = track.title || 'Lagu';
+            try {
+                var vid = track.videoId || track.id;
+                var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
+                var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name });
+                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
+                if (before) already++; else if (!result || !hasAudio) failed++;
+            } catch (e) { failed++; }
+            done++;
+            bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
+            count.textContent = done + '/' + playlist.songs.length;
+        }
+        offlinePlaylistJob = null;
+        if (job.cancelled) {
+            text.textContent = 'Download dibatalkan';
+            detail.textContent = done + ' lagu diproses';
+        } else {
+            text.textContent = failed ? 'Selesai dengan beberapa kegagalan' : 'Playlist tersedia offline';
+            detail.textContent = done + ' berhasil, ' + already + ' sudah ada, ' + failed + ' gagal';
+        }
+        modal.querySelector('#offline-playlist-cancel').textContent = 'Tutup';
+        modal.querySelector('#offline-playlist-cancel').disabled = false;
+        modal.querySelector('#offline-playlist-cancel').onclick = function() { modal.remove(); if (typeof OfflineView !== 'undefined' && S.at === 'offline') OfflineView.render(); };
+        if (typeof OfflineView !== 'undefined' && S.at === 'offline') OfflineView.render();
+        if (typeof Library !== 'undefined' && Library.currentPlaylistId === playlist.id) Library.open(playlist.id);
+    })();
+}
+
+function toggleCurrentOffline() {
+    if (typeof S === 'undefined' || !S.ct) {
+        showToast('Pilih lagu terlebih dahulu');
+        return;
+    }
+    saveTrackForOffline(S.ct);
+}
+
+function updateOfflineButtons() {
+    if (typeof S === 'undefined') return;
+    var isSaved = S.ct ? isOfflineSong(S.ct) : false;
+    
+    // Update FullPlayer Offline Button
+    var fullBtn = gid('full-offline-btn');
+    if (fullBtn) {
+        if (isSaved) {
+            fullBtn.className = 'w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center active:scale-90 transition-all shrink-0 cursor-pointer shadow-md';
+            fullBtn.title = 'Tersimpan di Mode Offline PWA (Klik untuk menghapus)';
+            fullBtn.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i>';
+        } else {
+            fullBtn.className = 'w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center active:scale-90 transition-all shrink-0 cursor-pointer shadow-md';
+            fullBtn.title = 'Simpan ke Mode Offline PWA';
+            fullBtn.innerHTML = '<i data-lucide="wifi-off" class="w-5 h-5"></i>';
+        }
+    }
+
+    if (window.lucide) lucide.createIcons();
+=== SW ===
+const CACHE_STATIC_NAME = 'malamusic-static-v34';
+const CACHE_DATA_NAME = 'malamusic-api-v34';
+
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/logo.png',
+  '/logo-mark.png',
+  '/banner.png',
+  '/firebase.js?v=49',
+  '/app.js?v=49',
+  '/player.js?v=49',
+  '/listen-together.js?v=49',
+  '/fullplayer.js',
+  '/miniplayer.js',
+  '/home.js?v=49',
+  '/library.js?v=49',
+  '/liked.js',
+  '/search.js',
+  '/album.js',
+  '/artist.js',
+  '/profile.js?v=49',
+  '/streak.js?v=49',
+  '/leaderboard.js?v=49',
+  '/stats.js?v=49',
+  'https://cdn.tailwindcss.com',
+  'https://unpkg.com/lucide@latest'
+];
+
+// Install Event - Pre-cache Static Shell
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_STATIC_NAME).then((cache) => {
+      console.log('[SW] Pre-caching static assets');
+      return Promise.allSettled(
+        STATIC_ASSETS.map((url) => {
+          return fetch(url).then((res) => {
+            if (res.status === 200 || res.type === 'opaque') {
+              return cache.put(url, res);
+            }
+          }).catch((err) => {
+            console.warn('[SW] Failed to cache:', url, err);
+          });
+        })
+      );
+    }).then(() => self.skipWaiting())
+  );
+});
+
+// Activate Event - Clean Up Old Caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME) {
+            console.log('[SW] Removing old cache:', key);
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch Event - Handle Offline & Caching
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // Ignore non-GET requests or chrome-extension URLs
+  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // 1. Navigation requests -> Network first, fallback to cached index.html
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match('/index.html', { ignoreSearch: true }) || caches.match('/', { ignoreSearch: true });
+      })
+    );
+    return;
+  }
+
+  // 2. API Routes -> Network first, save success to cache, fallback to cache on offline
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_DATA_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Fallback JSON for offline API requests
+            return new Response(
+              JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline (PWA Offline Mode)' }),
+              { headers: { 'Content-Type': 'application/json' } }
+            );
+          });
+        })
+    );
+    return;
+  }
+
+  // 3. HTML dan JavaScript -> network first agar deploy terbaru selalu tampil saat online
+  const isFreshAppAsset = url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('.js');
+  if (isFreshAppAsset) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, networkResponse.clone()));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('/index.html', { ignoreSearch: true })))
+    );
+    return;
+  }
+
+  // 4. Other static assets -> cache first, fallback to network
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        // Fetch background update for cache freshness if online
+        if (navigator.onLine) {
+          fetch(request).then((networkResponse) => {
+            if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+              caches.open(CACHE_STATIC_NAME).then((cache) => {
+                cache.put(request, networkResponse);
+              });
+            }
+          }).catch(() => {});
+        }
+        return cachedResponse;
+      }
+
+      return fetch(request).then((networkResponse) => {
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_STATIC_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // If image fails offline, fallback to logo or FI placeholder
+        if (request.headers.get('accept')?.includes('image')) {
+          return caches.match('/logo.png');
+        }
+      });
+    })
+  );
+});
+=== PLAYER CORE ===
+        img.src = '/logo.png';
+    }
+}
+const S={ht:[],sr:[],ar:[],hc:[],hcp:[],hca:[],sq:'',filter:'all',ct:null,pl:[],pi:-1,ps:'',ip:false,il:false,rm:'all',isShuffle:false,currentAccentColor:'#f43f5e',autoNext:true,iv:null,pt:0,pd:0,at:'home',ld:{type:'none',lines:[]},cli:-1,lo:false,lyricOffset:0,playbackRate:1.0,sleepSecondsLeft:0,sleepEndWithTrack:false,volume:1.0,lastVolume:1.0};
+try{S.playbackRate=parseFloat(localStorage.getItem('malamusic_playback_rate'))||1.0;}catch(e){S.playbackRate=1.0;}
+try{var storedAutoNext = localStorage.getItem('malamusic_auto_next');if(storedAutoNext!==null){S.autoNext = storedAutoNext==='true';}}catch(e){}
+function fm(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),se=Math.floor(s%60);return m+':'+(se<10?'0':'')+se;}
+function es(t){if(!t)return'';const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function esJs(t){if(!t)return'';return String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ').replace(/\r/g,'');}
+function cn(t){if(!t)return'Unknown';return t.replace(/[^\x20-\x7E\xA0-\xFF\u0100-\uFFFF]/g,'').replace(/\s*-\s*Topic$/i,'').trim()||'Unknown';}
+function normalizeTrack(track){
+    track = track || {};
+    var id = String(track.videoId || track.id || track.video_id || '').trim();
+    return {
+        id: id,
+        videoId: id,
+        title: cn(track.title || track.name || 'Lagu'),
+        artist: cn(track.artist || track.author || 'MalaMusic'),
+        artistId: track.artistId || track.artist_id || '',
+        cover: toHDCover(track.cover || track.thumbnail || track.image || '', id),
+        ytUrl: track.ytUrl || track.url || (id ? 'https://youtube.com/watch?v=' + id : '')
+    };
+}
+function trackId(track){return String(track && (track.videoId || track.id || track.video_id) || '').trim();}
+function gid(id){return document.getElementById(id);}
+
+function updateOG(title,image){
+    var t=document.querySelector('meta[property="og:title"]');if(!t){t=document.createElement('meta');t.setAttribute('property','og:title');document.head.appendChild(t);}t.setAttribute('content',title+' | MalaMusic');
+    var i=document.querySelector('meta[property="og:image"]');if(!i){i=document.createElement('meta');i.setAttribute('property','og:image');document.head.appendChild(i);}i.setAttribute('content',image||FI);
+    document.title=title+' - MalaMusic';
+}
+
+// ---- AUDIO ENGINE (elemen <audio> native, sumber stream dari /api/ytplay) ----
+var AU=gid('audio-player');
+if(!AU){AU=document.createElement('audio');AU.id='audio-player';AU.preload='auto';AU.style.display='none';document.body.appendChild(AU);}
+// Keep playback as a normal Android media session. The browser/Android audio
+// policy owns telephony focus; web code must not try to inject media into a call.
+try {
+    AU.setAttribute('playsinline','');
+    AU.setAttribute('x-webkit-airplay','allow');
+    AU.setAttribute('disableRemotePlayback','');
+} catch(e) {}
+AU.addEventListener('timeupdate',function(){
+    if(!AU.paused){
+        S.pt=AU.currentTime||0;
+        S.pd=AU.duration||0;
+        renderProgress();
+        if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
+        if(typeof StatsTracker !== 'undefined' && S.ct) StatsTracker.tick(S.ct, AU.currentTime);
+        checkAndPreloadNext();
+    }
+});
+AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
+AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+AU.addEventListener('waiting',function(){S.il=true;UB();});
+AU.addEventListener('playing',function(){S.il=false;UB();updateMediaSessionPlaybackState();});
+AU.addEventListener('ended',function(){if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
+AU.addEventListener('error',function(){if(AU.src){S.il=false;S.ip=false;UB();}});
+
+// ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
+if('mediaSession' in navigator){
+    try{
+        navigator.mediaSession.setActionHandler('play',function(){TP();});
+        navigator.mediaSession.setActionHandler('pause',function(){TP();});
+        navigator.mediaSession.setActionHandler('previoustrack',function(){navigateFromMediaSession('previous');});
+        navigator.mediaSession.setActionHandler('nexttrack',function(){navigateFromMediaSession('next');});
+        navigator.mediaSession.setActionHandler('stop',function(){try{AU.pause();}catch(e){}});
+        navigator.mediaSession.setActionHandler('seekto',function(details){
+            if(details.fastSeek && 'fastSeek' in AU){AU.fastSeek(details.seekTime);return;}
+            if(AU.duration){AU.currentTime=details.seekTime;S.pt=details.seekTime;renderProgress();}
+        });
+        navigator.mediaSession.setActionHandler('seekbackward',function(details){
+            AU.currentTime=Math.max(0,(AU.currentTime||0)-(details.seekOffset||10));
+        });
+        navigator.mediaSession.setActionHandler('seekforward',function(details){
+            AU.currentTime=Math.min(AU.duration||0,(AU.currentTime||0)+(details.seekOffset||10));
+        });
+    }catch(e){}
+}
+
+var mediaNavigationBusy = false;
+
+function navigateFromMediaSession(direction) {
+    if (mediaNavigationBusy) return;
+    mediaNavigationBusy = true;
+    var task;
+    try {
+        if (direction === 'previous') {
+            PV(true);
+            task = Promise.resolve();
+        } else {
+            task = Promise.resolve(NX());
+        }
+    } catch (error) {
+        task = Promise.reject(error);
+    }
+    task.catch(function() {
+        S.il = false;
+        S.ip = false;
+        UB();
+        if (typeof showToast === 'function') showToast('Tidak dapat mengganti lagu saat ini');
+    }).finally(function() {
+        setTimeout(function(){ mediaNavigationBusy = false; }, 250);
+    });
+}
+
+function updateMediaSessionMetadata(track){
+    if(!('mediaSession' in navigator) || !track) return;
+    try{
+        var cover = (typeof toHDCover==='function') ? toHDCover(track.cover, track.videoId||track.id) : (track.cover||FI);
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title || 'MalaMusic',
+            artist: track.artist || '',
+            album: 'MalaMusic',
+            artwork: [
+                {src: cover, sizes: '96x96', type: 'image/webp'},
+                {src: cover, sizes: '256x256', type: 'image/webp'},
+                {src: cover, sizes: '512x512', type: 'image/webp'}
+            ]
+        });
+    }catch(e){}
+}
+
+function updateMediaSessionPlaybackState(){
+    if(!('mediaSession' in navigator)) return;
+    try{
+        navigator.mediaSession.playbackState = S.ip ? 'playing' : 'paused';
+        if(AU.duration && isFinite(AU.duration)){
+            navigator.mediaSession.setPositionState({
+                duration: AU.duration,
+                playbackRate: AU.playbackRate || 1,
+                position: Math.min(AU.currentTime || 0, AU.duration)
+            });
+        }
+    }catch(e){}
+}
+
+// ---- VOLUME CONTROL ENGINE (SPOTIFY STYLE) ----
+try {
+    var storedVol = parseFloat(localStorage.getItem('malamusic_volume'));
+    if (!isNaN(storedVol) && storedVol >= 0 && storedVol <= 1) {
+        S.volume = storedVol;
+    } else {
+        S.volume = 1.0;
+    }
+} catch(e) { S.volume = 1.0; }
+S.lastVolume = S.volume > 0 ? S.volume : 1.0;
+if (AU) AU.volume = S.volume;
+
+function applyVolume(vol) {
+    vol = Math.max(0, Math.min(1, vol));
+    S.volume = vol;
+    if (AU) AU.volume = vol;
+    try { localStorage.setItem('malamusic_volume', String(vol)); } catch(e){}
+    updateVolumeUI();
+}
+
+function setVolume(valPercent) {
+    var vol = parseFloat(valPercent) / 100;
+    if (vol > 0) S.lastVolume = vol;
+    applyVolume(vol);
+}
+
+function toggleMute() {
+    var curVol = AU ? AU.volume : S.volume;
+    if (curVol > 0) {
+        S.lastVolume = curVol;
+        applyVolume(0);
+    } else {
+        applyVolume(S.lastVolume || 1.0);
+    }
+}
+
+function updateVolumeUI() {
+    var curVol = AU ? AU.volume : (S.volume ?? 1.0);
+    var pct = Math.round(curVol * 100);
+
+    var volBar = gid('vol-bar');
+    if (volBar) volBar.value = pct;
+
+    var volProgress = gid('full-vol-progress');
+    if (volProgress) volProgress.style.width = pct + '%';
+
+    var volText = gid('full-vol-text');
+    if (volText) volText.innerText = pct + '%';
+
+    var volIcon = gid('full-vol-icon');
+    if (volIcon) {
+        var iconName = 'volume-2';
+        if (pct === 0) iconName = 'volume-x';
+        else if (pct < 35) iconName = 'volume-1';
+        else iconName = 'volume-2';
+
+        volIcon.setAttribute('data-lucide', iconName);
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+var audioUrlCache = {};
+try {
+    var storedAudio = localStorage.getItem('pwa_audio_cache');
+    if (storedAudio) audioUrlCache = JSON.parse(storedAudio);
+} catch(e) {}
+
+var lyricsCache = {};
+try {
+    var storedLyrics = localStorage.getItem('pwa_lyrics_cache');
+    if (storedLyrics) lyricsCache = JSON.parse(storedLyrics);
+} catch(e) {}
+
+function savePwaCaches() {
+    try {
+        var lKeys = Object.keys(lyricsCache);
+        if (lKeys.length > 80) delete lyricsCache[lKeys[0]];
+        localStorage.setItem('pwa_lyrics_cache', JSON.stringify(lyricsCache));
+
+        var aKeys = Object.keys(audioUrlCache);
+        if (aKeys.length > 80) delete audioUrlCache[aKeys[0]];
+        localStorage.setItem('pwa_audio_cache', JSON.stringify(audioUrlCache));
+    } catch(e) {}
+}
+
+var hasPrefetchedNext = false;
+var isPreloadingNext = false;
+var audioLoadSequence = 0;
+var audioUrlFetchPromises = {};
+var prefetchAudioElements = {};
+
+function getTrackId(track) { return track && (track.videoId || track.id); }
+
+function resolveAudioUrl(track) {
+    var vid = getTrackId(track);
+    if (!vid) return Promise.reject(new Error('Track tidak memiliki ID'));
+    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
+    if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
+    if (!navigator.onLine) return Promise.reject(new Error('Offline dan audio belum tersimpan'));
+    var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+    audioUrlFetchPromises[vid] = fetch(API.ytplay, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
+    }).then(function(r){ return r.json(); }).then(function(d){
+        var url = d && d.status && d.result && d.result.download && d.result.download.audio;
+        if (!url) throw new Error('URL audio tidak tersedia');
+        audioUrlCache[vid] = url;
+        savePwaCaches();
+        return url;
+    }).finally(function(){ delete audioUrlFetchPromises[vid]; });
+    return audioUrlFetchPromises[vid];
+}
+
+function prefetchTrackAudio(track) {
+    var vid = getTrackId(track);
+    if (!vid || prefetchAudioElements[vid]) return;
+    resolveAudioUrl(track).then(function(rawUrl){
+        if (prefetchAudioElements[vid]) return;
+        var source = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(rawUrl)) : rawUrl;
+        var audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = source;
+        audio.load();
+        prefetchAudioElements[vid] = audio;
+    }).catch(function(){});
+}
+
+function preloadAdjacentTracks() {
+    if (!S.pl || !S.pl.length || S.pi < 0) return;
+    var adjacent = [];
+    if (S.pl.length > 1) {
+        if (S.isShuffle) {
+            var nextIndex = (S.pi + 1) % S.pl.length;
+            var prevIndex = (S.pi - 1 + S.pl.length) % S.pl.length;
+            adjacent.push(S.pl[nextIndex], S.pl[prevIndex]);
+=== API ENTRY ===
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// API Routes
+app.all('/api/search', require('./api/search.js'));
+app.all('/api/lyrics', require('./api/lyrics.js'));
+app.all('/api/lyrics1', require('./api/lyrics1.js'));
+app.all('/api/lyrics2', require('./api/lyrics2.js'));
+app.all('/api/artist', require('./api/artist.js'));
+app.all('/api/album', require('./api/album.js'));
+app.all('/api/suggest', require('./api/suggest.js'));
+app.all('/api/ytplay', require('./api/ytplay.js'));
+app.all('/api/translate', require('./api/translate.js'));
+app.all('/api/transcribe', require('./api/transcribe.js'));
+app.all('/api/google-auth', require('./api/google-auth.js'));
+app.all('/api/email-auth', require('./api/email-auth.js'));
+app.all('/api/streak', require('./api/streak.js'));
+app.all('/api/stats', require('./api/stats.js'));
+app.all('/api/listen-together', require('./api/listen-together.js'));
+
+// Proxy audio needs to stream in node, bypassing edge function
+app.get('/api/proxy-audio', (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('Missing url parameter');
+    

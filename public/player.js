@@ -2,6 +2,18 @@
 // MALAMUSIC - CORE PLAYER (FULL FIX)
 // ============================================================
 const API={search:'/api/search',artist:'/api/artist',suggest:'/api/suggest',lyrics:'/api/lyrics',ytplay:'/api/ytplay'};
+function safeMediaUrl(value, fallback) {
+    fallback = fallback || '';
+    if (!value) return fallback;
+    var raw = String(value).trim();
+    if (/^data:image\//i.test(raw)) return raw;
+    try {
+        var parsed = new URL(raw, location.origin);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') return parsed.href;
+    } catch (_) {}
+    return fallback;
+}
+
 const FI='data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2523374151%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%22100%2525%22%20height%3D%22100%2525%22%20fill%3D%22%252318181b%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%2210%22%20fill%3D%22%252327272a%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M9%2017V5l10-2v12%22%20stroke%3D%22%252352525b%22%20stroke-width%3D%221%22%2F%3E%3Ccircle%20cx%3D%226%22%20cy%3D%2217%22%20r%3D%223%22%20fill%3D%22%252352525b%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2215%22%20r%3D%223%22%20fill%3D%22%252352525b%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E';
 
 function toWebp(url) {
@@ -19,11 +31,11 @@ function toWebp(url) {
             u = u + '-rw';
         }
     }
-    return u;
+    return safeMediaUrl(u, FI);
 }
 
 function toHDCover(url, videoId) {
-    if (!url && videoId) return 'https://i.ytimg.com/vi_webp/' + videoId + '/hqdefault.webp';
+    if (!url && videoId) return safeMediaUrl('https://i.ytimg.com/vi_webp/' + encodeURIComponent(String(videoId)) + '/hqdefault.webp', FI);
     if (!url) return FI;
     var hd = String(url);
     if (hd.includes('googleusercontent.com') || hd.includes('ggpht.com') || hd.includes('ytimg.com')) {
@@ -44,7 +56,7 @@ function toHDCover(url, videoId) {
     } else if (hd.includes('i.ytimg.com/vi_webp/')) {
         hd = hd.replace(/(hqdefault|mqdefault|sddefault|default|maxresdefault)\.(jpg|jpeg|png)/i, 'hqdefault.webp');
     }
-    return hd;
+    return safeMediaUrl(hd, FI);
 }
 
 function handleImgError(img) {
@@ -265,17 +277,17 @@ function updateVolumeUI() {
     }
 }
 
-var audioUrlCache = {};
-try {
-    var storedAudio = localStorage.getItem('pwa_audio_cache');
-    if (storedAudio) audioUrlCache = JSON.parse(storedAudio);
-} catch(e) {}
-
-var lyricsCache = {};
-try {
-    var storedLyrics = localStorage.getItem('pwa_lyrics_cache');
-    if (storedLyrics) lyricsCache = JSON.parse(storedLyrics);
-} catch(e) {}
+function readStorageMap(key){
+    try {
+        var parsed = JSON.parse(localStorage.getItem(key) || '{}');
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (_) {
+        try { localStorage.removeItem(key); } catch (__) {}
+        return {};
+    }
+}
+var audioUrlCache = readStorageMap('pwa_audio_cache');
+var lyricsCache = readStorageMap('pwa_lyrics_cache');
 
 function savePwaCaches() {
     try {
@@ -297,21 +309,30 @@ var prefetchAudioElements = {};
 
 function getTrackId(track) { return track && (track.videoId || track.id); }
 
+function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
 function resolveAudioUrl(track) {
     var vid = getTrackId(track);
     if (!vid) return Promise.reject(new Error('Track tidak memiliki ID'));
-    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
     if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
-    if (!navigator.onLine) return Promise.reject(new Error('Offline dan audio belum tersimpan'));
-    var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
-    audioUrlFetchPromises[vid] = fetch(API.ytplay, {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
-    }).then(function(r){ return r.json(); }).then(function(d){
-        var url = d && d.status && d.result && d.result.download && d.result.download.audio;
-        if (!url) throw new Error('URL audio tidak tersedia');
-        audioUrlCache[vid] = url;
-        savePwaCaches();
-        return url;
+    audioUrlFetchPromises[vid] = Promise.resolve().then(function(){
+        if (typeof caches !== 'undefined') {
+            return caches.match(offlineAudioPath(vid)).then(function(hit){ return hit ? offlineAudioPath(vid) : null; }).catch(function(){ return null; });
+        }
+        return null;
+    }).then(function(offlinePath){
+        if (offlinePath) return offlinePath;
+        if (audioUrlCache[vid]) return audioUrlCache[vid];
+        if (!navigator.onLine) throw new Error('Offline dan audio belum tersimpan');
+        var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+        return fetch(API.ytplay, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
+        }).then(function(r){ return r.json(); }).then(function(d){
+            var url = d && d.status && d.result && d.result.download && d.result.download.audio;
+            if (!url) throw new Error('URL audio tidak tersedia');
+            audioUrlCache[vid] = url;
+            savePwaCaches();
+            return url;
+        });
     }).finally(function(){ delete audioUrlFetchPromises[vid]; });
     return audioUrlFetchPromises[vid];
 }
@@ -980,7 +1001,8 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
         if(!isCurrentLoad())return;
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
-            var nextSrc = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl;
+            var isOfflineBinary = String(audioUrl).indexOf('/offline-audio/') === 0;
+            var nextSrc = isOfflineBinary ? audioUrl : ((typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl);
             if (preloaded && preloaded.src) {
                 nextSrc = preloaded.src;
                 delete prefetchAudioElements[vid];
@@ -1619,10 +1641,11 @@ function toggleLyrics(){
 
 // LIKED SONGS SYSTEM
 function getLikedSongs(){
-    try{return JSON.parse(localStorage.getItem('malamusic_liked_songs')||'[]');}catch(e){return[];}
+    return typeof readJsonArray === 'function' ? readJsonArray('malamusic_liked_songs') : (function(){ try { var x=JSON.parse(localStorage.getItem('malamusic_liked_songs')||'[]'); return Array.isArray(x)?x:[]; } catch (_) { return []; } })();
 }
 function saveLikedSongs(songs){
-    try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(songs));}catch(e){}
+    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_liked_songs', songs); return; }
+    try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(Array.isArray(songs)?songs:[]));}catch(e){}
 }
 function isLikedSong(videoId){
     if(!videoId) return false;
@@ -1667,10 +1690,11 @@ function toggleCurrentLike(){
 
 // LIKED ARTISTS SYSTEM
 function getLikedArtists(){
-    try{return JSON.parse(localStorage.getItem('malamusic_liked_artists')||'[]');}catch(e){return[];}
+    return typeof readJsonArray === 'function' ? readJsonArray('malamusic_liked_artists') : (function(){ try { var x=JSON.parse(localStorage.getItem('malamusic_liked_artists')||'[]'); return Array.isArray(x)?x:[]; } catch (_) { return []; } })();
 }
 function saveLikedArtists(artists){
-    try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(artists));}catch(e){}
+    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_liked_artists', artists); return; }
+    try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(Array.isArray(artists)?artists:[]));}catch(e){}
 }
 function isArtistLiked(artistId){
     if(!artistId) return false;
@@ -1735,8 +1759,9 @@ function updateLikeButtons(){
 function getUserPlaylists(){
     try{
         var pls=JSON.parse(localStorage.getItem('malamusic_playlists')||'[]');
+        if (!Array.isArray(pls)) pls=[];
         var changed=false;
-        pls.forEach(function(p){
+        pls.forEach(function(p){ if(!p || typeof p !== 'object') return;
             if(p.image && (p.image.includes('uZKDQkZ3c5VK.png') || p.image.includes('R0ym4wqfznmp.png') || p.image.includes('logo.png'))){
                 p.image='';
                 changed=true;
@@ -1760,7 +1785,10 @@ function getUserPlaylists(){
         return pls;
     }catch(e){return[];}
 }
-function saveUserPlaylists(pls){try{localStorage.setItem('malamusic_playlists',JSON.stringify(pls));}catch(e){}}
+function saveUserPlaylists(pls){
+    if (typeof writeJsonArray === 'function') { writeJsonArray('malamusic_playlists', pls); return; }
+    try{localStorage.setItem('malamusic_playlists',JSON.stringify(Array.isArray(pls)?pls:[]));}catch(e){ }
+}
 function createPlaylist(name,image){var pls=getUserPlaylists();var id='pl_'+Date.now();pls.push({id:id,name:name,image:image||'',songs:[]});saveUserPlaylists(pls);return id;}
 function updateUserPlaylist(id,name,image){var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===id;});if(!pl)return;if(name)pl.name=name;if(image)pl.image=image;saveUserPlaylists(pls);}
 function deleteUserPlaylist(id){var pls=getUserPlaylists().filter(function(p){return p.id!==id;});saveUserPlaylists(pls);}
@@ -1821,7 +1849,7 @@ function showToast(msg){
     }, 1600);
 }
 function addCurrentToPlaylist(){if(!S.ct)return;var pls=getUserPlaylists();if(pls.length===0){showToast('Belum ada playlist! Buat di Library dulu');return;}showPlaylistPicker(S.ct);}
-function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
+function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+esJs(p.id)+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+safeMediaUrl(p.image||(p.songs.length>0?p.songs[0].cover:FI),FI)+'" class="w-10 h-10 rounded object-cover" onerror="this.src=\''+FI+'\'" /><div><p class="font-medium text-white">'+es(p.name)+'</p><p class="text-[#6b7280] text-xs">'+Number(p.songs.length||0)+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
 
 var trackContextRegistry = {};
 var trackContextSequence = 0;
