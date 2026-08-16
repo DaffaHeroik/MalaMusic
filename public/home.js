@@ -296,7 +296,7 @@ var Home = {
                 return '<div onclick="PK(\'homecat\','+i+')" class="snap-start home-cat-card group '+ (isPlay ? 'bg-[#343a4e] border border-white/40 shadow-xl' : (isCur ? 'bg-[#2e3344] border border-white/30' : 'bg-[#20222c] border border-white/10 hover:bg-[#282b38]')) +' rounded-2xl flex items-center gap-3 p-2.5 cursor-pointer active:scale-95 transition-all w-full shadow-lg shadow-black/20">'+
                     '<img src="'+t.cover+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" referrerPolicy="no-referrer" onerror="this.src=\''+FI+'\'" />'+
                     '<div class="truncate flex-1 min-w-0"><h3 class="font-semibold text-xs sm:text-sm truncate '+(isCur?'text-white font-black':'text-white/90')+'">'+es(t.title)+'</h3><p class="text-white/60 text-[11px] truncate mt-0.5">'+es(t.artist)+'</p></div>'+
-                    '<div class="home-cat-icon ml-auto shrink-0">'+playIconHtml+'</div>'+
+                    '<div class="home-cat-icon ml-auto shrink-0">'+playIconHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
         } else {
@@ -405,7 +405,7 @@ var Home = {
                 return '<div onclick="PK(\'homecat\','+i+')" class="home-cat-card group '+ (isPlay ? 'bg-[#343a4e] border border-white/40 shadow-xl' : (isCur ? 'bg-[#2e3344] border border-white/30' : 'bg-[#20222c] border border-white/10 hover:bg-[#282b38]')) +' rounded-2xl flex items-center gap-3 p-2.5 cursor-pointer active:scale-95 transition-all animate-card-up shadow-lg shadow-black/20" style="animation-delay:'+Math.min(i*30, 450)+'ms">'+
                     '<img src="'+t.cover+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src=\''+FI+'\'" />'+
                     '<div class="truncate flex-1 min-w-0"><h3 class="font-semibold text-sm truncate '+(isCur?'text-white font-black':'text-white/90')+'">'+es(t.title)+'</h3><p class="text-white/60 text-xs truncate mt-0.5">'+es(t.artist)+'</p></div>'+
-                    '<div class="home-cat-icon ml-auto">'+playIconHtml+'</div>'+
+                    '<div class="home-cat-icon ml-auto">'+playIconHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
         } else {
@@ -627,7 +627,7 @@ var Home = {
                         '<h3 class="home-grid-title font-semibold text-sm text-white truncate '+textStyle+'">'+es(t.title)+'</h3>'+
                         '<p class="text-xs text-white/60 truncate mt-0.5">'+es(t.artist)+'</p>'+
                     '</div>'+
-                    '<div class="home-grid-icon shrink-0">'+playIconHtml+'</div>'+
+                    '<div class="home-grid-icon shrink-0">'+playIconHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
         }

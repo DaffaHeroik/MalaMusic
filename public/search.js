@@ -260,7 +260,7 @@ var Search={
                 return '<div onclick="PK(\'search\','+i+')" class="search-song-item flex items-center gap-3.5 p-2.5 mb-2 rounded-2xl cursor-pointer active:scale-[0.98] transition-all shadow-lg shadow-black/25 animate-card-up '+itemBg+'" style="animation-delay:'+Math.min(i*35, 500)+'ms">'+
                     '<img src="'+toWebp(t.cover)+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="handleImgError(this)" />'+
                     '<div class="truncate flex-1 min-w-0"><div class="flex items-center"><h3 class="search-song-title font-semibold text-sm truncate '+titleColor+'">'+es(t.title)+'</h3><span class="search-song-badge">'+badgeHtml+'</span></div><p class="text-white/60 text-xs truncate mt-0.5">'+es(t.artist)+'</p></div>'+
-                    '<div class="search-song-btn">'+btnHtml+'</div>'+
+                    '<div class="search-song-btn">'+btnHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
             lucide.createIcons();

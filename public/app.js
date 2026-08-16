@@ -384,7 +384,7 @@ var OfflineView = {
                             '<h3 class="'+titleClass+' text-sm truncate">'+es(s.title)+'</h3>'+
                             '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
                         '</div>'+
-                    '</div>'+
+                    '</div>'+trackMenuButton(s)+
                     '<button onclick="event.stopPropagation();saveTrackForOffline('+safeSongJson+');" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-red-400 border border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all" title="Hapus dari Mode Offline PWA">'+
                         '<i data-lucide="trash-2" class="w-4 h-4"></i>'+
                     '</button>'+

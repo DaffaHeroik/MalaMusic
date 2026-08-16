@@ -1759,7 +1759,62 @@ function showToast(msg){
     }, 1600);
 }
 function addCurrentToPlaylist(){if(!S.ct)return;var pls=getUserPlaylists();if(pls.length===0){showToast('Belum ada playlist! Buat di Library dulu');return;}showPlaylistPicker(S.ct);}
-function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',S.ct);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
+function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
+
+var trackContextRegistry = {};
+
+function trackMenuButton(track) {
+    var id = String(track && (track.videoId || track.id) || '').replace(/'/g, '');
+    if (!id) return '';
+    trackContextRegistry[id] = track;
+    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + id + '\')" class="w-9 h-9 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>';
+}
+
+function closeTrackContextMenu() {
+    var menu = gid('track-context-menu');
+    if (menu) menu.remove();
+}
+
+function openTrackContextMenu(id) {
+    closeTrackContextMenu();
+    var track = trackContextRegistry[id];
+    if (!track) return;
+    var liked = isLikedSong(track.videoId || track.id);
+    var offline = typeof isOfflineSong === 'function' && isOfflineSong(track);
+    var menu = document.createElement('div');
+    menu.id = 'track-context-menu';
+    menu.className = 'fixed inset-0 z-[420] flex items-end justify-center bg-black/65';
+    menu.onclick = function(e) { if (e.target === menu) closeTrackContextMenu(); };
+    menu.innerHTML = '<div class="w-full max-w-md rounded-t-3xl bg-[#17171d] border-t border-white/10 p-5 shadow-2xl" style="animation:slideUp .25s ease-out forwards"><div class="flex items-center gap-3 pb-4 border-b border-white/10"><img src="' + (track.cover || FI) + '" class="w-12 h-12 rounded-xl object-cover" onerror="this.src=\'' + FI + '\'" /><div class="min-w-0 flex-1"><h3 class="text-sm font-black text-white truncate">' + es(track.title || 'Lagu') + '</h3><p class="text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</p></div><button onclick="closeTrackContextMenu()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="grid grid-cols-4 gap-2 py-4 border-b border-white/10"><button onclick="playTrackFromContext(\'' + id + '\')" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="play" class="w-5 h-5"></i><span class="text-[10px]">Putar</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',true)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-plus" class="w-5 h-5"></i><span class="text-[10px]">Putar Berikutnya</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',false)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-music" class="w-5 h-5"></i><span class="text-[10px]">Ke Antrian</span></button><button onclick="closeTrackContextMenu();openQueue()" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list" class="w-5 h-5"></i><span class="text-[10px]">Lihat Antrian</span></button></div><div class="space-y-1"><button onclick="closeTrackContextMenu();showPlaylistPicker(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="folder-plus" class="w-5 h-5 text-emerald-300"></i><span>Tambah ke Playlist</span></button><button onclick="closeTrackContextMenu();toggleLikeSong(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="heart" class="w-5 h-5 ' + (liked ? 'text-rose-400 fill-current' : 'text-white/60') + '"></i><span>' + (liked ? 'Hapus dari Lagu Disukai' : 'Tambah ke Lagu Disukai') + '</span></button><button onclick="contextDownloadTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="download" class="w-5 h-5 text-cyan-300"></i><span>' + (offline ? 'Sudah di Mode Offline' : 'Download ke Mode Offline') + '</span></button><button onclick="contextShareTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="share-2" class="w-5 h-5 text-amber-300"></i><span>Bagikan Lagu</span></button></div></div>';
+    document.body.appendChild(menu); lucide.createIcons();
+}
+
+function playTrackFromContext(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+}
+
+function addTrackToQueueFromContext(id, playNext) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    var copy = Object.assign({}, track);
+    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
+    else { var insertAt = playNext ? Math.max(0, (S.pi || 0) + 1) : S.pl.length; S.pl.splice(insertAt, 0, copy); }
+    showToast(playNext ? 'Akan diputar berikutnya' : 'Ditambahkan ke antrian');
+}
+
+function contextDownloadTrack(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    if (typeof isOfflineSong === 'function' && isOfflineSong(track)) { showToast('Lagu sudah ada di Mode Offline'); return; }
+    if (typeof saveTrackForOffline === 'function') saveTrackForOffline(track);
+}
+
+function contextShareTrack(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    var url = track.ytUrl || ('https://youtube.com/watch?v=' + (track.videoId || track.id));
+    if (navigator.share) navigator.share({ title: track.title || 'MalaMusic', text: (track.title || 'Lagu') + ' — ' + (track.artist || ''), url: url }).catch(function() {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function() { showToast('Link lagu disalin'); });
+    else showToast(url);
+}
 
 // ============================================================
 // EQUALIZER & SHARE CARD FEATURES

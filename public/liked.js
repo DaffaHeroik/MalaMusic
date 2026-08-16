@@ -34,7 +34,7 @@ var Liked = {
                             '<h3 class="font-semibold text-sm text-white truncate">'+es(s.title)+'</h3>'+
                             '<p class="text-xs text-white/60 truncate mt-0.5">'+es(s.artist)+'</p>'+
                         '</div>'+
-                    '</div>'+
+                    '</div>'+trackMenuButton(s)+
                     '<button onclick="toggleLikeSong('+es(JSON.stringify(s)).replace(/"/g, '&quot;')+');Liked.render();" class="w-9 h-9 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0 hover:bg-rose-500/30 active:scale-90 transition-all" title="Hapus dari Disukai">'+
                         '<i data-lucide="heart" class="w-4 h-4 fill-current"></i>'+
                     '</button>'+
