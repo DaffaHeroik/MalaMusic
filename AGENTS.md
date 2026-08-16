@@ -6,4 +6,4 @@ After every frontend, UI, PWA, or asset change, do not assume the change is visi
 
 Before reporting completion, open the current preview URL with a fresh cache-busting query, navigate to the affected screen, and confirm the actual rendered text and interactions. If an old UI is still rendered, diagnose the active service worker and deployment rather than only incrementing a query-string version.
 
-For authentication changes, verify the complete user flow from the initial Login/Daftar choice through email input, OTP request, OTP verification, authenticated state, and logout. MalaMusic's primary authentication flow is Email OTP through Resend and accepts only Gmail addresses.
+For authentication changes, verify the complete user flow from the initial Login/Daftar choice through email/password input, Firebase register/login, authenticated state, and logout. MalaMusic's primary authentication flow is Firebase Email/Password and accepts only Gmail addresses.

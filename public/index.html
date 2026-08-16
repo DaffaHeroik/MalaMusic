@@ -4,7 +4,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=35').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=36').then(function(reg) {
                     reg.update();
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
@@ -608,22 +608,22 @@
     <div id="yt-player" style="position:absolute;top:-9999px;left:-9999px;width:1px;height:1px;"></div>
     <audio id="audio-player" preload="auto" style="display:none;"></audio>
 
-    <script type="module" src="/firebase.js?v=50"></script>
-    <script src="/player.js?v=50"></script>
-    <script src="/listen-together.js?v=50"></script>
-    <script src="/home.js?v=50"></script>
-    <script src="/search.js?v=50"></script>
-    <script src="/leaderboard.js?v=50"></script>
-    <script src="/stats.js?v=50"></script>
-    <script src="/liked.js?v=50"></script>
-    <script src="/library.js?v=50"></script>
-    <script src="/profile.js?v=50"></script>
-    <script src="/streak.js?v=50"></script>
-    <script src="/miniplayer.js?v=50"></script>
-    <script src="/fullplayer.js?v=50"></script>
-    <script src="/artist.js?v=50"></script>
-    <script src="/album.js?v=50"></script>
-    <script src="/app.js?v=50"></script>
+    <script type="module" src="/firebase.js?v=51"></script>
+    <script src="/player.js?v=51"></script>
+    <script src="/listen-together.js?v=51"></script>
+    <script src="/home.js?v=51"></script>
+    <script src="/search.js?v=51"></script>
+    <script src="/leaderboard.js?v=51"></script>
+    <script src="/stats.js?v=51"></script>
+    <script src="/liked.js?v=51"></script>
+    <script src="/library.js?v=51"></script>
+    <script src="/profile.js?v=51"></script>
+    <script src="/streak.js?v=51"></script>
+    <script src="/miniplayer.js?v=51"></script>
+    <script src="/fullplayer.js?v=51"></script>
+    <script src="/artist.js?v=51"></script>
+    <script src="/album.js?v=51"></script>
+    <script src="/app.js?v=51"></script>
     <script>(function () {
   document.addEventListener('visibilitychange', function () {
     document.documentElement.classList.toggle('tab-hidden', document.hidden);

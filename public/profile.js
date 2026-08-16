@@ -43,7 +43,7 @@ var Profile = {
                         <button onclick="App.switch('liked')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#5436a3] to-[#c53d70] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="heart" class="w-8 h-8 text-white fill-current mb-auto"></i><span class="text-white font-bold text-sm">Lagu Disukai</span><span class="text-white/60 text-xs mt-1">${liked.length} lagu</span></button>
                         <button onclick="App.switch('offline')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#164e63] to-[#0f766e] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="download" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Mode Offline</span><span class="text-white/60 text-xs mt-1">${offline.length} lagu</span></button>
                         <button onclick="App.switch('library')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#3b3b3b] to-[#111] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="library" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Playlist Kamu</span><span class="text-white/60 text-xs mt-1">${playlists.length} playlist</span></button>
-                        <button onclick="EmailAuth.open()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Login / Daftar</span><span class="text-white/60 text-xs mt-1">Gmail dan password</span></button>
+                        <div id="profile-auth-collection-action"></div>
                     </div>
                 </section>
 
@@ -54,7 +54,7 @@ var Profile = {
 
                 <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
                     <div id="profile-account-panel-secondary"></div>
-                    <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Login atau buat akun dengan Gmail dan password</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                    <div id="profile-auth-secondary-action"></div>
                     <button onclick="Profile.showSettings()" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar, tampilan, dan data</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                 </section>
 
@@ -71,6 +71,7 @@ var Profile = {
         }
 
         lucide.createIcons();
+        EmailAuth.renderAuthActions(false);
         Profile.renderPublicPlaylistSettings();
         Profile.refreshListeningStats();
         EmailAuth.refresh();
@@ -143,6 +144,19 @@ var EmailAuth = {
         panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
         this.renderChoice();
     },
+    renderAuthActions: function(authenticated, user) {
+        var collection = document.getElementById('profile-auth-collection-action');
+        var secondary = document.getElementById('profile-auth-secondary-action');
+        var email = this.escape(user && user.email || 'akun Gmail');
+        if (authenticated) {
+            if (collection) collection.innerHTML = '<button onclick="App.switch(\'dev\')" class="w-full h-full min-h-[150px] text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#166534] to-[#064e3b] p-4 flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="circle-check" class="w-8 h-8 text-emerald-200 mb-auto"></i><span class="text-white font-bold text-sm">Akun Terhubung</span><span class="text-emerald-100/70 text-xs mt-1 truncate">' + email + '</span></button>';
+            if (secondary) secondary.innerHTML = '<button onclick="EmailAuth.logout()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="log-out" class="w-5 h-5 text-emerald-300"></i><span class="flex-1"><strong class="block text-sm text-white">Logout dari MalaMusic</strong><span class="block text-xs text-white/50">Sesi akun Gmail sedang aktif</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>';
+        } else {
+            if (collection) collection.innerHTML = '<button onclick="EmailAuth.open()" class="w-full h-full min-h-[150px] text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Login / Daftar</span><span class="text-white/60 text-xs mt-1">Gmail dan password</span></button>';
+            if (secondary) secondary.innerHTML = '<button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Login atau buat akun dengan Gmail dan password</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>';
+        }
+        lucide.createIcons();
+    },
     choose: function(mode) {
         this.entryMode = mode === 'register' ? 'register' : 'login';
         this.renderEmailForm();
@@ -197,12 +211,14 @@ var EmailAuth = {
                 if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
                 if (avatar && user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
                 panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Gmail terhubung: ' + this.escape(user.email) + '</span><button onclick="EmailAuth.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
+                this.renderAuthActions(true, user);
             } else {
                 name && (name.textContent = 'Profil Saya');
                 subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
                 this.renderChoice();
+                this.renderAuthActions(false);
             }
             lucide.createIcons();
-        } catch (_) { this.renderChoice('Server autentikasi belum siap.'); }
+        } catch (_) { this.renderChoice('Server autentikasi belum siap.'); this.renderAuthActions(false); }
     }
 };
