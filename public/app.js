@@ -155,7 +155,8 @@ function isOfflineSong(track) {
     });
 }
 
-async function saveTrackForOffline(track) {
+async function saveTrackForOffline(track, options) {
+    options = options || {};
     if (!isPwaInstalled()) {
         showPwaRequiredModal();
         return false;
@@ -168,6 +169,10 @@ async function saveTrackForOffline(track) {
     var existingIndex = list.findIndex(function(s) { return (s.videoId === vid || s.id === vid); });
 
     if (existingIndex !== -1) {
+        if (options.keepExisting) {
+            if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: track });
+            return true;
+        }
         // Remove from offline
         list.splice(existingIndex, 1);
         try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
@@ -177,7 +182,7 @@ async function saveTrackForOffline(track) {
         return false;
     }
 
-    showToast('Menyimpan lagu ke Mode Offline PWA...');
+    if (!options.silent) showToast('Menyimpan lagu ke Mode Offline PWA...');
 
     // 1. Add track metadata to list
     var songObj = {
@@ -188,7 +193,9 @@ async function saveTrackForOffline(track) {
         cover: track.cover || (typeof toHDCover==='function'?toHDCover('', vid):''),
         artistId: track.artistId || '',
         ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vid),
-        savedAt: Date.now()
+        savedAt: Date.now(),
+        offlinePlaylistId: options.playlistId || '',
+        offlinePlaylistName: options.playlistName || ''
     };
     list.unshift(songObj);
     try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
@@ -241,10 +248,67 @@ async function saveTrackForOffline(track) {
         }
     } catch(e) {}
 
-    showToast('Lagu "' + track.title + '" tersimpan untuk Mode Offline!');
+    if (typeof options.onProgress === 'function') options.onProgress({ status: 'saved', track: track });
+    if (!options.silent) showToast('Lagu "' + track.title + '" tersimpan untuk Mode Offline!');
     updateOfflineButtons();
     if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
     return true;
+}
+
+var offlinePlaylistJob = null;
+
+function downloadPlaylistOffline(playlistId) {
+    if (!isPwaInstalled()) { showPwaRequiredModal(); return; }
+    var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
+    var playlist = playlists.find(function(p) { return p.id === playlistId; });
+    if (!playlist || !playlist.songs || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return; }
+    if (offlinePlaylistJob) { showToast('Download playlist sedang berjalan'); return; }
+
+    var modal = document.createElement('div');
+    modal.id = 'offline-playlist-progress';
+    modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
+    modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><button id="offline-playlist-cancel" class="w-full mt-4 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button></div>';
+    document.body.appendChild(modal); lucide.createIcons();
+    offlinePlaylistJob = { cancelled: false };
+    var job = offlinePlaylistJob;
+    var bar = modal.querySelector('#offline-playlist-progress-bar');
+    var text = modal.querySelector('#offline-playlist-progress-text');
+    var count = modal.querySelector('#offline-playlist-progress-count');
+    var detail = modal.querySelector('#offline-playlist-progress-detail');
+    modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; this.disabled = true; this.textContent = 'Membatalkan...'; };
+
+    (async function() {
+        var done = 0, failed = 0, already = 0;
+        for (var i = 0; i < playlist.songs.length; i++) {
+            if (job.cancelled) break;
+            var track = playlist.songs[i];
+            text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length;
+            detail.textContent = track.title || 'Lagu';
+            try {
+                var vid = track.videoId || track.id;
+                var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
+                var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name });
+                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
+                if (before) already++; else if (!result || !hasAudio) failed++;
+            } catch (e) { failed++; }
+            done++;
+            bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
+            count.textContent = done + '/' + playlist.songs.length;
+        }
+        offlinePlaylistJob = null;
+        if (job.cancelled) {
+            text.textContent = 'Download dibatalkan';
+            detail.textContent = done + ' lagu diproses';
+        } else {
+            text.textContent = failed ? 'Selesai dengan beberapa kegagalan' : 'Playlist tersedia offline';
+            detail.textContent = done + ' berhasil, ' + already + ' sudah ada, ' + failed + ' gagal';
+        }
+        modal.querySelector('#offline-playlist-cancel').textContent = 'Tutup';
+        modal.querySelector('#offline-playlist-cancel').disabled = false;
+        modal.querySelector('#offline-playlist-cancel').onclick = function() { modal.remove(); if (typeof OfflineView !== 'undefined' && S.at === 'offline') OfflineView.render(); };
+        if (typeof OfflineView !== 'undefined' && S.at === 'offline') OfflineView.render();
+        if (typeof Library !== 'undefined' && Library.currentPlaylistId === playlist.id) Library.open(playlist.id);
+    })();
 }
 
 function toggleCurrentOffline() {
@@ -318,7 +382,7 @@ var OfflineView = {
                         '<img src="'+(s.cover || FI)+'" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
                         '<div class="min-w-0 flex-1">'+
                             '<h3 class="'+titleClass+' text-sm truncate">'+es(s.title)+'</h3>'+
-                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+'</p>'+
+                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
                         '</div>'+
                     '</div>'+
                     '<button onclick="event.stopPropagation();saveTrackForOffline('+safeSongJson+');" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-red-400 border border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all" title="Hapus dari Mode Offline PWA">'+

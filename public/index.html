@@ -4,7 +4,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=18').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=19').then(function(reg) {
                     reg.update();
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
@@ -607,17 +607,17 @@
     <div id="yt-player" style="position:absolute;top:-9999px;left:-9999px;width:1px;height:1px;"></div>
     <audio id="audio-player" preload="auto" style="display:none;"></audio>
 
-    <script src="/player.js?v=33"></script>
-    <script src="/home.js?v=33"></script>
-    <script src="/search.js?v=33"></script>
-    <script src="/liked.js?v=33"></script>
-    <script src="/library.js?v=33"></script>
-    <script src="/profile.js?v=33"></script>
-    <script src="/miniplayer.js?v=33"></script>
-    <script src="/fullplayer.js?v=33"></script>
-    <script src="/artist.js?v=33"></script>
-    <script src="/album.js?v=33"></script>
-    <script src="/app.js?v=33"></script>
+    <script src="/player.js?v=34"></script>
+    <script src="/home.js?v=34"></script>
+    <script src="/search.js?v=34"></script>
+    <script src="/liked.js?v=34"></script>
+    <script src="/library.js?v=34"></script>
+    <script src="/profile.js?v=34"></script>
+    <script src="/miniplayer.js?v=34"></script>
+    <script src="/fullplayer.js?v=34"></script>
+    <script src="/artist.js?v=34"></script>
+    <script src="/album.js?v=34"></script>
+    <script src="/app.js?v=34"></script>
     <script>(function () {
   document.addEventListener('visibilitychange', function () {
     document.documentElement.classList.toggle('tab-hidden', document.hidden);
