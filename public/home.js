@@ -43,6 +43,9 @@ var Home = {
                     <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">MalaMusic</h1>
                 </div>
                 <div class="flex items-center gap-2.5">
+                    <button onclick="Home.refresh()" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Muat lagu lain" aria-label="Muat lagu lain">
+                        <i data-lucide="shuffle" class="w-5 h-5"></i>
+                    </button>
                     <button onclick="App.switch('search')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Cari">
                         <i data-lucide="search" class="w-5 h-5"></i>
                     </button>
@@ -486,7 +489,13 @@ var Home = {
         }
     },
 
-    async fetch() {
+    refresh() {
+        S.ht = [];
+        S.hp = [];
+        Home.fetch(true);
+    },
+
+    async fetch(forceRefresh) {
         Home.showSkeleton();
         if (!navigator.onLine) {
             var offlineSongs = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
@@ -497,7 +506,12 @@ var Home = {
             return;
         }
         try {
-            var q = 'Trend Indonesia';
+            var queryPool = ['Trend Indonesia', 'Lagu Indonesia terbaru', 'Top Hits Indonesia', 'Lagu viral terbaru', 'Pop Indonesia populer', 'Musik Indonesia 2026', 'Lagu santai Indonesia', 'Hits TikTok Indonesia'];
+            var previousQuery = '';
+            try { previousQuery = localStorage.getItem('mala_home_query') || ''; } catch(e) {}
+            var availableQueries = queryPool.filter(function(item){ return item !== previousQuery; });
+            var q = availableQueries[Math.floor(Math.random() * availableQueries.length)] || queryPool[0];
+            try { localStorage.setItem('mala_home_query', q); } catch(e) {}
             var r = await fetch(API.search + '?query=' + encodeURIComponent(q) + '&type=songs');
             var d = await r.json();
             if (d.status) {
@@ -512,7 +526,7 @@ var Home = {
                             cover: toHDCover(s.thumbnail, s.videoId),
                             ytUrl: s.url
                         };
-                    });
+                    }).filter(function(song, index, list){ return list.findIndex(function(item){ return item.videoId === song.videoId; }) === index; }).sort(function(){ return Math.random() - 0.5; });
                 }
                 var plist = [].concat(d.result.playlists || []).concat(d.result.albums || []);
                 if (plist.length < 4) {
