@@ -42,6 +42,14 @@ function updateOnlineOfflineStatus() {
     }
 }
 
+async function clearOfflineDownloads() {
+    var songs = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
+    for (var i = 0; i < songs.length; i++) { if (typeof removeOfflineAudioBinary === 'function') await removeOfflineAudioBinary(songs[i].videoId || songs[i].id); }
+    if (typeof writeJsonArray === 'function') writeJsonArray('pwa_offline_tracks', []); else localStorage.removeItem('pwa_offline_tracks');
+    if (typeof audioUrlCache !== 'undefined') audioUrlCache = {};
+    showToast('Semua download offline dihapus');
+    if (typeof OfflineView !== 'undefined') OfflineView.render();
+}
 function clearPwaCache() {
     if ('caches' in window) {
         caches.keys().then(function(names) {
@@ -440,7 +448,7 @@ var OfflineView = {
                     <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Mode Offline</h1>
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border ${isOnline ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-white/20 text-white/60 bg-white/5'}">${isOnline ? 'Online' : 'Offline'}</span>
                 </div>
-                <p class="text-xs text-white/50 mt-0.5">Penyimpanan PWA dan lagu tersimpan</p>
+                <p class="text-xs text-white/50 mt-0.5">Penyimpanan PWA dan lagu tersimpan</p><p id="offline-storage-summary" class="text-[11px] text-cyan-300/70 mt-1">Menghitung penyimpanan...</p>
             </div>
             <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-md">
                 <i data-lucide="wifi-off" class="w-4 h-4"></i>
@@ -451,9 +459,7 @@ var OfflineView = {
             ${offlineSongs.length > 0 ? `
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-semibold text-white/60 uppercase tracking-wider">${offlineSongs.length} Lagu Tersimpan</span>
-                    <button onclick="PK('offline',0)" class="text-xs text-white hover:text-white/80 font-bold hover:underline flex items-center gap-1">
-                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Putar Semua
-                    </button>
+                    <div class="flex items-center gap-2"><button onclick="PK('offline',0)" class="text-xs text-white hover:text-white/80 font-bold hover:underline flex items-center gap-1"><i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Putar Semua</button><button onclick="clearOfflineDownloads()" class="text-xs text-rose-300 hover:text-rose-200 font-bold">Hapus semua</button></div>
                 </div>
             ` : ''}
 
@@ -461,6 +467,7 @@ var OfflineView = {
         </div>`;
 
         if (window.lucide) lucide.createIcons();
+        if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function(info){ var target = gid('offline-storage-summary'); if (!target) return; var used = Number(info.usage || 0), quota = Number(info.quota || 0); function fmt(n){ return n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; } target.textContent = 'Audio tersimpan: ' + fmt(used) + (quota ? ' dari sekitar ' + fmt(quota) : ''); }).catch(function(){});
     }
 };
 
