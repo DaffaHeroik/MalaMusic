@@ -19,8 +19,8 @@ var Profile = {
                     </div>
                     <div class="min-w-0 pb-1">
                         <p class="text-xs font-bold uppercase tracking-[.2em] text-white/60 mb-2">Profil</p>
-                        <h1 id="profile-name" class="text-3xl sm:text-5xl font-black text-white tracking-tight truncate">Pendengar MalaMusic</h1>
-                        <p id="profile-subtitle" class="text-sm text-white/60 mt-2">Kelola musik dan koleksi favoritmu</p>
+                        <h1 id="profile-name" class="text-3xl sm:text-5xl font-black text-white tracking-tight truncate">Profil Saya</h1>
+                        <p id="profile-subtitle" class="text-sm text-white/60 mt-2">Koleksi musik dan aktivitas mendengarkan</p>
                     </div>
                 </div>
             </div>
@@ -54,7 +54,7 @@ var Profile = {
                     <button onclick="showToast('Pengaturan profil akan hadir setelah autentikasi selesai')" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar dan tampilan</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                 </section>
 
-                <p class="text-center text-xs text-white/30 pb-4">MalaMusic • Dengarkan musik favoritmu</p>
+                <p class="text-center text-xs text-white/30 pb-4">Profil musik kamu</p>
             </div>
         </div>`;
 
@@ -102,8 +102,8 @@ var GoogleAccount = {
             if (!panel) return;
             if (response.ok && data.authenticated) {
                 var user = data.user || {};
-                if (name) name.textContent = user.name || 'Pengguna MalaMusic';
-                if (subtitle) subtitle.textContent = user.email || 'Akun Google terhubung';
+                if (name) name.textContent = user.name || 'Profil Saya';
+                if (subtitle) subtitle.textContent = user.email || 'Koleksi musik dan aktivitas mendengarkan';
                 if (avatar && user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
                 panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Google terhubung</span><button onclick="GoogleAccount.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
             } else {
