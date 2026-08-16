@@ -40,7 +40,7 @@ var Profile = {
                         <button onclick="App.switch('liked')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#5436a3] to-[#c53d70] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="heart" class="w-8 h-8 text-white fill-current mb-auto"></i><span class="text-white font-bold text-sm">Lagu Disukai</span><span class="text-white/60 text-xs mt-1">${liked.length} lagu</span></button>
                         <button onclick="App.switch('offline')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#164e63] to-[#0f766e] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="download" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Mode Offline</span><span class="text-white/60 text-xs mt-1">${offline.length} lagu</span></button>
                         <button onclick="App.switch('library')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#3b3b3b] to-[#111] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="library" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Playlist Kamu</span><span class="text-white/60 text-xs mt-1">${playlists.length} playlist</span></button>
-                        <button onclick="EmailAuth.open()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Akun Kamu</span><span class="text-white/60 text-xs mt-1">Login dengan OTP Gmail</span></button>
+                        <button onclick="EmailAuth.open()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Login / Daftar</span><span class="text-white/60 text-xs mt-1">Masuk dengan Gmail</span></button>
                     </div>
                 </section>
 
@@ -51,7 +51,7 @@ var Profile = {
 
                 <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
                     <div id="profile-account-panel-secondary"></div>
-                    <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Akun MalaMusic</strong><span class="block text-xs text-white/50">Daftar atau masuk dengan kode OTP ke Gmail</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                    <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Pilih login atau buat akun dengan OTP Gmail</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                     <button onclick="showToast('Pengaturan profil akan hadir setelah autentikasi selesai')" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar dan tampilan</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                 </section>
 
@@ -76,6 +76,7 @@ var Dev = Profile;
 
 var EmailAuth = {
     pendingEmail: '',
+    entryMode: 'login',
     escape: function(value) {
         return String(value || '').replace(/[&<>"']/g, function(char) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[char]; });
     },
@@ -83,18 +84,31 @@ var EmailAuth = {
         var panel = document.getElementById('profile-account-panel');
         if (!panel) return;
         panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        this.refresh();
+        this.renderChoice();
     },
-    renderLogin: function(message) {
+    choose: function(mode) {
+        this.entryMode = mode === 'register' ? 'register' : 'login';
+        this.renderEmailForm();
+    },
+    renderChoice: function(message) {
         var panel = document.getElementById('profile-account-panel');
         if (!panel) return;
-        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="mail" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">Masuk atau daftar dengan Gmail</strong><span class="block text-xs text-white/50 mt-1">Kami kirim kode OTP sekali pakai ke email kamu.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.request()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Kirim OTP</button></div>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-5 sm:p-6"><div class="flex items-start gap-3 mb-5"><i data-lucide="user-round" class="w-6 h-6 text-rose-400 mt-0.5"></i><div><strong class="block text-base text-white">Akun MalaMusic</strong><span class="block text-xs text-white/50 mt-1">Masuk untuk menyimpan koleksi, playlist, dan aktivitas musik kamu.</span></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="EmailAuth.choose(\'login\')" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100 transition-colors">Login</button><button onclick="EmailAuth.choose(\'register\')" class="rounded-xl border border-white/20 bg-white/[.06] px-5 py-3 text-sm font-black text-white hover:bg-white/[.12] transition-colors">Daftar</button></div>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
         lucide.createIcons();
     },
+    renderEmailForm: function(message) {
+        var panel = document.getElementById('profile-account-panel');
+        if (!panel) return;
+        var title = this.entryMode === 'register' ? 'Daftar dengan Gmail' : 'Login dengan Gmail';
+        var helper = this.entryMode === 'register' ? 'Buat akun MalaMusic dengan kode OTP sekali pakai.' : 'Masuk ke akun MalaMusic dengan kode OTP sekali pakai.';
+        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="mail" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/50 mt-1">' + helper + ' Hanya alamat @gmail.com yang diterima.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.request()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Kirim OTP</button></div><button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke pilihan Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+        lucide.createIcons();
+    },
+    renderLogin: function(message) { this.renderEmailForm(message); },
     renderVerify: function(email, message) {
         var panel = document.getElementById('profile-account-panel');
         if (!panel) return;
-        panel.innerHTML = '<div class="rounded-2xl bg-rose-500/10 border border-rose-400/20 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-300 mt-0.5"></i><div><strong class="block text-sm text-white">Masukkan kode OTP</strong><span class="block text-xs text-white/60 mt-1">Kode dikirim ke <b class="text-white">' + this.escape(email) + '</b> dan berlaku 10 menit.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-lg tracking-[.35em] text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.verify()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Verifikasi</button></div><button onclick="EmailAuth.renderLogin()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Gunakan email lain</button>' + (message ? '<p class="mt-3 text-xs text-rose-200">' + this.escape(message) + '</p>' : '') + '</div>';
+        panel.innerHTML = '<div class="rounded-2xl bg-rose-500/10 border border-rose-400/20 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-300 mt-0.5"></i><div><strong class="block text-sm text-white">Masukkan kode OTP</strong><span class="block text-xs text-white/60 mt-1">Kode dikirim ke <b class="text-white">' + this.escape(email) + '</b> dan berlaku 10 menit.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-lg tracking-[.35em] text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.verify()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Verifikasi</button></div><button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke pilihan Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-rose-200">' + this.escape(message) + '</p>' : '') + '</div>';
         lucide.createIcons();
     },
     request: async function() {
@@ -145,9 +159,9 @@ var EmailAuth = {
             } else {
                 name && (name.textContent = 'Profil Saya');
                 subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
-                this.renderLogin();
+                this.renderChoice();
             }
             lucide.createIcons();
-        } catch (_) { this.renderLogin('Server autentikasi belum siap.'); }
+        } catch (_) { this.renderChoice('Server autentikasi belum siap.'); }
     }
 };

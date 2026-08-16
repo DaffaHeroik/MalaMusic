@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v12';
-const CACHE_DATA_NAME = 'malamusic-api-v12';
+const CACHE_STATIC_NAME = 'malamusic-static-v14';
+const CACHE_DATA_NAME = 'malamusic-api-v14';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/banner.png',
-  '/app.js?v=27',
+  '/app.js?v=28',
   '/player.js',
   '/fullplayer.js',
   '/miniplayer.js',
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   '/search.js',
   '/album.js',
   '/artist.js',
-  '/profile.js?v=27',
+  '/profile.js?v=28',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -109,7 +109,7 @@ self.addEventListener('fetch', (event) => {
 
   // 3. Static Assets (JS, PNG, WebP, CSS, Manifest, CDN scripts) -> Cache first, fallback to network
   event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
+    caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
         // Fetch background update for cache freshness if online
         if (navigator.onLine) {
