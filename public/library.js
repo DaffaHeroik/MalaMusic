@@ -9,6 +9,8 @@ var Library={
         var likedArtists = typeof getLikedArtists === 'function' ? getLikedArtists() : [];
         var isPlaylistsTab = Library.activeTab === 'playlists';
         var isArtistsTab = Library.activeTab === 'artists';
+        var isSongsTab = Library.activeTab === 'songs';
+        var likedSongs = typeof getLikedSongs === 'function' ? getLikedSongs() : [];
 
         var html = '<div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url(\'/banner.png\') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">' +
             '<div class="flex items-center justify-between mb-3">' +
@@ -25,11 +27,21 @@ var Library={
                     '<i data-lucide="user" class="w-4 h-4 ' + (isArtistsTab ? 'text-amber-600' : '') + '"></i>' +
                     '<span>Artists</span>' +
                 '</button>' +
+                '<button onclick="Library.setTab(\'songs\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isSongsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
+                    '<i data-lucide="heart" class="w-4 h-4 ' + (isSongsTab ? 'text-rose-500' : '') + '"></i>' +
+                    '<span>Songs</span>' +
+                '</button>' +
             '</div>' +
         '</div>' +
         '<div class="px-4 mt-4 pb-12">';
 
-        if (isArtistsTab) {
+        if (isSongsTab) {
+            if (!likedSongs.length) {
+                html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-500/10 flex items-center justify-center"><i data-lucide="heart" class="w-8 h-8 text-rose-400"></i></div><h3 class="text-white font-bold text-lg mb-1">Belum Ada Lagu Disukai</h3><p class="text-xs text-white/70 max-w-xs mx-auto mb-5">Tekan ikon hati saat menemukan lagu yang ingin kamu simpan.</p><button onclick="App.switch(\'search\')" class="bg-white/10 hover:bg-white/20 px-6 py-3 font-bold rounded-full text-xs text-white border border-white/20"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i> Cari Lagu</button></div>';
+            } else {
+                html += '<div class="space-y-2">' + likedSongs.map(function(s, i){ return '<button onclick="Library.playLikedIndex(' + i + ')" class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10 text-left hover:bg-white/[.08]"><img src="' + (s.cover || FI) + '" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(s.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(s.artist || '') + '</span></span><i data-lucide="play" class="w-4 h-4 text-white/60"></i></button>'; }).join('') + '</div>';
+            }
+        } else if (isArtistsTab) {
             // ARTISTS TAB CONTENT
             if(likedArtists.length === 0){
                 html += '<div class="text-center text-white/70 py-16 px-4 bg-white/[0.04] backdrop-blur-xl rounded-3xl border border-white/10 mt-2">' +

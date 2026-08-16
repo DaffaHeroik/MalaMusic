@@ -889,8 +889,23 @@ function PK(s,i){
     loadTrack(S.ct);
 }
 
+function saveRecentTrack(track){
+    if(!track || !(track.videoId || track.id)) return;
+    try {
+        var id = track.videoId || track.id;
+        var current = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]');
+        current = current.filter(function(item){ return (item.videoId || item.id) !== id; });
+        current.unshift({ id:id, videoId:id, title:track.title || 'Lagu', artist:track.artist || 'MalaMusic', cover:track.cover || FI, artistId:track.artistId || '', ytUrl:track.ytUrl || ('https://youtube.com/watch?v=' + id), playedAt:Date.now() });
+        localStorage.setItem('mala_recent_tracks', JSON.stringify(current.slice(0, 12)));
+    } catch(e) {}
+}
+function getRecentTracks(){
+    try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
+}
+
 function loadTrack(track,resumeAt){
     if(!track)return;
+    saveRecentTrack(track);
     hasPrefetchedNext = false;
     isPreloadingNext = false;
     ST();
