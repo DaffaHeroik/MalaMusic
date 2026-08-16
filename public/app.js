@@ -733,10 +733,10 @@ var App={
         if(localStorage.getItem('seen_v2_popup_update')) return;
         var popup = document.createElement('div');
         popup.id = 'v2-popup';
-        popup.className = 'fixed inset-0 z-[400] flex items-center justify-center bg-black/80 px-4';
+        popup.className = 'fixed inset-0 z-[400] flex items-center justify-center bg-black/80 px-3 sm:px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto';
         ;
         popup.innerHTML = `
-            <div class="glass-strong w-full max-w-sm rounded-3xl p-6 border border-white/10 text-center relative overflow-hidden" style="animation: slideUp 0.3s ease-out forwards;">
+            <div class="glass-strong w-full max-w-sm max-h-[calc(100dvh-2rem)] rounded-3xl p-5 sm:p-6 border border-white/10 text-center relative overflow-hidden flex flex-col" style="animation: slideUp 0.3s ease-out forwards;">
                 <!-- Header -->
                 <div class="relative w-16 h-16 rounded-full mx-auto mb-4 bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center  ">
                     <i data-lucide="sparkles" class="w-8 h-8 text-white"></i>
@@ -746,7 +746,7 @@ var App={
                 <p class="text-white/70 text-xs mb-5">Berikut adalah fitur dan pembaruan terbaru:</p>
                 
                 <!-- Features list -->
-                <div class="space-y-4 text-left mb-6 max-h-[250px] overflow-y-auto pr-1">
+                <div class="space-y-4 text-left mb-5 max-h-[min(40vh,250px)] overflow-y-auto pr-1 overscroll-contain">
                     <div class="flex items-start gap-3">
                         <div class="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0 mt-0.5">
                             <i data-lucide="sliders" class="w-4 h-4 text-rose-400"></i>
