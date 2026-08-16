@@ -358,7 +358,7 @@ var EmailAuth = {
                 var user = data.user || {};
                 if (name) name.textContent = user.name || 'Profil Saya';
                 if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
-                this.applyAvatar(user);
+                Profile.applyAvatar(user);
                 if (typeof loadLibraryRemote === 'function') loadLibraryRemote();
                 fetch('/api/profile', { credentials: 'same-origin', cache: 'no-store' }).then(function(profileResponse) { return profileResponse.ok ? profileResponse.json() : null; }).then(function(profileData) {
                     if (requestId !== EmailAuth.refreshSeq || !profileData || !profileData.status) return;
@@ -371,7 +371,7 @@ var EmailAuth = {
                 name && (name.textContent = 'Profil Saya');
                 subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
                 this.remoteProfile = null;
-                this.applyAvatar(null);
+                Profile.applyAvatar(null);
                 this.renderChoice();
                 this.renderAuthActions(false);
             }
@@ -379,7 +379,7 @@ var EmailAuth = {
         } catch (_) {
             if (requestId !== this.refreshSeq) return;
             this.remoteProfile = null;
-            this.applyAvatar(null);
+            Profile.applyAvatar(null);
             if (response && response.ok) { this.renderChoice(); this.renderAuthActions(false); }
             else { this.renderChoice('Server autentikasi belum siap.'); this.renderAuthActions(false); }
         }
