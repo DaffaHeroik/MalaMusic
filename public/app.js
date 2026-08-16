@@ -381,34 +381,28 @@ var App={
         localStorage.removeItem('theme');
 
         gid('nav-container').innerHTML=`
-        <div class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-lg z-40">
-            <div class="glass-dock rounded-3xl py-1 px-1.5 flex items-center justify-between shadow-2xl">
-                <button onclick="App.switch('home')" id="nav-home" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="home" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Home</span>
-                </button>
-                <button onclick="App.switch('search')" id="nav-search" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="search" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Search</span>
-                </button>
-                <button onclick="App.switch('library')" id="nav-library" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="library" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Library</span>
-                </button>
-                <button onclick="App.switch('offline')" id="nav-offline" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="wifi-off" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Offline</span>
-                </button>
-                <button onclick="App.switch('liked')" id="nav-liked" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="heart" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Liked</span>
-                </button>
-                <button onclick="App.switch('dev')" id="nav-dev" class="nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl transition-all duration-300 active:scale-95">
-                    <i data-lucide="user" class="w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300"></i>
-                    <span class="nav-label text-[9px] font-medium transition-all duration-300 mt-0.5">Profile</span>
-                </button>
+        <aside class="spotify-sidebar" aria-label="Navigasi MalaMusic">
+            <div class="spotify-brand">
+                <img src="/logo.png" alt="MalaMusic">
+                <span class="spotify-brand-title">MalaMusic</span>
             </div>
-        </div>`;
+            <div class="spotify-nav-section">
+                <div class="spotify-section-label">Menu utama</div>
+                <button onclick="App.switch('home')" id="nav-home" class="spotify-nav-item" aria-label="Beranda"><i data-lucide="home"></i><span>Beranda</span></button>
+                <button onclick="App.switch('search')" id="nav-search" class="spotify-nav-item" aria-label="Cari"><i data-lucide="search"></i><span>Cari</span></button>
+            </div>
+            <div class="spotify-nav-section">
+                <div class="spotify-section-label">Koleksi kamu</div>
+                <button onclick="App.switch('library')" id="nav-library" class="spotify-nav-item" aria-label="Koleksi"><i data-lucide="library"></i><span>Koleksi</span></button>
+                <button onclick="App.switch('liked')" id="nav-liked" class="spotify-nav-item" aria-label="Lagu disukai"><i data-lucide="heart"></i><span>Lagu Disukai</span></button>
+                <button onclick="App.switch('offline')" id="nav-offline" class="spotify-nav-item" aria-label="Mode offline"><i data-lucide="download"></i><span>Mode Offline</span></button>
+                <button onclick="App.switch('dev')" id="nav-dev-mobile" class="spotify-nav-item mobile-only-nav" aria-label="Profil"><i data-lucide="user-circle-2"></i><span>Profil</span></button>
+            </div>
+            <div class="spotify-user">
+                <i data-lucide="user-circle-2"></i>
+                <button onclick="App.switch('dev')" id="nav-dev" class="spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none" aria-label="Profil"><span>Profil & Akun Google</span></button>
+            </div>
+        </aside>`;
         
         Profile.render();
         
@@ -601,13 +595,16 @@ var App={
 
         ['home','search','library','offline','liked','dev'].forEach(function(n){
             var b=gid('nav-'+n);
-            if(!b)return;
+            var mobileB = n === 'dev' ? gid('nav-dev-mobile') : null;
+            if(!b && !mobileB)return;
             var isCurrent = (n === t);
 
             if(isCurrent){
-                b.className = 'nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2.5 sm:px-3 rounded-2xl bg-white/20 text-white font-bold transition-all duration-300 shadow-md scale-105';
+                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none active' : 'spotify-nav-item active';
+                if(mobileB) mobileB.className = 'spotify-nav-item mobile-only-nav active';
             } else {
-                b.className = 'nav-item group relative flex flex-col items-center justify-center cursor-pointer select-none touch-manipulation py-1.5 px-2 rounded-2xl text-white/50 hover:text-white hover:bg-white/10 transition-all duration-300';
+                if(b) b.className = n === 'dev' ? 'spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none' : 'spotify-nav-item';
+                if(mobileB) mobileB.className = 'spotify-nav-item mobile-only-nav';
             }
         });
 
