@@ -3,7 +3,7 @@ const { getAuth } = require('./firebase-admin.js');
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
-const AUTH_RATE_LIMITS = { register: 4, login: 8 };
+const AUTH_RATE_LIMITS = { register: 4, login: 8, 'password-reset': 3, 'send-verification': 3 };
 const authRateBuckets = new Map();
 const FIREBASE_SIGN_IN_ENDPOINT = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 
@@ -114,7 +114,8 @@ function safeUser(user) {
         uid: user.uid,
         email,
         name: String(user.displayName || fallbackName).slice(0, 80),
-        picture: String(user.photoURL || '').slice(0, 500)
+        picture: String(user.photoURL || '').slice(0, 500),
+        emailVerified: !!user.emailVerified
     };
 }
 
@@ -159,6 +160,17 @@ async function loginWithFirebasePassword(email, password) {
     return payload.idToken;
 }
 
+async function sendFirebaseOobCode(requestType, email, idToken) {
+    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk';
+    const body = { requestType };
+    if (email) body.email = email;
+    if (idToken) body.idToken = idToken;
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(apiKey)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(String(payload.error && payload.error.message || 'OOB_EMAIL_FAILED'));
+    return payload;
+}
+
 async function verifyFirebaseToken(idToken) {
     if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) throw new Error('Token Firebase tidak valid.');
     const auth = getAuth();
@@ -174,14 +186,20 @@ module.exports = async function emailAuth(req, res) {
 
     const action = (req.query && req.query.action) || 'me';
     cleanupAuthRateBuckets();
-    if ((action === 'register' || action === 'login') && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
+    if (['register', 'login', 'password-reset', 'send-verification'].includes(action) && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
     const cookies = parseCookies(req);
     const now = Date.now();
 
     if (action === 'me') {
         const session = decode(cookies.mm_session);
         if (!session || !session.email || !session.exp || session.exp < now) return res.status(200).json({ authenticated: false });
-        return res.status(200).json({ authenticated: true, user: session });
+        try {
+            const freshUser = await getAuth().getUser(session.uid);
+            const freshSession = { ...safeUser(freshUser), exp: session.exp };
+            return res.status(200).json({ authenticated: true, user: freshSession });
+        } catch (_) {
+            return res.status(200).json({ authenticated: true, user: session });
+        }
     }
 
     if (action === 'logout') {
@@ -193,9 +211,18 @@ module.exports = async function emailAuth(req, res) {
     const body = bodyOf(req);
     const email = normalizeEmail(body.email);
     const password = body.password;
+    if (!isGmail(email)) return res.status(400).json({ status: false, message: 'Gunakan alamat Gmail yang valid (@gmail.com).' });
+    const rate = enforceAuthRateLimit(req, action, email);
+    if (!rate.allowed) {
+        res.setHeader('Retry-After', String(rate.retryAfter));
+        return res.status(429).json({ status: false, message: 'Terlalu banyak permintaan. Coba lagi setelah beberapa menit.' });
+    }
+    if (action === 'password-reset') {
+        try { await sendFirebaseOobCode('PASSWORD_RESET', email); } catch (_) {}
+        return res.status(200).json({ status: true, message: 'Jika akun Gmail tersebut terdaftar, link reset password sudah dikirim.' });
+    }
     const validationError = validateCredentials(email, password);
     if (validationError) return res.status(400).json({ status: false, message: validationError });
-    const rate = enforceAuthRateLimit(req, action, email);
     if (!rate.allowed) {
         res.setHeader('Retry-After', String(rate.retryAfter));
         return res.status(429).json({ status: false, message: 'Terlalu banyak percobaan. Coba lagi setelah beberapa menit.' });
@@ -210,6 +237,16 @@ module.exports = async function emailAuth(req, res) {
             const createOptions = { email, password };
             if (displayName) createOptions.displayName = displayName;
             firebaseUser = await auth.createUser(createOptions);
+            try { const registrationToken = await loginWithFirebasePassword(email, password); await sendFirebaseOobCode('VERIFY_EMAIL', email, registrationToken); } catch (_) { console.warn('[email-auth] verification email could not be sent after register'); }
+        } else if (action === 'send-verification') {
+            const session = decode(cookies.mm_session);
+            if (!session || session.email !== email) return res.status(401).json({ status: false, message: 'Sesi akun tidak cocok.' });
+            const idToken = await loginWithFirebasePassword(email, password);
+            const decoded = await verifyFirebaseToken(idToken);
+            firebaseUser = await auth.getUser(decoded.uid);
+            if (firebaseUser.emailVerified) return res.status(200).json({ status: true, verified: true, message: 'Email sudah terverifikasi.' });
+            await sendFirebaseOobCode('VERIFY_EMAIL', email, idToken);
+            return res.status(200).json({ status: true, verified: false, message: 'Email verification sudah dikirim ulang.' });
         } else if (action === 'login') {
             const idToken = await loginWithFirebasePassword(email, password);
             const decoded = await verifyFirebaseToken(idToken);
@@ -222,6 +259,7 @@ module.exports = async function emailAuth(req, res) {
         return res.status(200).json({ status: true, authenticated: true, user });
     } catch (error) {
         const code = String(error && (error.code || error.message) || '');
+        if (code.includes('EMAIL_NOT_FOUND') || code.includes('USER_NOT_FOUND')) return res.status(200).json({ status: true, message: 'Jika akun Gmail tersebut terdaftar, link reset password sudah dikirim.' });
         if (code.includes('email-already-exists')) return res.status(409).json({ status: false, message: 'Email sudah terdaftar. Pilih Login.' });
         if (code.includes('invalid-password')) return res.status(400).json({ status: false, message: 'Password tidak memenuhi aturan Firebase.' });
         if (code.includes('auth/')) return res.status(401).json({ status: false, message: firebaseErrorMessage(code.replace('auth/', '').toUpperCase()) });
