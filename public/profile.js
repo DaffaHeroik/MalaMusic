@@ -45,14 +45,14 @@ var Profile = {
                 </section>
 
                 <section class="mb-8">
-                    <div class="flex items-center justify-between mb-3"><h2 class="text-xl font-black text-white">Aktivitas terbaru</h2><button onclick="showToast('Riwayat pemutaran akan hadir di versi berikutnya')" class="text-xs font-bold text-white/50 hover:text-white">Lihat semua</button></div>
+                    <div class="flex items-center justify-between mb-3"><h2 class="text-xl font-black text-white">Aktivitas terbaru</h2><button onclick="Profile.showHistory()" class="text-xs font-bold text-white/50 hover:text-white">Lihat semua</button></div>
                     <div id="profile-recent-list" class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden"></div>
                 </section>
 
                 <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
                     <div id="profile-account-panel-secondary"></div>
                     <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Pilih login atau buat akun dengan OTP Gmail</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
-                    <button onclick="showToast('Pengaturan profil akan hadir setelah autentikasi selesai')" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar dan tampilan</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                    <button onclick="Profile.showSettings()" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar, tampilan, dan data</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                 </section>
 
                 <p class="text-center text-xs text-white/30 pb-4">Profil musik kamu</p>
@@ -64,11 +64,46 @@ var Profile = {
             recentEl.innerHTML = recent.length ? recent.slice(0, 4).map(function(track) {
                 var id = track.id || track.videoId;
                 return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
-            }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru. Mulai dengarkan lagu dari Beranda.</div>';
+            }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru.<button onclick="App.switch(\'home\')" class="block mx-auto mt-3 rounded-full bg-white/10 border border-white/15 px-4 py-2 text-xs font-bold text-white">Buka Beranda</button></div>';
         }
 
         lucide.createIcons();
         EmailAuth.refresh();
+    },
+    showHistory: function() {
+        var recent = typeof getRecentTracks === 'function' ? getRecentTracks() : [];
+        var modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        var rows = recent.length ? recent.map(function(track) {
+            var id = String(track.id || track.videoId || '').replace(/'/g, '');
+            return '<button onclick="App.autoPlayTrack(\'' + id + '\');this.closest(\'.fixed\').remove()" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-11 h-11 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span><i data-lucide="play" class="w-4 h-4 text-white/60"></i></button>';
+        }).join('') : '<div class="p-8 text-center text-white/50 text-sm">Belum ada riwayat pemutaran.</div>';
+        modal.innerHTML = '<div class="w-full sm:max-w-lg max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-white/10"><div><h3 class="font-black text-white text-lg">Riwayat Pemutaran</h3><p class="text-xs text-white/50 mt-1">Lagu yang baru kamu dengarkan</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[55vh] overflow-y-auto">' + rows + '</div><div class="p-4 border-t border-white/10 flex gap-2"><button onclick="localStorage.removeItem(\'mala_recent_tracks\');this.closest(\'.fixed\').remove();Profile.render();showToast(\'Riwayat dihapus\')" class="flex-1 rounded-xl bg-rose-500/15 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat</button><button onclick="this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-white/10 text-white py-3 text-xs font-bold">Tutup</button></div></div>';
+        document.body.appendChild(modal); lucide.createIcons();
+    },
+    exportLocalData: function() {
+        var keys = ['malamusic_liked_songs', 'malamusic_playlists', 'pwa_offline_tracks', 'malamusic_recent_tracks', 'mala_recent_searches', 'malamusic_auto_next', 'malamusic_bg_glow_enabled'];
+        var data = { exportedAt: new Date().toISOString(), app: 'MalaMusic', version: 1, data: {} };
+        keys.forEach(function(key) { data.data[key] = localStorage.getItem(key); });
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'malamusic-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000); showToast('Backup data berhasil dibuat');
+    },
+    importLocalData: function() {
+        var input = document.createElement('input'); input.type = 'file'; input.accept = 'application/json,.json';
+        input.onchange = function() { var file = input.files && input.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function() { try { var payload = JSON.parse(reader.result); if (!payload || payload.app !== 'MalaMusic' || !payload.data) throw new Error('Format backup tidak cocok'); Object.keys(payload.data).forEach(function(key) { if (payload.data[key] !== null && payload.data[key] !== undefined) localStorage.setItem(key, payload.data[key]); }); showToast('Backup berhasil dipulihkan'); Profile.render(); } catch (e) { showToast('Backup tidak valid'); } }; reader.readAsText(file); };
+        input.click();
+    },
+    showSettings: function() {
+        var autoNext = typeof S !== 'undefined' ? S.autoNext !== false : localStorage.getItem('malamusic_auto_next') !== 'false';
+        var glow = typeof FullPlayer !== 'undefined' ? FullPlayer.bgGlowEnabled !== false : localStorage.getItem('malamusic_bg_glow_enabled') !== '0';
+        var modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        modal.innerHTML = '<div class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-center justify-between mb-5"><div><h3 class="font-black text-white text-lg">Pengaturan</h3><p class="text-xs text-white/50 mt-1">Preferensi MalaMusic di perangkat ini</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="space-y-2"><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="skip-forward" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Putar otomatis</strong><span class="block text-xs text-white/50">Lanjutkan ke lagu berikutnya</span></span><input type="checkbox" ' + (autoNext ? 'checked' : '') + ' onchange="toggleAutoNext()" class="accent-rose-500 w-5 h-5" /></label><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="sparkles" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Latar bergerak</strong><span class="block text-xs text-white/50">Warna cover pada pemutar</span></span><input type="checkbox" ' + (glow ? 'checked' : '') + ' onchange="FullPlayer.toggleBgGlow()" class="accent-rose-500 w-5 h-5" /></label></div><div class="mt-4 pt-4 border-t border-white/10 space-y-2"><p class="text-[11px] text-white/40">Koleksi saat ini tersimpan di perangkat ini. Buat backup sebelum mengganti browser atau perangkat.</p><div class="grid grid-cols-2 gap-2"><button onclick="Profile.exportLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Backup Data</button><button onclick="Profile.importLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Pulihkan Data</button></div><button onclick="localStorage.removeItem(\'mala_recent_tracks\');localStorage.removeItem(\'mala_recent_searches\');Profile.render();showToast(\'Data aktivitas lokal dihapus\')" class="w-full rounded-xl bg-rose-500/10 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat & Pencarian</button></div></div>';
+        document.body.appendChild(modal); lucide.createIcons();
     }
 };
 

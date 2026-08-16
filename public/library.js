@@ -14,7 +14,7 @@ var Library={
 
         var html = '<div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url(\'/banner.png\') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">' +
             '<div class="flex items-center justify-between mb-3">' +
-                '<h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">Library</h1>' +
+                '<h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">Koleksi</h1>' +
             '</div>' +
             
             '<!-- Tabs Navigation -->' +
@@ -25,7 +25,7 @@ var Library={
                 '</button>' +
                 '<button onclick="Library.setTab(\'artists\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isArtistsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="user" class="w-4 h-4 ' + (isArtistsTab ? 'text-amber-600' : '') + '"></i>' +
-                    '<span>Artists</span>' +
+                    '<span>Artis</span>' +
                 '</button>' +
                 '<button onclick="Library.setTab(\'songs\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isSongsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="heart" class="w-4 h-4 ' + (isSongsTab ? 'text-rose-500' : '') + '"></i>' +

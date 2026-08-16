@@ -44,12 +44,12 @@ var Liked = {
                 '</div>';
             }).join('');
         } else {
-            likedHtml = '<div class="text-center py-16 rounded-3xl bg-white/[0.04] border border-white/10 px-4"><div class="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-3"><i data-lucide="heart" class="w-8 h-8 text-rose-400"></i></div><h3 class="text-white font-bold text-base mb-1">Belum ada lagu disukai</h3><p class="text-white/60 text-xs max-w-xs mx-auto">Klik ikon hati pada lagu favoritmu untuk menyimpannya di sini.</p></div>';
+            likedHtml = '<div class="text-center py-16 rounded-3xl bg-white/[0.04] border border-white/10 px-4"><div class="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-3"><i data-lucide="heart" class="w-8 h-8 text-rose-400"></i></div><h3 class="text-white font-bold text-base mb-1">Belum ada lagu disukai</h3><p class="text-white/60 text-xs max-w-xs mx-auto mb-4">Klik ikon hati pada lagu favoritmu untuk menyimpannya di sini.</p><button onclick="App.switch(\'search\')" class="rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-xs font-bold text-white"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i>Cari Lagu</button></div>';
         }
 
         el.innerHTML = `
         <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
-            <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">Liked Songs</h1>
+            <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">Lagu Disukai</h1>
             <div class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-rose-400 shadow-lg">
                 <i data-lucide="heart" class="w-5 h-5 fill-current"></i>
             </div>

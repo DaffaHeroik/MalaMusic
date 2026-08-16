@@ -341,17 +341,16 @@ var OfflineView = {
                     <i data-lucide="download" class="w-3.5 h-3.5"></i>
                     <span>Klik ikon Download di pemutar lagu</span>
                 </div>
-            </div>`;
+            </div><button onclick="App.switch('search')" class="mt-3 rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-xs font-bold text-white"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i>Cari Lagu</button></div>`;
         }
-
         el.innerHTML = `
         <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center bg-black/80 backdrop-blur-md">
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Offline Mode</h1>
+                    <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Mode Offline</h1>
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border ${isOnline ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-white/20 text-white/60 bg-white/5'}">${isOnline ? 'Online' : 'Offline'}</span>
                 </div>
-                <p class="text-xs text-white/50 mt-0.5">PWA Storage & Saved Songs</p>
+                <p class="text-xs text-white/50 mt-0.5">Penyimpanan PWA dan lagu tersimpan</p>
             </div>
             <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-md">
                 <i data-lucide="wifi-off" class="w-4 h-4"></i>
