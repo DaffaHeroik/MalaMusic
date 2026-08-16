@@ -70,7 +70,7 @@ function publicRoom(room) {
         host: { name: room.hostName || 'Host', email: room.hostEmail || '' },
         createdAt: room.createdAt,
         updatedAt: room.updatedAt,
-        members: Math.max(1, Number(room.members || 1)),
+        members: room.membersByUid ? Object.keys(room.membersByUid).length : Math.max(1, Number(room.members || 1)),
         state: room.state || { queue: [], index: 0, track: null, playing: false, position: 0, changedAt: Date.now(), version: 0 }
     };
 }
@@ -99,6 +99,7 @@ module.exports = async function listenTogether(req, res) {
                 createdAt: now,
                 updatedAt: now,
                 members: 1,
+                membersByUid: { [user.uid]: { name: cleanText(user.name || user.email.split('@')[0], 80), lastSeen: now } },
                 state: { queue, index, track: queue[index], playing: false, position: 0, changedAt: now, version: 1 }
             };
             await roomPath(id).set(room);
@@ -118,19 +119,31 @@ module.exports = async function listenTogether(req, res) {
 
         const isHost = room.hostUid === (user.uid || '') && room.hostEmail === user.email;
         if (action === 'join' && method === 'POST') {
-            const members = Math.min(Number(room.members || 1) + 1, 100);
-            await ref.update({ members, updatedAt: Date.now() });
+            const now = Date.now();
+            const membersByUid = room.membersByUid || {};
+            membersByUid[user.uid] = { name: cleanText(user.name || user.email.split('@')[0], 80), lastSeen: now };
+            const members = Math.min(Object.keys(membersByUid).length, 100);
+            await ref.update({ members, membersByUid, updatedAt: now });
             room.members = members;
-            room.updatedAt = Date.now();
+            room.membersByUid = membersByUid;
+            room.updatedAt = now;
             return res.json({ status: true, room: publicRoom(room), role: isHost ? 'host' : 'listener' });
         }
         if (action === 'state' && method === 'GET') {
+            const now = Date.now();
+            const membersByUid = room.membersByUid || {};
+            if (membersByUid[user.uid]) membersByUid[user.uid].lastSeen = now;
+            const members = Math.min(Object.keys(membersByUid).length || Number(room.members || 1), 100);
+            await ref.update({ members, membersByUid, updatedAt: now });
+            room.members = members; room.membersByUid = membersByUid; room.updatedAt = now;
             return res.json({ status: true, room: publicRoom(room), role: isHost ? 'host' : 'listener' });
         }
         if (action === 'leave' && method === 'POST') {
-            const members = Math.max(0, Number(room.members || 1) - 1);
+            const membersByUid = room.membersByUid || {};
+            delete membersByUid[user.uid];
+            const members = Object.keys(membersByUid).length;
             if (isHost || members === 0) await ref.remove();
-            else await ref.update({ members, updatedAt: Date.now() });
+            else await ref.update({ members, membersByUid, updatedAt: Date.now() });
             return res.json({ status: true });
         }
         if (action === 'command' && method === 'POST') {

@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     var state = {
-        roomId: '', role: '', timer: null, lastVersion: 0, applying: false,
+        roomId: '', role: '', timer: null, lastVersion: 0, applying: false, pollDelay: 1200,
         publishTimer: null, driftTimer: null, modal: null
     };
 
@@ -70,22 +70,23 @@
             .catch(function (e) { showToastSafe(e.message); });
     }
     function activate(room, role) {
-        state.roomId = room.id; state.role = role || 'listener'; state.lastVersion = 0;
+        state.roomId = room.id; state.room = room; state.role = role || 'listener'; state.lastVersion = 0;
         history.pushState({}, '', '/room/' + encodeURIComponent(room.id));
         applyRoom(room, true); startPolling();
     }
     function startPolling() {
-        if (state.timer) clearInterval(state.timer);
-        poll(); state.timer = setInterval(poll, 1000);
+        if (state.timer) clearTimeout(state.timer);
+        var loop = function() { if (!state.roomId) return; state.pollDelay = document.hidden ? 6000 : 1200; Promise.resolve(poll()).finally(function(){ if (state.roomId) state.timer = setTimeout(loop, state.pollDelay); }); };
+        loop();
     }
     function stopPolling() {
-        if (state.timer) clearInterval(state.timer);
+        if (state.timer) clearTimeout(state.timer);
         if (state.driftTimer) clearInterval(state.driftTimer);
         state.timer = null; state.driftTimer = null;
     }
     function poll() {
-        if (!state.roomId) return;
-        jsonFetch('/api/listen-together?action=state&room=' + encodeURIComponent(state.roomId), { method: 'GET', headers: {} })
+        if (!state.roomId) return Promise.resolve();
+        return jsonFetch('/api/listen-together?action=state&room=' + encodeURIComponent(state.roomId), { method: 'GET', headers: {} })
             .then(function (data) { if (data.room) applyRoom(data.room, false); })
             .catch(function (e) { if (/tidak ditemukan|kedaluwarsa/i.test(e.message)) { stopPolling(); state.roomId = ''; showToastSafe('Room sudah berakhir.'); } });
     }
@@ -93,7 +94,7 @@
         var remote = room.state || {};
         var version = Number(remote.version || 0);
         if (!force && version <= state.lastVersion) return;
-        state.lastVersion = version;
+        state.lastVersion = version; state.room = room;
         var queue = Array.isArray(remote.queue) ? remote.queue.map(normalizeTrack).filter(function (x) { return trackId(x); }) : [];
         var remoteTrack = normalizeTrack(remote.track || queue[Number(remote.index) || 0]);
         if (!trackId(remoteTrack)) return;
@@ -135,14 +136,14 @@
             badge = el('button', { id: 'listen-together-badge', className: 'fixed left-4 bottom-28 z-[280] rounded-full bg-emerald-400/15 border border-emerald-300/40 text-emerald-200 px-3 py-2 text-[11px] font-black backdrop-blur-xl' });
             document.body.appendChild(badge);
         }
-        badge.textContent = '● Room ' + room.id + (isHost() ? ' · Host' : ' · Mengikuti');
+        badge.textContent = '● Room ' + room.id + ' · ' + Math.max(1, Number(room.members || 1)) + ' peserta' + (isHost() ? ' · Host' : ' · Mengikuti');
         badge.onclick = showRoomPanel;
     }
     function showRoomPanel() {
         if (!state.roomId) return openLobby();
         closeModal();
         var modal = el('div', { className: 'fixed inset-0 z-[500] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4' });
-        modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 p-5 shadow-2xl"><div class="flex items-center justify-between"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 font-black">Room aktif</p><h2 class="text-xl font-black text-white mt-1">' + state.roomId + '</h2></div><button id="lt-panel-close" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><p class="text-sm text-white/60 mt-4">Bagikan link ini kepada teman:</p><div class="flex gap-2 mt-2"><input readonly class="min-w-0 flex-1 rounded-xl bg-white/10 text-white text-xs px-3" value="' + roomUrl(state.roomId) + '" /><button id="lt-copy" class="rounded-xl bg-white/10 px-3 text-white text-xs font-bold">Salin</button></div><p class="text-xs text-white/45 mt-4">' + (isHost() ? 'Kamu adalah host. Kontrol pemutaranmu akan diikuti peserta lain.' : 'Kamu sedang mengikuti pemutaran host.') + '</p><button id="lt-leave" class="w-full rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-200 py-3.5 font-black mt-5">Keluar dari Room</button></div>';
+        modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 p-5 shadow-2xl"><div class="flex items-center justify-between"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 font-black">Room aktif</p><h2 class="text-xl font-black text-white mt-1">' + state.roomId + '</h2></div><button id="lt-panel-close" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><p class="text-sm text-white/60 mt-4">Bagikan link ini kepada teman:</p><div class="flex gap-2 mt-2"><input readonly class="min-w-0 flex-1 rounded-xl bg-white/10 text-white text-xs px-3" value="' + roomUrl(state.roomId) + '" /><button id="lt-copy" class="rounded-xl bg-white/10 px-3 text-white text-xs font-bold">Salin</button></div><p class="text-xs text-white/45 mt-4">' + Math.max(1, Number((state.room && state.room.members) || 1)) + ' peserta aktif. ' + (isHost() ? 'Kamu adalah host. Kontrol pemutaranmu akan diikuti peserta lain.' : 'Kamu sedang mengikuti pemutaran host.') + '</p><button id="lt-leave" class="w-full rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-200 py-3.5 font-black mt-5">Keluar dari Room</button></div>';
         document.body.appendChild(modal); state.modal = modal;
         modal.querySelector('#lt-panel-close').onclick = closeModal;
         modal.querySelector('#lt-copy').onclick = function () { navigator.clipboard.writeText(roomUrl(state.roomId)).then(function () { showToastSafe('Link room disalin.'); }); };
