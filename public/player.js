@@ -108,8 +108,8 @@ if('mediaSession' in navigator){
     try{
         navigator.mediaSession.setActionHandler('play',function(){TP();});
         navigator.mediaSession.setActionHandler('pause',function(){TP();});
-        navigator.mediaSession.setActionHandler('previoustrack',function(){PV(true);});
-        navigator.mediaSession.setActionHandler('nexttrack',function(){NX();});
+        navigator.mediaSession.setActionHandler('previoustrack',function(){navigateFromMediaSession('previous');});
+        navigator.mediaSession.setActionHandler('nexttrack',function(){navigateFromMediaSession('next');});
         navigator.mediaSession.setActionHandler('stop',function(){try{AU.pause();}catch(e){}});
         navigator.mediaSession.setActionHandler('seekto',function(details){
             if(details.fastSeek && 'fastSeek' in AU){AU.fastSeek(details.seekTime);return;}
@@ -122,6 +122,32 @@ if('mediaSession' in navigator){
             AU.currentTime=Math.min(AU.duration||0,(AU.currentTime||0)+(details.seekOffset||10));
         });
     }catch(e){}
+}
+
+var mediaNavigationBusy = false;
+
+function navigateFromMediaSession(direction) {
+    if (mediaNavigationBusy) return;
+    mediaNavigationBusy = true;
+    var task;
+    try {
+        if (direction === 'previous') {
+            PV(true);
+            task = Promise.resolve();
+        } else {
+            task = Promise.resolve(NX());
+        }
+    } catch (error) {
+        task = Promise.reject(error);
+    }
+    task.catch(function() {
+        S.il = false;
+        S.ip = false;
+        UB();
+        if (typeof showToast === 'function') showToast('Tidak dapat mengganti lagu saat ini');
+    }).finally(function() {
+        setTimeout(function(){ mediaNavigationBusy = false; }, 250);
+    });
 }
 
 function updateMediaSessionMetadata(track){
@@ -242,76 +268,70 @@ function savePwaCaches() {
 
 var hasPrefetchedNext = false;
 var isPreloadingNext = false;
+var audioUrlFetchPromises = {};
+var prefetchAudioElements = {};
+
+function getTrackId(track) { return track && (track.videoId || track.id); }
+
+function resolveAudioUrl(track) {
+    var vid = getTrackId(track);
+    if (!vid) return Promise.reject(new Error('Track tidak memiliki ID'));
+    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
+    if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
+    if (!navigator.onLine) return Promise.reject(new Error('Offline dan audio belum tersimpan'));
+    var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+    audioUrlFetchPromises[vid] = fetch(API.ytplay, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
+    }).then(function(r){ return r.json(); }).then(function(d){
+        var url = d && d.status && d.result && d.result.download && d.result.download.audio;
+        if (!url) throw new Error('URL audio tidak tersedia');
+        audioUrlCache[vid] = url;
+        savePwaCaches();
+        return url;
+    }).finally(function(){ delete audioUrlFetchPromises[vid]; });
+    return audioUrlFetchPromises[vid];
+}
+
+function prefetchTrackAudio(track) {
+    var vid = getTrackId(track);
+    if (!vid || prefetchAudioElements[vid]) return;
+    resolveAudioUrl(track).then(function(rawUrl){
+        if (prefetchAudioElements[vid]) return;
+        var source = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(rawUrl)) : rawUrl;
+        var audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = source;
+        audio.load();
+        prefetchAudioElements[vid] = audio;
+    }).catch(function(){});
+}
+
+function preloadAdjacentTracks() {
+    if (!S.pl || !S.pl.length || S.pi < 0) return;
+    var adjacent = [];
+    if (S.pl.length > 1) {
+        if (S.isShuffle) {
+            var nextIndex = (S.pi + 1) % S.pl.length;
+            var prevIndex = (S.pi - 1 + S.pl.length) % S.pl.length;
+            adjacent.push(S.pl[nextIndex], S.pl[prevIndex]);
+        } else {
+            if (S.pi + 1 < S.pl.length) adjacent.push(S.pl[S.pi + 1]);
+            if (S.pi - 1 >= 0) adjacent.push(S.pl[S.pi - 1]);
+        }
+    }
+    adjacent.forEach(prefetchTrackAudio);
+}
 
 function checkAndPreloadNext() {
-    if (hasPrefetchedNext || isPreloadingNext) return;
+    if (hasPrefetchedNext) return;
     if (S.pd > 0 && (S.pd - S.pt <= 40 || S.pt >= S.pd * 0.7)) {
         hasPrefetchedNext = true;
-        triggerPreloadNextTrack();
+        preloadAdjacentTracks();
     }
 }
 
 async function triggerPreloadNextTrack(){
-    if (isPreloadingNext) return;
-    isPreloadingNext = true;
-    try {
-        if (!S.ct) return;
-
-        var nextTrack = null;
-        if (S.isShuffle && S.pl && S.pl.length > 1) {
-            var ni = (S.pi + 1) % S.pl.length;
-            nextTrack = S.pl[ni];
-        } else if (S.pl && S.pi + 1 < S.pl.length) {
-            nextTrack = S.pl[S.pi + 1];
-        } else if (S.autoNext) {
-            var fetched = await fetchAutoNextRecommendations(S.ct);
-            if (fetched && S.pl && S.pi + 1 < S.pl.length) {
-                nextTrack = S.pl[S.pi + 1];
-            }
-        }
-
-        if (!nextTrack) return;
-        var nextVid = nextTrack.videoId || nextTrack.id;
-        if (!nextVid) return;
-
-        // Pre-fetch lyrics for next track
-        if (typeof lyricsCache !== 'undefined' && !lyricsCache[nextVid]) {
-            var nTitle = nextTrack.title ? '&title=' + encodeURIComponent(nextTrack.title) : '';
-            var nArtist = nextTrack.artist ? '&artist=' + encodeURIComponent(nextTrack.artist) : '';
-            fetch(API.lyrics + '?id=' + nextVid + nTitle + nArtist).then(function(r){ return r.json(); }).then(function(d){
-                if (d && d.status && d.result && d.result.lyrics && d.result.lyrics.lines) {
-                    lyricsCache[nextVid] = {
-                        vid: nextVid,
-                        type: d.result.lyrics.type,
-                        lines: d.result.lyrics.lines
-                    };
-                }
-            }).catch(function(){});
-        }
-
-        // Pre-fetch audio URL
-        if (!audioUrlCache[nextVid]) {
-            var nextYtUrl = nextTrack.ytUrl || ('https://youtube.com/watch?v=' + nextVid);
-            var r = await fetch(API.ytplay, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: nextYtUrl})
-            });
-            var d = await r.json();
-            if (d && d.status && d.result && d.result.download && d.result.download.audio) {
-                var rawAudioUrl = d.result.download.audio;
-                audioUrlCache[nextVid] = rawAudioUrl;
-
-                var srcUrl = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(rawAudioUrl)) : rawAudioUrl;
-                var preAudio = new Audio();
-                preAudio.preload = 'auto';
-                preAudio.src = srcUrl;
-            }
-        }
-    } catch(e) {
-    } finally {
-        isPreloadingNext = false;
-    }
+    preloadAdjacentTracks();
 }
 
 function SP(){
@@ -912,6 +932,8 @@ function loadTrack(track,resumeAt){
     try{AU.pause();}catch(e){}
     updateMediaSessionMetadata(track);
     fetchAudioAndPlay(track,resumeAt);
+    // Resolusi URL lagu sekitar dilakukan di background agar Next/Previous tidak menunggu dari awal.
+    setTimeout(preloadAdjacentTracks, 80);
 }
 
 async function fetchAudioAndPlay(track,resumeAt){
@@ -925,22 +947,21 @@ async function fetchAudioAndPlay(track,resumeAt){
                 if(typeof showToast === 'function') showToast('Mode Offline: Lagu ini belum tersimpan di cache PWA');
                 return;
             }
-            var ytUrl=track.ytUrl||('https://youtube.com/watch?v='+vid);
-            var r=await fetch(API.ytplay,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:ytUrl})});
-            var d=await r.json();
-            if(d&&d.status&&d.result&&d.result.download&&d.result.download.audio){
-                audioUrl = d.result.download.audio;
-                audioUrlCache[vid] = audioUrl;
-                savePwaCaches();
-            }
+            audioUrl = await resolveAudioUrl(track);
         }
         if(S.ct!==track)return;
         if(audioUrl){
+            var preloaded = prefetchAudioElements[vid];
+            var nextSrc = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl;
+            if (preloaded && preloaded.src) {
+                nextSrc = preloaded.src;
+                delete prefetchAudioElements[vid];
+            }
             if (typeof audioCtx !== 'undefined' && audioCtx) {
-                AU.src = '/api/proxy-audio?url=' + encodeURIComponent(audioUrl);
+                AU.src = nextSrc;
             } else {
                 AU.removeAttribute('crossorigin');
-                AU.src = audioUrl;
+                AU.src = nextSrc;
             }
             if(resumeAt){
                 var onMeta=function(){AU.currentTime=resumeAt;AU.removeEventListener('loadedmetadata',onMeta);};
