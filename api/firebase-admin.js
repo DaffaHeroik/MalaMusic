@@ -1,6 +1,8 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, getApp, cert } = require('firebase-admin/app');
+const { getAuth: getFirebaseAuth } = require('firebase-admin/auth');
+const { getDatabase: getFirebaseDatabase } = require('firebase-admin/database');
 
-let initialized = false;
+let appInstance = null;
 
 function getServiceAccount() {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
@@ -29,27 +31,25 @@ function getServiceAccount() {
 }
 
 function getAdminApp() {
-    if (!initialized) {
-        if (admin.apps.length) {
-            initialized = true;
-            return admin.app();
-        }
-        admin.initializeApp({
-            credential: admin.credential.cert(getServiceAccount()),
-            databaseURL: process.env.FIREBASE_DATABASE_URL || 'https://heroikzre-default-rtdb.asia-southeast1.firebasedatabase.app'
-        });
-        initialized = true;
+    if (appInstance) return appInstance;
+    const existingApps = getApps();
+    if (existingApps.length > 0) {
+        appInstance = getApp();
+        return appInstance;
     }
-    return admin.app();
+    appInstance = initializeApp({
+        credential: cert(getServiceAccount()),
+        databaseURL: process.env.FIREBASE_DATABASE_URL || 'https://heroikzre-default-rtdb.asia-southeast1.firebasedatabase.app'
+    });
+    return appInstance;
 }
 
 function getAuth() {
-    return getAdminApp() && admin.auth();
+    return getFirebaseAuth(getAdminApp());
 }
 
 function getDatabase() {
-    getAdminApp();
-    return admin.database();
+    return getFirebaseDatabase(getAdminApp());
 }
 
-module.exports = { admin, getAdminApp, getAuth, getDatabase };
+module.exports = { getAdminApp, getAuth, getDatabase };
