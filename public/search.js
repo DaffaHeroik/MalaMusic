@@ -36,8 +36,11 @@ var Search={
     ],
     renderRecs(){
         var rc=gid('search-recs');if(!rc)return;
+        var recent=[];
+        try { recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]'); } catch(e) {}
+        var recentHtml=recent.length ? '<div><h2 class="text-base font-bold mb-3 flex items-center gap-2 text-white"><i data-lucide="history" class="w-4 h-4 text-rose-400"></i><span>Pencarian Terakhir</span></h2><div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">'+recent.slice(0,6).map(function(q){return '<button onclick="Search.query(\''+esJs(q)+'\')" class="shrink-0 px-3.5 py-2 rounded-full bg-white/[.06] border border-white/10 text-xs text-white/80 hover:bg-white/10 flex items-center gap-1.5"><i data-lucide="search" class="w-3.5 h-3.5"></i>'+es(q)+'</button>';}).join('')+'</div></div>' : '';
         if(S.rec0&&S.rec1&&S.rec2){Search.showRecs();return;}
-        rc.innerHTML=Search.REC_ROWS.map(function(row){
+        rc.innerHTML=recentHtml + Search.REC_ROWS.map(function(row){
             return '<div><div class="h-5 w-32 bg-white/10 rounded mb-3 animate-pulse"></div><div class="flex gap-3 overflow-x-auto hide-scrollbar pb-1">'+
                 Array(4).fill(0).map(function(){return '<div class="flex-shrink-0 w-32 animate-pulse"><div class="w-32 h-32 rounded-xl bg-white/5 mb-2"></div><div class="h-3 bg-white/10 rounded w-3/4"></div></div>';}).join('')+
             '</div></div>';
@@ -178,6 +181,7 @@ var Search={
         sf.addEventListener('submit',async function(e){
             e.preventDefault();S.sq=si.value.trim();gid('suggestions').classList.add('hidden');
             if(!S.sq){S.ar=[];S.pr=[];S.sr=[];Search.show();return;}
+            try { var recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]').filter(function(item){return item!==S.sq;}); recent.unshift(S.sq); localStorage.setItem('mala_recent_searches',JSON.stringify(recent.slice(0,8))); } catch(e) {}
             var url=location.origin+'/search/'+encodeURIComponent(S.sq);
             history.pushState({},'',url);
             Search.show(true);
@@ -195,7 +199,7 @@ var Search={
                 S.filter = 'songs';
                 Search.updateFilterUI();
                 Search.apply();
-            }catch(e){S.ar=[];S.pr=[];Search.show();}
+            }catch(e){S.ar=[];S.pr=[];S.sr=[];c=gid('search-results');if(c)c.innerHTML='<div class="text-center mt-10 p-6 rounded-2xl bg-red-500/10 border border-red-400/20"><i data-lucide="wifi-off" class="w-8 h-8 text-red-300 mx-auto mb-3"></i><h3 class="text-white font-bold mb-1">Pencarian gagal</h3><p class="text-white/60 text-xs mb-4">Periksa koneksi lalu coba lagi.</p><button onclick="Search.query(\''+esJs(S.sq)+'\')" class="px-4 py-2 rounded-full bg-white text-black text-xs font-bold">Coba Lagi</button></div>';lucide.createIcons();}
         });
         si.addEventListener('input',function(){
             var q=this.value.trim();
@@ -224,7 +228,7 @@ var Search={
         if(!S.sq){c.innerHTML='';if(rc)rc.style.display='';return;}
         if(rc)rc.style.display='none';
         if(loading){c.innerHTML='<div class="text-center mt-10"><div class="w-8 h-8 border-3 border-[#cfd3d8] border-t-transparent rounded-full animate-spin mx-auto"></div></div>';return;}
-        if(S.sr.length===0){c.innerHTML='<p class="text-center text-white/70 mt-10">Tidak ada hasil</p>';return;}
+        if(S.sr.length===0){c.innerHTML='<div class="text-center mt-10 p-8 rounded-2xl bg-white/[.04] border border-white/10"><i data-lucide="search-x" class="w-10 h-10 text-white/30 mx-auto mb-3"></i><h3 class="text-white font-bold mb-1">Tidak ada hasil</h3><p class="text-white/60 text-xs">Coba kata kunci lain, nama artis, atau judul lagu.</p></div>';lucide.createIcons();return;}
         
         if (S.filter === 'songs') {
             c.innerHTML=S.sr.map(function(t,i){
