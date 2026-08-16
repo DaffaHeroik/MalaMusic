@@ -29,11 +29,10 @@ var Library={
                 '</button>' +
                 '<button onclick="Library.setTab(\'songs\')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ' + (isSongsTab ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white') + '">' +
                     '<i data-lucide="heart" class="w-4 h-4 ' + (isSongsTab ? 'text-rose-500' : '') + '"></i>' +
-                    '<span>Songs</span>' +
+                    '<span>Lagu Disukai</span>' +
                 '</button>' +
             '</div>' +
             '<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">' +
-                '<button onclick="App.switch(\'liked\')" class="shrink-0 px-4 py-2 rounded-full bg-rose-500/15 border border-rose-400/20 text-rose-200 text-xs font-bold flex items-center gap-1.5"><i data-lucide="heart" class="w-3.5 h-3.5"></i> Lagu Disukai</button>' +
                 '<button onclick="App.switch(\'offline\')" class="shrink-0 px-4 py-2 rounded-full bg-cyan-500/15 border border-cyan-400/20 text-cyan-200 text-xs font-bold flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Mode Offline</button>' +
             '</div>' +
         '</div>' +
