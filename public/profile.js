@@ -1,78 +1,73 @@
 var Profile = {
-    render() {
+    render: function() {
         var el = gid('view-dev');
-        if(!el) return;
+        if (!el) return;
+        var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
+        var liked = typeof getLikedSongs === 'function' ? getLikedSongs() : [];
+        var offline = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
+        var recent = [];
+        try { recent = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch (_) {}
+
         el.innerHTML = `
-        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
-            <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md">Profil</h1>
-        </div>
-        <div class="pt-6 px-4 text-center">
-            <div class="relative w-24 h-24 rounded-full mx-auto mb-6 glass-strong shine-sweep flex items-center justify-center overflow-hidden shadow-black/50">
-                <i data-lucide="music" class="w-12 h-12 text-white/60 absolute"></i>
-                <img src="/logo.png" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'" />
-            </div>
-            <h1 class="text-3xl font-black chrome-text mb-1">MalaMusic</h1>
-            <p class="text-[#b3b3b3] text-sm mb-6">Streaming Musik YouTube dengan Lirik</p>
-            
-            <div class="glass rounded-2xl p-5 max-w-sm mx-auto space-y-3 text-left mb-6">
-                <h3 class="text-white font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <i data-lucide="smartphone" class="w-4 h-4 text-rose-400"></i> Aplikasi & PWA
-                </h3>
-                <div class="flex justify-between"><span class="text-white/70 text-sm">Nama</span><span class="text-white font-medium text-sm">MalaMusic</span></div>
-                <div class="flex justify-between"><span class="text-white/70 text-sm">Versi</span><span class="text-white font-medium text-sm">v2.0.0</span></div>
-                <div class="flex justify-between"><span class="text-white/70 text-sm">Mode Offline PWA</span><span class="text-emerald-400 font-bold text-sm flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Aktif</span></div>
-                <div class="flex justify-between"><span class="text-white/70 text-sm">Service Worker</span><span class="text-white font-medium text-sm">${'serviceWorker' in navigator ? 'Terdaftar' : 'Tidak didukung'}</span></div>
-                <div class="pt-2 border-t border-white/10 flex items-center justify-between">
-                    <span class="text-white/70 text-xs">Cache PWA tersimpan</span>
-                    <button onclick="if(typeof clearPwaCache==='function') clearPwaCache();" class="text-xs text-rose-400 hover:text-rose-300 font-semibold underline active:scale-95">Bersihkan Cache</button>
-                </div>
-            </div>
-
-            <div class="glass rounded-2xl p-5 max-w-sm mx-auto space-y-4 text-left mb-6">
-                <h3 class="text-white font-bold text-sm uppercase tracking-wider mb-2 border-b border-white/10 pb-2 flex items-center gap-2">
-                    <i data-lucide="code" class="w-4 h-4 text-rose-400"></i> Developer Profile
-                </h3>
-                <div class="flex justify-between items-center">
-                    <span class="text-white/70 text-sm font-medium">Developed by</span>
-                    <div class="flex items-center gap-2">
-                        <img src="/dev.png" class="w-6 h-6 rounded-full object-cover border border-white/10" referrerPolicy="no-referrer" onerror="this.src='/logo.png'" />
-                        <span class="text-white font-bold text-sm">MalaMusic</span>
+        <div class="min-h-full bg-[#0b0b0f]">
+            <div class="relative overflow-hidden px-5 sm:px-8 pt-8 pb-7 border-b border-white/10" style="background: radial-gradient(circle at 72% 0%, rgba(244,63,94,.34), transparent 42%), linear-gradient(135deg, #25202a, #0b0b0f 70%);">
+                <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+                <div class="relative flex items-end gap-5 sm:gap-7 max-w-5xl mx-auto">
+                    <div id="profile-avatar-wrap" class="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0 overflow-hidden bg-gradient-to-br from-rose-400 to-purple-700 shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
+                        <img id="profile-avatar" src="/logo.png" class="w-full h-full object-cover" alt="Profil" onerror="this.style.display='none'" />
+                        <i data-lucide="user" class="w-12 h-12 text-white/80"></i>
+                    </div>
+                    <div class="min-w-0 pb-1">
+                        <p class="text-xs font-bold uppercase tracking-[.2em] text-white/60 mb-2">Profil</p>
+                        <h1 id="profile-name" class="text-3xl sm:text-5xl font-black text-white tracking-tight truncate">Pendengar MalaMusic</h1>
+                        <p id="profile-subtitle" class="text-sm text-white/60 mt-2">Kelola musik dan koleksi favoritmu</p>
                     </div>
                 </div>
-
-                <div class="pt-1">
-                    <div class="text-xs font-semibold text-white/60 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <i data-lucide="heart" class="w-3.5 h-3.5 text-red-400 fill-current"></i> Lagu Yang Disukai
-                    </div>
-                    <p class="text-sm font-medium text-white/90 bg-white/5 p-2.5 rounded-xl border border-white/5">Semua lagu XXXTENTACION</p>
-                </div>
-
-                <div>
-                    <div class="text-xs font-semibold text-white/60 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <i data-lucide="disc" class="w-3.5 h-3.5 text-purple-400"></i> Playlist Yang Disukai
-                    </div>
-                    <p class="text-sm font-medium text-white/90 bg-white/5 p-2.5 rounded-xl border border-white/5">Semua album XXXTENTACION</p>
-                </div>
             </div>
 
-            <div class="glass rounded-2xl p-5 max-w-sm mx-auto text-left mb-6" id="google-account-card">
-                <h3 class="text-white font-bold text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <i data-lucide="log-in" class="w-4 h-4 text-rose-400"></i> Akun Google
-                </h3>
-                <div id="google-account-status" class="text-sm text-white/70 mb-3">Memeriksa status login...</div>
-                <div id="google-account-actions" class="space-y-2"></div>
-                <div id="google-liked-list" class="mt-4 space-y-2"></div>
-            </div>
-            
-            <button id="pwa-install-btn" onclick="installPWA()" class="${typeof isStandaloneApp !== 'undefined' && isStandaloneApp ? 'hidden ' : ''}w-full max-w-sm mx-auto btn-chrome font-bold py-4 rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-2 mb-3">
-                <i data-lucide="download" class="w-5 h-5"></i> Install Aplikasi
-            </button>
+            <div class="max-w-5xl mx-auto px-5 sm:px-8 py-6">
+                <div id="profile-account-panel" class="mb-7"></div>
 
-            <a href="https://whatsapp.com/channel/0029VbCsS2r2phHIV3O0nO1a" target="_blank" class="block w-full max-w-sm mx-auto btn-chrome font-bold py-4 rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-2">
-                <i data-lucide="message-circle" class="w-5 h-5"></i> Gabung Channel WhatsApp
-            </a>
+                <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
+                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${liked.length}</strong><span class="text-[11px] text-white/50">Lagu disukai</span></div>
+                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${playlists.length}</strong><span class="text-[11px] text-white/50">Playlist</span></div>
+                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${offline.length}</strong><span class="text-[11px] text-white/50">Offline</span></div>
+                </div>
+
+                <section class="mb-8">
+                    <div class="flex items-center justify-between mb-3"><h2 class="text-xl font-black text-white">Koleksi kamu</h2><button onclick="App.switch('library')" class="text-xs font-bold text-white/50 hover:text-white">Lihat semua</button></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="App.switch('liked')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#5436a3] to-[#c53d70] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="heart" class="w-8 h-8 text-white fill-current mb-auto"></i><span class="text-white font-bold text-sm">Lagu Disukai</span><span class="text-white/60 text-xs mt-1">${liked.length} lagu</span></button>
+                        <button onclick="App.switch('offline')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#164e63] to-[#0f766e] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="download" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Mode Offline</span><span class="text-white/60 text-xs mt-1">${offline.length} lagu</span></button>
+                        <button onclick="App.switch('library')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#3b3b3b] to-[#111] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="library" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Playlist Kamu</span><span class="text-white/60 text-xs mt-1">${playlists.length} playlist</span></button>
+                        <button onclick="GoogleAccount.syncLiked()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="refresh-cw" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Sinkronkan</span><span class="text-white/60 text-xs mt-1">Dari Google</span></button>
+                    </div>
+                </section>
+
+                <section class="mb-8">
+                    <div class="flex items-center justify-between mb-3"><h2 class="text-xl font-black text-white">Aktivitas terbaru</h2><button onclick="showToast('Riwayat pemutaran akan hadir di versi berikutnya')" class="text-xs font-bold text-white/50 hover:text-white">Lihat semua</button></div>
+                    <div id="profile-recent-list" class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden"></div>
+                </section>
+
+                <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
+                    <button onclick="GoogleAccount.login()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="log-in" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Akun Google</strong><span class="block text-xs text-white/50">Login untuk mengambil Lagu Disukai dari YouTube Music</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                    <button onclick="showToast('Pengaturan profil akan hadir setelah autentikasi selesai')" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar dan tampilan</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                </section>
+
+                <p class="text-center text-xs text-white/30 pb-4">MalaMusic • Dengarkan musik favoritmu</p>
+            </div>
         </div>`;
+
+        var recentEl = document.getElementById('profile-recent-list');
+        if (recentEl) {
+            recentEl.innerHTML = recent.length ? recent.slice(0, 4).map(function(track) {
+                var id = track.id || track.videoId;
+                return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
+            }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru. Mulai dengarkan lagu dari Beranda.</div>';
+        }
+
         lucide.createIcons();
+        GoogleAccount.refresh();
     }
 };
 
@@ -80,62 +75,41 @@ var Dev = Profile;
 
 var GoogleAccount = {
     escape: function(value) {
-        return String(value || '').replace(/[&<>"']/g, function(char) {
-            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[char];
-        });
+        return String(value || '').replace(/[&<>"']/g, function(char) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[char]; });
     },
-    login: function() {
-        window.location.href = '/api/google-auth?action=login';
-    },
-    logout: async function() {
-        await fetch('/api/google-auth?action=logout', { credentials: 'same-origin' });
-        Profile.render();
-    },
+    login: function() { window.location.href = '/api/google-auth?action=login'; },
+    logout: async function() { await fetch('/api/google-auth?action=logout', { credentials: 'same-origin' }); Profile.render(); },
     syncLiked: async function() {
-        var list = document.getElementById('google-liked-list');
-        if (!list) return;
-        list.innerHTML = '<div class="text-sm text-white/60">Memuat lagu yang disukai...</div>';
         try {
             var response = await fetch('/api/google-auth?action=liked&maxResults=25', { credentials: 'same-origin' });
             var data = await response.json();
-            if (!response.ok || !data.status) throw new Error(data.message || 'Gagal mengambil data Like');
-            if (!data.items || !data.items.length) {
-                list.innerHTML = '<div class="text-sm text-white/60">Belum ada video yang diberi Like atau data tidak tersedia.</div>';
-                return;
-            }
-            list.innerHTML = '<div class="text-xs text-white/50 mb-2">' + data.items.length + ' item ditemukan</div>' + data.items.map(function(item) {
-                return '<button onclick="location.href=\'/?play=' + encodeURIComponent(item.id) + '\'" class="w-full flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors">' +
-                    '<img src="' + GoogleAccount.escape(item.thumbnail) + '" class="w-10 h-10 rounded-lg object-cover" loading="lazy" referrerpolicy="no-referrer" />' +
-                    '<span class="min-w-0"><span class="block text-sm text-white font-medium truncate">' + GoogleAccount.escape(item.title) + '</span><span class="block text-xs text-white/50 truncate">' + GoogleAccount.escape(item.channelTitle) + '</span></span>' +
-                    '</button>';
-            }).join('');
-        } catch (error) {
-            list.innerHTML = '<div class="text-sm text-rose-300">' + GoogleAccount.escape(error.message) + '</div>';
-        }
+            if (!response.ok || !data.status) throw new Error(data.message || 'Login Google diperlukan');
+            var list = data.items || [];
+            if (typeof localStorage !== 'undefined') localStorage.setItem('google_liked_tracks', JSON.stringify(list));
+            showToast(list.length + ' lagu disukai berhasil disinkronkan');
+            Profile.render();
+        } catch (error) { showToast(error.message); }
     },
     refresh: async function() {
-        var status = document.getElementById('google-account-status');
-        var actions = document.getElementById('google-account-actions');
-        if (!status || !actions) return;
+        var status;
         try {
             var response = await fetch('/api/google-auth?action=me', { credentials: 'same-origin' });
             var data = await response.json();
-            if (!response.ok || !data.authenticated) {
-                status.innerHTML = 'Login untuk mengakses lagu yang kamu sukai di YouTube/YouTube Music.';
-                actions.innerHTML = '<button onclick="GoogleAccount.login()" class="w-full bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-white/90"><span class="text-lg font-black">G</span> Login dengan Google</button>';
-                return;
+            var name = document.getElementById('profile-name');
+            var subtitle = document.getElementById('profile-subtitle');
+            var avatar = document.getElementById('profile-avatar');
+            var panel = document.getElementById('profile-account-panel');
+            if (!panel) return;
+            if (response.ok && data.authenticated) {
+                var user = data.user || {};
+                if (name) name.textContent = user.name || 'Pengguna MalaMusic';
+                if (subtitle) subtitle.textContent = user.email || 'Akun Google terhubung';
+                if (avatar && user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
+                panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Google terhubung</span><button onclick="GoogleAccount.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
+            } else {
+                panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-white/[.05] border border-white/10 p-4"><i data-lucide="user-plus" class="w-5 h-5 text-rose-400"></i><span class="text-sm text-white/70 flex-1">Login untuk membuat profil personal dan sinkronkan Lagu Disukai.</span><button onclick="GoogleAccount.login()" class="px-4 py-2 rounded-full bg-white text-black text-xs font-black hover:bg-white/90">Login Google</button></div>';
+                lucide.createIcons();
             }
-            var user = data.user || {};
-            status.innerHTML = '<div class="flex items-center gap-3"><img src="' + GoogleAccount.escape(user.picture) + '" class="w-10 h-10 rounded-full" referrerpolicy="no-referrer" /><span><strong class="text-white block">' + GoogleAccount.escape(user.name) + '</strong><span class="text-xs text-white/50">' + GoogleAccount.escape(user.email) + '</span></span></div>';
-            actions.innerHTML = '<button onclick="GoogleAccount.syncLiked()" class="w-full btn-chrome font-bold py-3 rounded-xl">Sinkronkan Lagu Disukai</button><button onclick="GoogleAccount.logout()" class="w-full text-white/60 text-sm py-2 hover:text-white">Logout</button>';
-        } catch (_) {
-            status.textContent = 'Status akun belum dapat diperiksa.';
-        }
+        } catch (_) { status = 'offline'; }
     }
-};
-
-var _originalProfileRender = Profile.render;
-Profile.render = function() {
-    _originalProfileRender.call(Profile);
-    GoogleAccount.refresh();
 };
