@@ -79,3 +79,20 @@ Sebelum menjalankan fitur ini, aktifkan **YouTube Data API v3** di Google Cloud 
 Redirect URI harus sama persis dengan URL yang didaftarkan di Google Cloud Console. Untuk lokal, gunakan `http://localhost:3000/api/google-auth?action=callback`. Untuk hosting, gunakan domain hosting sementara yang aktif.
 
 MalaMusic memakai API resmi YouTube untuk mengambil video yang diberi Like. YouTube Music tidak menyediakan endpoint publik terpisah untuk playlist lagu yang disukai, sehingga hasil sinkronisasi berupa item video YouTube yang terkait dengan rating Like akun pengguna.
+
+
+## Email OTP Authentication
+
+MalaMusic sekarang menggunakan login dan registrasi melalui kode OTP email. Untuk tahap ini, hanya alamat `@gmail.com` yang diterima dan email temporary/disposable tidak digunakan. Pengiriman menggunakan Resend dengan domain terverifikasi `malawalipayment.web.id`.
+
+Set environment variable berikut pada hosting:
+
+```env
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM=MalaMusic <otp@malawalipayment.web.id>
+SESSION_SECRET=minimum-32-character-random-secret
+```
+
+OTP berlaku selama 10 menit, memiliki cooldown pengiriman 60 detik, dan maksimal lima percobaan verifikasi. Sesi pengguna ditandatangani pada cookie HttpOnly. Untuk deployment serverless sementara, data akun bersifat minimal dan disimpan di sesi; database permanen dapat ditambahkan saat aplikasi berkembang.
+
+Google OAuth lama tetap ada di source sebagai opsi legacy untuk sinkronisasi YouTube, tetapi tidak lagi menjadi alur login utama MalaMusic.

@@ -400,7 +400,7 @@ var App={
             </div>
             <div class="spotify-user">
                 <i data-lucide="user-circle-2"></i>
-                <button onclick="App.switch('dev')" id="nav-dev" class="spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none" aria-label="Profil"><span>Profil & Akun Google</span></button>
+                <button onclick="App.switch('dev')" id="nav-dev" class="spotify-nav-item !min-h-0 !p-0 !bg-transparent !shadow-none" aria-label="Profil"><span>Profil & Akun</span></button>
             </div>
         </aside>`;
         

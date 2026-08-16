@@ -40,7 +40,7 @@ var Profile = {
                         <button onclick="App.switch('liked')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#5436a3] to-[#c53d70] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="heart" class="w-8 h-8 text-white fill-current mb-auto"></i><span class="text-white font-bold text-sm">Lagu Disukai</span><span class="text-white/60 text-xs mt-1">${liked.length} lagu</span></button>
                         <button onclick="App.switch('offline')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#164e63] to-[#0f766e] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="download" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Mode Offline</span><span class="text-white/60 text-xs mt-1">${offline.length} lagu</span></button>
                         <button onclick="App.switch('library')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#3b3b3b] to-[#111] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="library" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Playlist Kamu</span><span class="text-white/60 text-xs mt-1">${playlists.length} playlist</span></button>
-                        <button onclick="GoogleAccount.syncLiked()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="refresh-cw" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Sinkronkan</span><span class="text-white/60 text-xs mt-1">Dari Google</span></button>
+                        <button onclick="EmailAuth.open()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Akun Kamu</span><span class="text-white/60 text-xs mt-1">Login dengan OTP Gmail</span></button>
                     </div>
                 </section>
 
@@ -50,7 +50,8 @@ var Profile = {
                 </section>
 
                 <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
-                    <button onclick="GoogleAccount.login()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="log-in" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Akun Google</strong><span class="block text-xs text-white/50">Login untuk mengambil Lagu Disukai dari YouTube Music</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+                    <div id="profile-account-panel-secondary"></div>
+                    <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Akun MalaMusic</strong><span class="block text-xs text-white/50">Daftar atau masuk dengan kode OTP ke Gmail</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                     <button onclick="showToast('Pengaturan profil akan hadir setelah autentikasi selesai')" class="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-white/10 hover:bg-white/[.06] transition-colors"><i data-lucide="settings" class="w-5 h-5 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Pengaturan</strong><span class="block text-xs text-white/50">Preferensi pemutar dan tampilan</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
                 </section>
 
@@ -67,33 +68,68 @@ var Profile = {
         }
 
         lucide.createIcons();
-        GoogleAccount.refresh();
+        EmailAuth.refresh();
     }
 };
 
 var Dev = Profile;
 
-var GoogleAccount = {
+var EmailAuth = {
+    pendingEmail: '',
     escape: function(value) {
         return String(value || '').replace(/[&<>"']/g, function(char) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[char]; });
     },
-    login: function() { window.location.href = '/api/google-auth?action=login'; },
-    logout: async function() { await fetch('/api/google-auth?action=logout', { credentials: 'same-origin' }); Profile.render(); },
-    syncLiked: async function() {
+    open: function() {
+        var panel = document.getElementById('profile-account-panel');
+        if (!panel) return;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        this.refresh();
+    },
+    renderLogin: function(message) {
+        var panel = document.getElementById('profile-account-panel');
+        if (!panel) return;
+        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="mail" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">Masuk atau daftar dengan Gmail</strong><span class="block text-xs text-white/50 mt-1">Kami kirim kode OTP sekali pakai ke email kamu.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.request()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Kirim OTP</button></div>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+        lucide.createIcons();
+    },
+    renderVerify: function(email, message) {
+        var panel = document.getElementById('profile-account-panel');
+        if (!panel) return;
+        panel.innerHTML = '<div class="rounded-2xl bg-rose-500/10 border border-rose-400/20 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-300 mt-0.5"></i><div><strong class="block text-sm text-white">Masukkan kode OTP</strong><span class="block text-xs text-white/60 mt-1">Kode dikirim ke <b class="text-white">' + this.escape(email) + '</b> dan berlaku 10 menit.</span></div></div><div class="flex flex-col sm:flex-row gap-2"><input id="otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" class="flex-1 min-w-0 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-lg tracking-[.35em] text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.verify()" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">Verifikasi</button></div><button onclick="EmailAuth.renderLogin()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Gunakan email lain</button>' + (message ? '<p class="mt-3 text-xs text-rose-200">' + this.escape(message) + '</p>' : '') + '</div>';
+        lucide.createIcons();
+    },
+    request: async function() {
+        var input = document.getElementById('otp-email');
+        var email = input ? input.value.trim().toLowerCase() : '';
+        if (!/^[^@\s]+@gmail\.com$/i.test(email)) return this.renderLogin('Gunakan alamat Gmail yang valid (@gmail.com).');
         try {
-            var response = await fetch('/api/google-auth?action=liked&maxResults=25', { credentials: 'same-origin' });
+            var response = await fetch('/api/email-auth?action=request', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
             var data = await response.json();
-            if (!response.ok || !data.status) throw new Error(data.message || 'Login Google diperlukan');
-            var list = data.items || [];
-            if (typeof localStorage !== 'undefined') localStorage.setItem('google_liked_tracks', JSON.stringify(list));
-            showToast(list.length + ' lagu disukai berhasil disinkronkan');
+            if (!response.ok || !data.status) throw new Error(data.message || 'OTP gagal dikirim.');
+            this.pendingEmail = email;
+            showToast('OTP dikirim ke ' + email);
+            this.renderVerify(email);
+        } catch (error) { this.renderLogin(error.message); }
+    },
+    verify: async function() {
+        var input = document.getElementById('otp-code');
+        var otp = input ? input.value.trim() : '';
+        if (!/^\d{6}$/.test(otp)) return this.renderVerify('', 'Masukkan 6 digit kode OTP.');
+        try {
+            var response = await fetch('/api/email-auth?action=verify', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otp: otp }) });
+            var data = await response.json();
+            if (!response.ok || !data.status) throw new Error(data.message || 'OTP tidak valid.');
+            showToast('Berhasil masuk ke MalaMusic');
             Profile.render();
-        } catch (error) { showToast(error.message); }
+        } catch (error) { this.renderVerify(this.pendingEmail, error.message); }
+    },
+    logout: async function() {
+        await fetch('/api/email-auth?action=logout', { credentials: 'same-origin' });
+        showToast('Kamu sudah logout');
+        Profile.render();
     },
     refresh: async function() {
-        var status;
         try {
-            var response = await fetch('/api/google-auth?action=me', { credentials: 'same-origin' });
+            var response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin' });
             var data = await response.json();
             var name = document.getElementById('profile-name');
             var subtitle = document.getElementById('profile-subtitle');
@@ -103,13 +139,21 @@ var GoogleAccount = {
             if (response.ok && data.authenticated) {
                 var user = data.user || {};
                 if (name) name.textContent = user.name || 'Profil Saya';
-                if (subtitle) subtitle.textContent = user.email || 'Koleksi musik dan aktivitas mendengarkan';
+                if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
                 if (avatar && user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
-                panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Google terhubung</span><button onclick="GoogleAccount.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
+                panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Gmail terhubung: ' + this.escape(user.email) + '</span><button onclick="EmailAuth.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
             } else {
-                panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-white/[.05] border border-white/10 p-4"><i data-lucide="user-plus" class="w-5 h-5 text-rose-400"></i><span class="text-sm text-white/70 flex-1">Login untuk membuat profil personal dan sinkronkan Lagu Disukai.</span><button onclick="GoogleAccount.login()" class="px-4 py-2 rounded-full bg-white text-black text-xs font-black hover:bg-white/90">Login Google</button></div>';
-                lucide.createIcons();
+                name && (name.textContent = 'Profil Saya');
+                subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
+                this.renderLogin();
             }
-        } catch (_) { status = 'offline'; }
+            lucide.createIcons();
+        } catch (_) { this.renderLogin('Server autentikasi belum siap.'); }
     }
+};
+
+var GoogleAccount = {
+    login: function() { EmailAuth.open(); },
+    logout: function() { return EmailAuth.logout(); },
+    syncLiked: function() { showToast('Sinkronisasi YouTube memerlukan koneksi Google OAuth.'); }
 };
