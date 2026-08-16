@@ -84,6 +84,8 @@ function handleImgError(img) {
 }
 const S={ht:[],sr:[],ar:[],hc:[],hcp:[],hca:[],sq:'',filter:'all',ct:null,pl:[],pi:-1,ps:'',ip:false,il:false,rm:'all',isShuffle:false,currentAccentColor:'#f43f5e',autoNext:true,iv:null,pt:0,pd:0,at:'home',ld:{type:'none',lines:[]},cli:-1,lo:false,lyricOffset:0,playbackRate:1.0,sleepSecondsLeft:0,sleepEndWithTrack:false,volume:1.0,lastVolume:1.0};
 try{S.playbackRate=parseFloat(localStorage.getItem('malamusic_playback_rate'))||1.0;}catch(e){S.playbackRate=1.0;}
+try{S.dataSaver=localStorage.getItem('malamusic_data_saver')==='true';}catch(e){S.dataSaver=false;}
+function toggleDataSaver(){S.dataSaver=!S.dataSaver;try{localStorage.setItem('malamusic_data_saver',String(S.dataSaver));}catch(e){};showToast(S.dataSaver?'Data Saver aktif':'Data Saver nonaktif');}
 try{var storedAutoNext = localStorage.getItem('malamusic_auto_next');if(storedAutoNext!==null){S.autoNext = storedAutoNext==='true';}}catch(e){}
 function fm(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),se=Math.floor(s%60);return m+':'+(se<10?'0':'')+se;}
 function es(t){if(!t)return'';const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
@@ -352,6 +354,7 @@ function prefetchTrackAudio(track) {
 }
 
 function preloadAdjacentTracks() {
+    if (S.dataSaver) return;
     if (!S.pl || !S.pl.length || S.pi < 0) return;
     var adjacent = [];
     if (S.pl.length > 1) {

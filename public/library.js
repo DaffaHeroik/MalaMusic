@@ -236,10 +236,22 @@ var Library={
         }
     },
     currentPlaylistId: null,
+    playlistQuery: '',
+    playlistSort: 'added',
+    setPlaylistQuery(value){
+        Library.playlistQuery = String(value || '').trim().toLowerCase();
+        if (Library.currentPlaylistId) Library.open(Library.currentPlaylistId);
+    },
+    setPlaylistSort(value){
+        Library.playlistSort = value || 'added';
+        if (Library.currentPlaylistId) Library.open(Library.currentPlaylistId);
+    },
     open(id){
         var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===id;});if(!pl)return;
         Library.currentPlaylistId = id;
         var offlineCount = pl.songs.filter(function(song) { return typeof isOfflineSong === 'function' && isOfflineSong(song); }).length;
+        var visibleSongs = pl.songs.map(function(song, index) { return { song: song, index: index }; }).filter(function(item) { var text = [item.song.title, item.song.artist].join(' ').toLowerCase(); return !Library.playlistQuery || text.indexOf(Library.playlistQuery) !== -1; });
+        visibleSongs.sort(function(a, b) { if (Library.playlistSort === 'title') return String(a.song.title || '').localeCompare(String(b.song.title || ''), 'id'); if (Library.playlistSort === 'artist') return String(a.song.artist || '').localeCompare(String(b.song.artist || ''), 'id'); return a.index - b.index; });
         var url = location.origin + '/playlist/' + id;
         history.pushState({}, '', url);
         
@@ -272,7 +284,7 @@ var Library={
                         <div>
                             <p class="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-1">PLAYLIST LOKAL</p>
                             <h1 class="text-3xl md:text-5xl font-black text-white mb-2 leading-tight line-clamp-2">${es(pl.name)}</h1>
-                            <p class="text-white text-xs md:text-sm line-clamp-2">${pl.songs.length} lagu</p>
+                            <p class="text-white text-xs md:text-sm line-clamp-2">${visibleSongs.length === pl.songs.length ? pl.songs.length : visibleSongs.length + ' dari ' + pl.songs.length} lagu</p>
                         </div>
                     </div>
                 </div>
@@ -283,8 +295,9 @@ var Library={
         if(pl.songs.length===0){
             html+='<div class="text-center text-white/70 mt-10"><p>Belum ada lagu</p></div>';
         } else {
-            html+='<div id="playlist-songs-list" class="space-y-1 px-4">';
-            pl.songs.forEach(function(s,i){
+            html+='<div class="px-4 mb-4 flex items-center gap-2"><div class="relative flex-1"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/45"></i><input value="' + es(Library.playlistQuery) + '" oninput="Library.setPlaylistQuery(this.value)" placeholder="Cari di playlist" class="w-full rounded-xl bg-white/[.06] border border-white/10 pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-white/40 outline-none focus:border-white/30" /></div><select onchange="Library.setPlaylistSort(this.value)" class="rounded-xl bg-white/[.06] border border-white/10 px-2.5 py-2.5 text-xs text-white outline-none"><option value="added" ' + (Library.playlistSort === 'added' ? 'selected' : '') + '>Ditambahkan</option><option value="title" ' + (Library.playlistSort === 'title' ? 'selected' : '') + '>Judul A-Z</option><option value="artist" ' + (Library.playlistSort === 'artist' ? 'selected' : '') + '>Artis A-Z</option></select></div><div id="playlist-songs-list" class="space-y-1 px-4">';
+            if (!visibleSongs.length) html += '<div class="rounded-2xl border border-white/10 bg-white/[.04] p-8 text-center text-sm text-white/50">Tidak ada lagu yang cocok.</div>';
+            visibleSongs.forEach(function(entry,displayIndex){ var s = entry.song; var sourceIndex = entry.index;
                 var isCur = S.ct && (
                     S.ct.id === s.id ||
                     S.ct.videoId === s.videoId ||
@@ -307,7 +320,7 @@ var Library={
                 var rowBg = isPlay ? 'bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-transparent border border-rose-500/30 shadow-md' : (isCur ? 'bg-white/10 border border-white/20' : 'hover:bg-white/5 border border-transparent');
                 var titleClass = isCur ? 'text-rose-400 font-bold' : 'text-white font-medium';
 
-                html+='<div class="flex items-center gap-2 p-2 rounded-lg active:scale-[0.98] ' + rowBg + '"><div onclick="Library.playSong(\''+id+'\','+i+')" class="flex items-center gap-3 flex-1 cursor-pointer overflow-hidden"><div class="relative w-10 h-10 rounded overflow-hidden shrink-0"><img src="'+s.cover+'" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" /><div class="absolute inset-0 bg-black/80 ' + (isCur ? 'opacity-100' : 'opacity-0 group-hover:opacity-100') + ' transition-all flex items-center justify-center">' + iconOverlay + '</div></div><div class="truncate flex-1 min-w-0"><p class="text-sm truncate ' + titleClass + '">'+es(s.title)+'</p><p class="text-white/70 text-xs truncate">'+es(s.artist)+'</p></div></div>'+trackMenuButton(s)+'<button onclick="Library.removeSong(\''+id+'\','+i+')" class="text-white/70 hover:text-red-400 p-2 active:scale-90 shrink-0" title="Hapus"><i data-lucide="x" class="w-5 h-5"></i></button></div>';
+                html+='<div class="flex items-center gap-2 p-2 rounded-lg active:scale-[0.98] ' + rowBg + '"><div onclick="Library.playSong(\''+id+'\','+sourceIndex+')" class="flex items-center gap-3 flex-1 cursor-pointer overflow-hidden"><div class="relative w-10 h-10 rounded overflow-hidden shrink-0"><img src="'+s.cover+'" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" /><div class="absolute inset-0 bg-black/80 ' + (isCur ? 'opacity-100' : 'opacity-0 group-hover:opacity-100') + ' transition-all flex items-center justify-center">' + iconOverlay + '</div></div><div class="truncate flex-1 min-w-0"><p class="text-sm truncate ' + titleClass + '">'+es(s.title)+'</p><p class="text-white/70 text-xs truncate">'+es(s.artist)+'</p></div></div>'+trackMenuButton(s)+'<button onclick="Library.removeSong(\''+id+'\','+sourceIndex+')" class="text-white/70 hover:text-red-400 p-2 active:scale-90 shrink-0" title="Hapus"><i data-lucide="x" class="w-5 h-5"></i></button></div>';
             });
             html+='</div>';
         }

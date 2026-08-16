@@ -108,9 +108,11 @@ var Profile = {
         document.body.appendChild(modal); lucide.createIcons();
     },
     avatarKey: 'malamusic_profile_avatar',
+    remoteProfile: null,
     avatarSource: function(user) {
         var stored = '';
         try { stored = localStorage.getItem(this.avatarKey) || ''; } catch (_) {}
+        if (this.remoteProfile && /^data:image\//i.test(String(this.remoteProfile.picture || ''))) return this.remoteProfile.picture;
         if (/^data:image\//i.test(stored)) return stored;
         if (user && /^https?:\/\//i.test(String(user.picture || ''))) return String(user.picture);
         if (!user || !user.email) return '/logo-mark.png';
@@ -140,7 +142,16 @@ var Profile = {
                     var ctx = canvas.getContext('2d'); var size = Math.min(image.width, image.height);
                     var sx = (image.width - size) / 2, sy = (image.height - size) / 2;
                     ctx.drawImage(image, sx, sy, size, size, 0, 0, 256, 256);
-                    try { localStorage.setItem(Profile.avatarKey, canvas.toDataURL('image/jpeg', 0.88)); Profile.applyAvatar(null); showToast('Avatar berhasil diperbarui di perangkat ini'); } catch (_) { showToast('Avatar gagal disimpan'); }
+                    try {
+                        var picture = canvas.toDataURL('image/jpeg', 0.82);
+                        localStorage.setItem(Profile.avatarKey, picture);
+                        Profile.remoteProfile = Object.assign({}, Profile.remoteProfile || {}, { picture: picture });
+                        Profile.applyAvatar(null);
+                        fetch('/api/profile', { method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ picture: picture }) })
+                            .then(function(response) { return response.json().catch(function(){ return {}; }).then(function(data){ if (!response.ok || !data.status) throw new Error(data.message || 'gagal'); return data; }); })
+                            .then(function(data) { Profile.remoteProfile = data.profile || Profile.remoteProfile; showToast('Avatar tersimpan dan tersinkron di semua perangkat'); })
+                            .catch(function() { showToast('Avatar tersimpan di perangkat ini, tetapi sinkronisasi server gagal'); });
+                    } catch (_) { showToast('Avatar gagal disimpan'); }
                 };
                 image.onerror = function() { showToast('Format avatar tidak dapat dibaca'); };
                 image.src = reader.result;
@@ -151,7 +162,11 @@ var Profile = {
     },
     clearAvatar: function() {
         try { localStorage.removeItem(this.avatarKey); } catch (_) {}
-        this.applyAvatar(null); showToast('Avatar dikembalikan ke avatar akun');
+        this.remoteProfile = Object.assign({}, this.remoteProfile || {}, { picture: '' });
+        this.applyAvatar(null);
+        fetch('/api/profile', { method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ picture: '' }) })
+            .then(function(response) { if (!response.ok) throw new Error('gagal'); showToast('Avatar dikembalikan ke avatar akun'); })
+            .catch(function() { showToast('Avatar lokal dihapus, tetapi server belum berubah'); });
     },
     exportLocalData: function() {
         var keys = ['malamusic_liked_songs', 'malamusic_playlists', 'pwa_offline_tracks', 'malamusic_recent_tracks', 'mala_recent_searches', 'malamusic_auto_next', 'malamusic_bg_glow_enabled', 'malamusic_profile_avatar'];
@@ -172,6 +187,7 @@ var Profile = {
         var glow = typeof FullPlayer !== 'undefined' ? FullPlayer.bgGlowEnabled !== false : localStorage.getItem('malamusic_bg_glow_enabled') !== '0';
         var speed = typeof S !== 'undefined' ? Number(S.playbackRate || 1) : Number(localStorage.getItem('malamusic_playback_rate') || 1);
         var offlineCount = typeof getOfflineSongs === 'function' ? getOfflineSongs().length : 0;
+        var dataSaver = typeof S !== 'undefined' && S.dataSaver === true;
         var modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
         modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
@@ -194,16 +210,17 @@ var Profile = {
                 row('palette', 'Tema aplikasi', 'MalaMusic menggunakan tema gelap yang hemat baterai', 'showToast(\'Tema gelap sedang aktif\')') +
             '</div></section>' +
             '<section class="mb-5"><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Offline & data</p><div class="space-y-2">' +
+                toggle('gauge', 'Data Saver', dataSaver ? 'Preload lagu sekitar dimatikan' : 'Preload lagu sekitar tetap aktif', dataSaver, 'toggleDataSaver()') +
                 row('download', 'Mode Offline', offlineCount + ' lagu tersimpan di perangkat', 'App.switch(\'offline\'); this.closest(\'.fixed\').remove()') +
                 row('trash-2', 'Bersihkan cache offline', 'Hapus cache audio dan lirik yang dapat diunduh ulang', 'clearPwaCache(); this.closest(\'.fixed\').remove()') +
                 row('history', 'Riwayat pemutaran', 'Lihat atau hapus aktivitas lokal', 'Profile.showHistory(); this.closest(\'.fixed\').remove()') +
                 '<div class="grid grid-cols-2 gap-2"><button onclick="Profile.exportLocalData(); this.closest(\'.fixed\').remove()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Backup Data</button><button onclick="Profile.importLocalData(); this.closest(\'.fixed\').remove()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Pulihkan Data</button></div>' +
             '</div></section>' +
             '<section><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Profil & privasi</p><div class="space-y-2">' +
-                row('camera', 'Ganti avatar', 'Avatar diproses dan disimpan lokal di perangkat ini', 'Profile.chooseAvatar(); this.closest(\'.fixed\').remove()') +
+                row('camera', 'Ganti avatar', 'Avatar dikompres lalu disinkronkan ke semua perangkat', 'Profile.chooseAvatar(); this.closest(\'.fixed\').remove()') +
                 row('rotate-ccw', 'Kembalikan avatar bawaan', 'Hapus avatar lokal dan gunakan avatar akun', 'Profile.clearAvatar(); this.closest(\'.fixed\').remove()') +
                 row('globe-2', 'Playlist publik', 'Atur playlist yang boleh dibagikan', 'this.closest(\'.fixed\').remove(); document.getElementById(\'profile-public-playlists\')?.scrollIntoView({behavior:\'smooth\',block:\'center\'})') +
-                '<p class="text-[11px] text-white/35 pt-2">Versi MalaMusic 2.0 · Koleksi dan avatar lokal tetap berada di perangkat ini.</p>' +
+                '<p class="text-[11px] text-white/35 pt-2">Versi MalaMusic 2.0 · Avatar tersinkron, koleksi offline tetap berada di perangkat ini.</p>' +
             '</div></section>' +
         '</div>';
         document.body.appendChild(modal); lucide.createIcons();
@@ -292,11 +309,17 @@ var EmailAuth = {
                 if (name) name.textContent = user.name || 'Profil Saya';
                 if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
                 this.applyAvatar(user);
+                fetch('/api/profile', { credentials: 'same-origin', cache: 'no-store' }).then(function(profileResponse) { return profileResponse.ok ? profileResponse.json() : null; }).then(function(profileData) {
+                    if (requestId !== EmailAuth.refreshSeq || !profileData || !profileData.status) return;
+                    Profile.remoteProfile = profileData.profile || null;
+                    Profile.applyAvatar(user);
+                }).catch(function() {});
                 panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Gmail terhubung: ' + this.escape(user.email) + '</span><button onclick="EmailAuth.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
                 this.renderAuthActions(true, user);
             } else {
                 name && (name.textContent = 'Profil Saya');
                 subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
+                this.remoteProfile = null;
                 this.applyAvatar(null);
                 this.renderChoice();
                 this.renderAuthActions(false);
@@ -304,6 +327,7 @@ var EmailAuth = {
             lucide.createIcons();
         } catch (_) {
             if (requestId !== this.refreshSeq) return;
+            this.remoteProfile = null;
             this.renderChoice('Server autentikasi belum siap.');
             this.renderAuthActions(false);
         }
