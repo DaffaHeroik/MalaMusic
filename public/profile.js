@@ -13,9 +13,10 @@ var Profile = {
             <div class="relative overflow-hidden px-5 sm:px-8 pt-8 pb-7 border-b border-white/10" style="background: radial-gradient(circle at 72% 0%, rgba(244,63,94,.34), transparent 42%), linear-gradient(135deg, #25202a, #0b0b0f 70%);">
                 <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
                 <div class="relative flex items-end gap-5 sm:gap-7 max-w-5xl mx-auto">
-                    <div id="profile-avatar-wrap" class="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0 overflow-hidden bg-gradient-to-br from-rose-400 to-purple-700 shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
-                        <img id="profile-avatar" src="/logo-mark.png" class="w-full h-full object-contain p-2" alt="Profil" onerror="this.style.display='none'" />
+                    <div id="profile-avatar-wrap" class="relative w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0 overflow-hidden bg-gradient-to-br from-rose-400 to-purple-700 shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
+                        <img id="profile-avatar" src="/logo-mark.png" class="w-full h-full object-cover" alt="Avatar Profil" onerror="this.style.display='none'" />
                         <i data-lucide="user" class="w-12 h-12 text-white/80"></i>
+                        <button onclick="Profile.chooseAvatar()" class="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center shadow-xl hover:bg-black transition-colors" title="Ganti avatar"><i data-lucide="camera" class="w-4 h-4"></i></button>
                     </div>
                     <div class="min-w-0 pb-1">
                         <p class="text-xs font-bold uppercase tracking-[.2em] text-white/60 mb-2">Profil</p>
@@ -106,8 +107,54 @@ var Profile = {
         modal.innerHTML = '<div class="w-full sm:max-w-lg max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-white/10"><div><h3 class="font-black text-white text-lg">Riwayat Pemutaran</h3><p class="text-xs text-white/50 mt-1">Lagu yang baru kamu dengarkan</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[55vh] overflow-y-auto">' + rows + '</div><div class="p-4 border-t border-white/10 flex gap-2"><button onclick="localStorage.removeItem(\'mala_recent_tracks\');this.closest(\'.fixed\').remove();Profile.render();showToast(\'Riwayat dihapus\')" class="flex-1 rounded-xl bg-rose-500/15 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat</button><button onclick="this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-white/10 text-white py-3 text-xs font-bold">Tutup</button></div></div>';
         document.body.appendChild(modal); lucide.createIcons();
     },
+    avatarKey: 'malamusic_profile_avatar',
+    avatarSource: function(user) {
+        var stored = '';
+        try { stored = localStorage.getItem(this.avatarKey) || ''; } catch (_) {}
+        if (/^data:image\//i.test(stored)) return stored;
+        if (user && /^https?:\/\//i.test(String(user.picture || ''))) return String(user.picture);
+        if (!user || !user.email) return '/logo-mark.png';
+        var label = String(user.name || user.email.split('@')[0] || 'M').trim().split(/\s+/).slice(0, 2).map(function(part) { return part.charAt(0); }).join('').toUpperCase().slice(0, 2) || 'M';
+        var colors = ['#be123c', '#7c3aed', '#0369a1', '#047857', '#b45309'];
+        var color = colors[(String(user.email).length + label.charCodeAt(0)) % colors.length];
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" rx="128" fill="' + color + '"/><text x="128" y="145" text-anchor="middle" font-family="Arial,sans-serif" font-size="92" font-weight="700" fill="white">' + label + '</text></svg>';
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    },
+    applyAvatar: function(user) {
+        var avatar = document.getElementById('profile-avatar');
+        if (!avatar) return;
+        avatar.src = this.avatarSource(user);
+        avatar.style.display = 'block';
+    },
+    chooseAvatar: function() {
+        var input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp';
+        input.onchange = function() {
+            var file = input.files && input.files[0]; if (!file) return;
+            if (file.size > 8 * 1024 * 1024) { showToast('Avatar maksimal 8 MB'); return; }
+            var reader = new FileReader();
+            reader.onload = function() {
+                var image = new Image();
+                image.onload = function() {
+                    var canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+                    var ctx = canvas.getContext('2d'); var size = Math.min(image.width, image.height);
+                    var sx = (image.width - size) / 2, sy = (image.height - size) / 2;
+                    ctx.drawImage(image, sx, sy, size, size, 0, 0, 256, 256);
+                    try { localStorage.setItem(Profile.avatarKey, canvas.toDataURL('image/jpeg', 0.88)); Profile.applyAvatar(null); showToast('Avatar berhasil diperbarui di perangkat ini'); } catch (_) { showToast('Avatar gagal disimpan'); }
+                };
+                image.onerror = function() { showToast('Format avatar tidak dapat dibaca'); };
+                image.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    },
+    clearAvatar: function() {
+        try { localStorage.removeItem(this.avatarKey); } catch (_) {}
+        this.applyAvatar(null); showToast('Avatar dikembalikan ke avatar akun');
+    },
     exportLocalData: function() {
-        var keys = ['malamusic_liked_songs', 'malamusic_playlists', 'pwa_offline_tracks', 'malamusic_recent_tracks', 'mala_recent_searches', 'malamusic_auto_next', 'malamusic_bg_glow_enabled'];
+        var keys = ['malamusic_liked_songs', 'malamusic_playlists', 'pwa_offline_tracks', 'malamusic_recent_tracks', 'mala_recent_searches', 'malamusic_auto_next', 'malamusic_bg_glow_enabled', 'malamusic_profile_avatar'];
         var data = { exportedAt: new Date().toISOString(), app: 'MalaMusic', version: 1, data: {} };
         keys.forEach(function(key) { data.data[key] = localStorage.getItem(key); });
         var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -123,10 +170,42 @@ var Profile = {
     showSettings: function() {
         var autoNext = typeof S !== 'undefined' ? S.autoNext !== false : localStorage.getItem('malamusic_auto_next') !== 'false';
         var glow = typeof FullPlayer !== 'undefined' ? FullPlayer.bgGlowEnabled !== false : localStorage.getItem('malamusic_bg_glow_enabled') !== '0';
+        var speed = typeof S !== 'undefined' ? Number(S.playbackRate || 1) : Number(localStorage.getItem('malamusic_playback_rate') || 1);
+        var offlineCount = typeof getOfflineSongs === 'function' ? getOfflineSongs().length : 0;
         var modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
         modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
-        modal.innerHTML = '<div class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-center justify-between mb-5"><div><h3 class="font-black text-white text-lg">Pengaturan</h3><p class="text-xs text-white/50 mt-1">Preferensi MalaMusic di perangkat ini</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="space-y-2"><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="skip-forward" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Putar otomatis</strong><span class="block text-xs text-white/50">Lanjutkan ke lagu berikutnya</span></span><input type="checkbox" ' + (autoNext ? 'checked' : '') + ' onchange="toggleAutoNext()" class="accent-rose-500 w-5 h-5" /></label><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="sparkles" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Latar bergerak</strong><span class="block text-xs text-white/50">Warna cover pada pemutar</span></span><input type="checkbox" ' + (glow ? 'checked' : '') + ' onchange="FullPlayer.toggleBgGlow()" class="accent-rose-500 w-5 h-5" /></label></div><div class="mt-4 pt-4 border-t border-white/10 space-y-2"><p class="text-[11px] text-white/40">Koleksi saat ini tersimpan di perangkat ini. Buat backup sebelum mengganti browser atau perangkat.</p><div class="grid grid-cols-2 gap-2"><button onclick="Profile.exportLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Backup Data</button><button onclick="Profile.importLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Pulihkan Data</button></div><button onclick="localStorage.removeItem(\'mala_recent_tracks\');localStorage.removeItem(\'mala_recent_searches\');Profile.render();showToast(\'Data aktivitas lokal dihapus\')" class="w-full rounded-xl bg-rose-500/10 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat & Pencarian</button></div></div>';
+        var row = function(icon, title, detail, action) {
+            return '<button onclick="' + action + '" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-white/[.04] border border-white/10 text-left hover:bg-white/[.08] active:scale-[.99] transition-all"><span class="w-9 h-9 rounded-xl bg-white/[.07] flex items-center justify-center shrink-0"><i data-lucide="' + icon + '" class="w-4 h-4 text-white/75"></i></span><span class="min-w-0 flex-1"><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/45 mt-1">' + detail + '</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/35 shrink-0"></i></button>';
+        };
+        var toggle = function(icon, title, detail, checked, action) {
+            return '<label class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-white/[.04] border border-white/10 text-left cursor-pointer hover:bg-white/[.08] transition-all"><span class="w-9 h-9 rounded-xl bg-white/[.07] flex items-center justify-center shrink-0"><i data-lucide="' + icon + '" class="w-4 h-4 text-white/75"></i></span><span class="min-w-0 flex-1"><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/45 mt-1">' + detail + '</span></span><input type="checkbox" ' + (checked ? 'checked' : '') + ' onchange="' + action + '" class="accent-rose-500 w-5 h-5 shrink-0" /></label>';
+        };
+        modal.innerHTML = '<div class="w-full sm:max-w-xl max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5 sm:p-6">' +
+            '<div class="flex items-center justify-between mb-5"><div><h3 class="font-black text-white text-xl">Pengaturan</h3><p class="text-xs text-white/50 mt-1">Atur pengalaman MalaMusic di perangkat ini</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div>' +
+            '<section class="mb-5"><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Pemutaran</p><div class="space-y-2">' +
+                toggle('skip-forward', 'Putar otomatis', 'Lanjutkan ke lagu berikutnya setelah selesai', autoNext, 'toggleAutoNext()') +
+                row('gauge', 'Kecepatan putar', speed === 1 ? 'Normal (1.0x)' : speed + 'x', 'openPlaybackSpeed(); this.closest(\'.fixed\').remove()') +
+                row('moon-star', 'Timer tidur', 'Hentikan musik setelah waktu tertentu', 'openSleepTimer(); this.closest(\'.fixed\').remove()') +
+                row('sliders-horizontal', 'Equalizer suara', 'Atur bass, mid, treble, dan preset', 'openEqualizer(); this.closest(\'.fixed\').remove()') +
+            '</div></section>' +
+            '<section class="mb-5"><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Tampilan</p><div class="space-y-2">' +
+                toggle('sparkles', 'Latar cover bergerak', 'Gunakan warna cover pada latar pemutar', glow, 'FullPlayer.toggleBgGlow()') +
+                row('palette', 'Tema aplikasi', 'MalaMusic menggunakan tema gelap yang hemat baterai', 'showToast(\'Tema gelap sedang aktif\')') +
+            '</div></section>' +
+            '<section class="mb-5"><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Offline & data</p><div class="space-y-2">' +
+                row('download', 'Mode Offline', offlineCount + ' lagu tersimpan di perangkat', 'App.switch(\'offline\'); this.closest(\'.fixed\').remove()') +
+                row('trash-2', 'Bersihkan cache offline', 'Hapus cache audio dan lirik yang dapat diunduh ulang', 'clearPwaCache(); this.closest(\'.fixed\').remove()') +
+                row('history', 'Riwayat pemutaran', 'Lihat atau hapus aktivitas lokal', 'Profile.showHistory(); this.closest(\'.fixed\').remove()') +
+                '<div class="grid grid-cols-2 gap-2"><button onclick="Profile.exportLocalData(); this.closest(\'.fixed\').remove()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Backup Data</button><button onclick="Profile.importLocalData(); this.closest(\'.fixed\').remove()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Pulihkan Data</button></div>' +
+            '</div></section>' +
+            '<section><p class="text-[10px] uppercase tracking-[.18em] text-rose-300/70 font-black mb-2">Profil & privasi</p><div class="space-y-2">' +
+                row('camera', 'Ganti avatar', 'Avatar diproses dan disimpan lokal di perangkat ini', 'Profile.chooseAvatar(); this.closest(\'.fixed\').remove()') +
+                row('rotate-ccw', 'Kembalikan avatar bawaan', 'Hapus avatar lokal dan gunakan avatar akun', 'Profile.clearAvatar(); this.closest(\'.fixed\').remove()') +
+                row('globe-2', 'Playlist publik', 'Atur playlist yang boleh dibagikan', 'this.closest(\'.fixed\').remove(); document.getElementById(\'profile-public-playlists\')?.scrollIntoView({behavior:\'smooth\',block:\'center\'})') +
+                '<p class="text-[11px] text-white/35 pt-2">Versi MalaMusic 2.0 · Koleksi dan avatar lokal tetap berada di perangkat ini.</p>' +
+            '</div></section>' +
+        '</div>';
         document.body.appendChild(modal); lucide.createIcons();
     }
 };
@@ -212,12 +291,13 @@ var EmailAuth = {
                 var user = data.user || {};
                 if (name) name.textContent = user.name || 'Profil Saya';
                 if (subtitle) subtitle.textContent = user.email || 'Akun MalaMusic';
-                if (avatar && user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
+                this.applyAvatar(user);
                 panel.innerHTML = '<div class="flex flex-wrap items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-4"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-sm text-emerald-200 flex-1">Akun Gmail terhubung: ' + this.escape(user.email) + '</span><button onclick="EmailAuth.logout()" class="text-xs font-bold text-white/60 hover:text-white">Logout</button></div>';
                 this.renderAuthActions(true, user);
             } else {
                 name && (name.textContent = 'Profil Saya');
                 subtitle && (subtitle.textContent = 'Masuk dengan Gmail untuk menyimpan profil kamu');
+                this.applyAvatar(null);
                 this.renderChoice();
                 this.renderAuthActions(false);
             }
