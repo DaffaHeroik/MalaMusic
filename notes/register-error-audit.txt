@@ -1,0 +1,143 @@
+=== EMAIL AUTH BACKEND ===
+    80	
+    81	function validateCredentials(email, password) {
+    82	    if (!isGmail(email)) return 'Gunakan alamat Gmail yang valid (@gmail.com).';
+    83	    if (typeof password !== 'string' || password.length < 8) return 'Password minimal 8 karakter.';
+    84	    if (password.length > 128) return 'Password terlalu panjang.';
+    85	    return '';
+    86	}
+    87	
+    88	function firebaseErrorMessage(code) {
+    89	    const messages = {
+    90	        EMAIL_NOT_FOUND: 'Akun Gmail belum terdaftar. Pilih Daftar terlebih dahulu.',
+    91	        INVALID_PASSWORD: 'Password salah.',
+    92	        INVALID_LOGIN_CREDENTIALS: 'Email atau password salah.',
+    93	        USER_DISABLED: 'Akun ini dinonaktifkan.',
+    94	        EMAIL_EXISTS: 'Email sudah terdaftar. Pilih Login.',
+    95	        WEAK_PASSWORD: 'Password Firebase harus minimal 6 karakter.',
+    96	        TOO_MANY_ATTEMPTS_TRY_LATER: 'Terlalu banyak percobaan. Coba lagi nanti.'
+    97	    };
+    98	    return messages[code] || 'Autentikasi Firebase gagal. Coba lagi.';
+    99	}
+   100	
+   101	function createSession(res, user) {
+   102	    const session = { ...safeUser(user), exp: Date.now() + SESSION_TTL_SECONDS * 1000 };
+   103	    setCookies(res, [cookie('mm_session', encode(session), SESSION_TTL_SECONDS)]);
+   104	    return session;
+   105	}
+   106	
+   107	async function loginWithFirebasePassword(email, password) {
+   108	    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFUvlprIhFX3gccM9A4gfk';
+   109	    const response = await fetch(`${FIREBASE_SIGN_IN_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+   110	        method: 'POST',
+   111	        headers: { 'Content-Type': 'application/json' },
+   112	        body: JSON.stringify({ email, password, returnSecureToken: true })
+   113	    });
+   114	    const payload = await response.json().catch(() => ({}));
+   115	    if (!response.ok || !payload.idToken) {
+   116	        const code = String(payload.error && payload.error.message || '').replace(/^EMAIL_NOT_FOUND$/, 'EMAIL_NOT_FOUND');
+   117	        throw new Error(firebaseErrorMessage(code));
+   118	    }
+   119	    return payload.idToken;
+   120	}
+   121	
+   122	async function verifyFirebaseToken(idToken) {
+   123	    if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) throw new Error('Token Firebase tidak valid.');
+   124	    const auth = getAuth();
+   125	    const decoded = await auth.verifyIdToken(idToken);
+   126	    if (!decoded.email || !isGmail(decoded.email)) throw new Error('Hanya akun Gmail yang diizinkan.');
+   127	    return decoded;
+   128	}
+   129	
+   130	module.exports = async function emailAuth(req, res) {
+   131	    if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+   132	        return res.status(500).json({ status: false, message: 'SESSION_SECRET belum dikonfigurasi di hosting.' });
+   133	    }
+   134	
+   135	    const action = (req.query && req.query.action) || 'me';
+   136	    const cookies = parseCookies(req);
+   137	    const now = Date.now();
+   138	
+   139	    if (action === 'me') {
+   140	        const session = decode(cookies.mm_session);
+   141	        if (!session || !session.email || !session.exp || session.exp < now) return res.status(200).json({ authenticated: false });
+   142	        return res.status(200).json({ authenticated: true, user: session });
+   143	    }
+   144	
+   145	    if (action === 'logout') {
+   146	        setCookies(res, [cookie('mm_session', '', 0)]);
+   147	        return res.status(200).json({ status: true });
+   148	    }
+   149	
+   150	    if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method tidak didukung.' });
+   151	    const body = bodyOf(req);
+   152	    const email = normalizeEmail(body.email);
+   153	    const password = body.password;
+   154	    const validationError = validateCredentials(email, password);
+   155	    if (validationError) return res.status(400).json({ status: false, message: validationError });
+   156	
+   157	    try {
+   158	        const auth = getAuth();
+   159	        let firebaseUser;
+   160	
+   161	        if (action === 'register') {
+   162	            firebaseUser = await auth.createUser({ email, password, displayName: String(body.name || '').trim().slice(0, 80) || undefined });
+   163	        } else if (action === 'login') {
+   164	            const idToken = await loginWithFirebasePassword(email, password);
+   165	            const decoded = await verifyFirebaseToken(idToken);
+   166	            firebaseUser = await auth.getUser(decoded.uid);
+   167	        } else {
+   168	            return res.status(404).json({ status: false, message: 'Aksi autentikasi tidak ditemukan.' });
+   169	        }
+   170	
+   171	        const user = createSession(res, firebaseUser);
+   172	        return res.status(200).json({ status: true, authenticated: true, user });
+   173	    } catch (error) {
+   174	        const code = String(error && (error.code || error.message) || '');
+   175	        if (code.includes('email-already-exists')) return res.status(409).json({ status: false, message: 'Email sudah terdaftar. Pilih Login.' });
+   176	        if (code.includes('invalid-password')) return res.status(400).json({ status: false, message: 'Password tidak memenuhi aturan Firebase.' });
+   177	        if (code.includes('auth/')) return res.status(401).json({ status: false, message: firebaseErrorMessage(code.replace('auth/', '').toUpperCase()) });
+   178	        console.error('[email-auth]', error && error.message ? error.message : error);
+   179	        return res.status(502).json({ status: false, message: error.message || 'Server autentikasi belum siap.' });
+   180	    }
+   181	};
+=== PROFILE AUTH FRONTEND ===
+17:                        <img id="profile-avatar" src="/logo-mark.png" class="w-full h-full object-contain p-2" alt="Profil" onerror="this.style.display='none'" />
+35:                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${liked.length}</strong><span class="text-[11px] text-white/50">Lagu disukai</span></div>
+36:                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${playlists.length}</strong><span class="text-[11px] text-white/50">Playlist</span></div>
+37:                    <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${offline.length}</strong><span class="text-[11px] text-white/50">Offline</span></div>
+43:                        <button onclick="App.switch('liked')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#5436a3] to-[#c53d70] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="heart" class="w-8 h-8 text-white fill-current mb-auto"></i><span class="text-white font-bold text-sm">Lagu Disukai</span><span class="text-white/60 text-xs mt-1">${liked.length} lagu</span></button>
+44:                        <button onclick="App.switch('offline')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#164e63] to-[#0f766e] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="download" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Mode Offline</span><span class="text-white/60 text-xs mt-1">${offline.length} lagu</span></button>
+45:                        <button onclick="App.switch('library')" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#3b3b3b] to-[#111] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="library" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Playlist Kamu</span><span class="text-white/60 text-xs mt-1">${playlists.length} playlist</span></button>
+46:                        <button onclick="EmailAuth.open()" class="text-left rounded-2xl overflow-hidden bg-gradient-to-br from-[#be123c] to-[#4c0519] p-4 aspect-square flex flex-col justify-end shadow-lg hover:scale-[1.02] transition-transform"><i data-lucide="mail-check" class="w-8 h-8 text-white mb-auto"></i><span class="text-white font-bold text-sm">Login / Daftar</span><span class="text-white/60 text-xs mt-1">Gmail dan password</span></button>
+57:                    <button onclick="EmailAuth.open()" class="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/[.06] transition-colors"><i data-lucide="mail" class="w-5 h-5 text-rose-400"></i><span class="flex-1"><strong class="block text-sm text-white">Login atau Daftar</strong><span class="block text-xs text-white/50">Login atau buat akun dengan Gmail dan password</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>
+67:            recentEl.innerHTML = recent.length ? recent.slice(0, 4).map(function(track) {
+69:                return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
+87:        if (!playlists.length) { el.innerHTML = '<div class="p-5 text-sm text-white/50">Belum ada playlist untuk diatur.</div>'; return; }
+88:        el.innerHTML = playlists.map(function(pl) { var isPublic = Boolean(pl.isPublic || pl.publicId); return '<div class="flex items-center gap-3 p-4"><img src="'+(pl.image || (pl.songs[0] && pl.songs[0].cover) || FI)+'" class="w-11 h-11 rounded-xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(pl.name)+'</strong><span class="block text-xs text-white/50 mt-1">'+(isPublic ? 'Dapat dibagikan publik' : 'Hanya kamu')+'</span></div><button onclick="Profile.togglePlaylistPublic(\''+String(pl.id).replace(/'/g,'')+'\')" class="shrink-0 rounded-full px-3 py-2 text-[11px] font-black '+(isPublic ? 'bg-amber-300 text-black' : 'bg-white/10 text-white')+'">'+(isPublic ? 'Publik' : 'Jadikan publik')+'</button></div>'; }).join('');
+101:        var rows = recent.length ? recent.map(function(track) {
+103:            return '<button onclick="App.autoPlayTrack(\'' + id + '\');this.closest(\'.fixed\').remove()" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-11 h-11 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span><i data-lucide="play" class="w-4 h-4 text-white/60"></i></button>';
+136:    entryMode: 'login',
+147:        this.entryMode = mode === 'register' ? 'register' : 'login';
+150:    renderChoice: function(message) {
+153:        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-5 sm:p-6"><div class="flex items-start gap-3 mb-5"><i data-lucide="user-round" class="w-6 h-6 text-rose-400 mt-0.5"></i><div><strong class="block text-base text-white">Akun MalaMusic</strong><span class="block text-xs text-white/50 mt-1">Masuk untuk menyimpan koleksi, playlist, dan aktivitas musik kamu.</span></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="EmailAuth.choose(\'login\')" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100 transition-colors">Login</button><button onclick="EmailAuth.choose(\'register\')" class="rounded-xl border border-white/20 bg-white/[.06] px-5 py-3 text-sm font-black text-white hover:bg-white/[.12] transition-colors">Daftar</button></div>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+156:    renderEmailForm: function(message) {
+159:        var register = this.entryMode === 'register';
+161:        var helper = register ? 'Buat akun permanen dengan email dan password.' : 'Masuk ke akun MalaMusic kamu.';
+162:        panel.innerHTML = '<div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 sm:p-5"><div class="flex items-start gap-3 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-rose-400 mt-0.5"></i><div><strong class="block text-sm text-white">' + title + '</strong><span class="block text-xs text-white/50 mt-1">' + helper + ' Hanya alamat @gmail.com yang diterima.</span></div></div>' + (register ? '<input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Nama tampilan (opsional)" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" />' : '') + '<input id="auth-email" type="email" autocomplete="email" placeholder="nama@gmail.com" class="w-full mb-2 rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><input id="auth-password" type="password" autocomplete="' + (register ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" placeholder="Password minimal 8 karakter" class="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-rose-400" /><button onclick="EmailAuth.submit()" class="w-full mt-3 rounded-xl bg-white px-5 py-3 text-sm font-black text-black hover:bg-rose-100">' + (register ? 'Buat Akun' : 'Login') + '</button><button onclick="EmailAuth.renderChoice()" class="mt-3 text-xs font-bold text-white/50 hover:text-white">Kembali ke pilihan Login/Daftar</button>' + (message ? '<p class="mt-3 text-xs text-rose-300">' + this.escape(message) + '</p>' : '') + '</div>';
+165:    submit: async function() {
+167:        var password = (document.getElementById('auth-password') || {}).value || '';
+171:        if (password.length < 8) return this.renderEmailForm('Password minimal 8 karakter.');
+173:            var response = await fetch('/api/email-auth?action=' + (this.entryMode === 'register' ? 'register' : 'login'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password, name: name.trim() }) });
+175:            if (!response.ok || !data.status) throw new Error(data.message || 'Autentikasi gagal.');
+176:            showToast(this.entryMode === 'register' ? 'Akun berhasil dibuat' : 'Berhasil masuk ke MalaMusic');
+178:        } catch (error) { this.renderEmailForm(error.message); }
+=== PACKAGE ===
+15:    "firebase-admin": "^14.2.0"
+=== RECENT AUTH DIFF ===
+[33madc0a90[m Implement Firebase Admin authentication
+[33m2ad1ad1[m Add profile listening and playlist privacy controls
+[33m2ba106e[m Add listening streak API and profile stats
+[33m9237064[m Update MalaMusic branding assets
+[33m387efa2[m feat: complete profile settings history and local backup
+[33m6b73b72[m feat: add explicit login and signup OTP flow

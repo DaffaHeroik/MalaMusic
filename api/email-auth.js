@@ -105,7 +105,7 @@ function createSession(res, user) {
 }
 
 async function loginWithFirebasePassword(email, password) {
-    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFUvlprIhFX3gccM9A4gfk';
+    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk';
     const response = await fetch(`${FIREBASE_SIGN_IN_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -159,7 +159,10 @@ module.exports = async function emailAuth(req, res) {
         let firebaseUser;
 
         if (action === 'register') {
-            firebaseUser = await auth.createUser({ email, password, displayName: String(body.name || '').trim().slice(0, 80) || undefined });
+            const displayName = String(body.name || '').trim().slice(0, 80);
+            const createOptions = { email, password };
+            if (displayName) createOptions.displayName = displayName;
+            firebaseUser = await auth.createUser(createOptions);
         } else if (action === 'login') {
             const idToken = await loginWithFirebasePassword(email, password);
             const decoded = await verifyFirebaseToken(idToken);
@@ -175,7 +178,7 @@ module.exports = async function emailAuth(req, res) {
         if (code.includes('email-already-exists')) return res.status(409).json({ status: false, message: 'Email sudah terdaftar. Pilih Login.' });
         if (code.includes('invalid-password')) return res.status(400).json({ status: false, message: 'Password tidak memenuhi aturan Firebase.' });
         if (code.includes('auth/')) return res.status(401).json({ status: false, message: firebaseErrorMessage(code.replace('auth/', '').toUpperCase()) });
-        console.error('[email-auth]', error && error.message ? error.message : error);
-        return res.status(502).json({ status: false, message: error.message || 'Server autentikasi belum siap.' });
+        console.error('[email-auth]', error && error.stack ? error.stack : error);
+        return res.status(502).json({ status: false, message: (error && typeof error.message === 'string' && error.message) || 'Server autentikasi belum siap.' });
     }
 };
