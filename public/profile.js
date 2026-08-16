@@ -151,9 +151,3 @@ var EmailAuth = {
         } catch (_) { this.renderLogin('Server autentikasi belum siap.'); }
     }
 };
-
-var GoogleAccount = {
-    login: function() { EmailAuth.open(); },
-    logout: function() { return EmailAuth.logout(); },
-    syncLiked: function() { showToast('Sinkronisasi YouTube memerlukan koneksi Google OAuth.'); }
-};

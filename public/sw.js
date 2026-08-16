@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/banner.png',
-  '/app.js?v=26',
+  '/app.js?v=27',
   '/player.js',
   '/fullplayer.js',
   '/miniplayer.js',
@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   '/search.js',
   '/album.js',
   '/artist.js',
-  '/profile.js?v=25',
+  '/profile.js?v=27',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
