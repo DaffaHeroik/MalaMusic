@@ -28,6 +28,8 @@ var Profile = {
             <div class="max-w-5xl mx-auto px-5 sm:px-8 py-6">
                 <div id="profile-account-panel" class="mb-7"></div>
                 <div id="profile-streak-card"></div>
+                <div id="profile-listening-card" class="mb-7"></div>
+                <section class="mb-8 rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden"><div class="p-4 border-b border-white/10"><div class="flex items-center gap-3"><i data-lucide="globe-2" class="w-5 h-5 text-amber-300"></i><div><h2 class="text-base font-black text-white">Playlist Publik</h2><p class="text-xs text-white/50 mt-1">Atur playlist mana yang dapat dilihat dan dibagikan.</p></div></div></div><div id="profile-public-playlists" class="divide-y divide-white/10"></div></section>
 
                 <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
                     <div class="rounded-2xl bg-white/[.05] border border-white/10 p-4 text-center"><strong class="block text-2xl font-black text-white">${liked.length}</strong><span class="text-[11px] text-white/50">Lagu disukai</span></div>
@@ -69,8 +71,27 @@ var Profile = {
         }
 
         lucide.createIcons();
+        Profile.renderPublicPlaylistSettings();
+        Profile.refreshListeningStats();
         EmailAuth.refresh();
         if (typeof Streak !== 'undefined') Streak.refreshProfileCard();
+    },
+    refreshListeningStats: async function() {
+        var el = document.getElementById('profile-listening-card'); if (!el) return;
+        el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="text-xs text-white/50">Total waktu mendengar</div><div class="h-9 w-28 mt-2 rounded-lg bg-white/10 animate-pulse"></div></div>';
+        try { var response = await fetch('/api/stats?action=me', { credentials: 'same-origin' }); if (!response.ok) { el.innerHTML = '<div class="rounded-2xl bg-white/[.04] border border-white/10 p-5"><div class="flex items-center gap-3"><i data-lucide="clock-3" class="w-5 h-5 text-white/50"></i><div><strong class="block text-sm text-white">Jam mendengar</strong><span class="block text-xs text-white/50 mt-1">Login untuk menyimpan statistik lintas perangkat.</span></div></div></div>'; lucide.createIcons(); return; } var data = await response.json(), s = data.stats || {}; el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-[.18em] text-amber-200/70 font-black">Aktivitas mendengar</p><strong class="block text-3xl font-black text-white mt-1">'+Number(s.hours || 0).toFixed(1)+' jam</strong><span class="block text-xs text-white/50 mt-1">'+Number(s.activeDays || 0)+' hari aktif · streak '+Number(s.streak || 0)+' hari</span></div><div class="w-14 h-14 rounded-2xl bg-amber-300/15 flex items-center justify-center"><i data-lucide="clock-3" class="w-7 h-7 text-amber-200"></i></div></div></div>'; lucide.createIcons(); } catch (_) { el.innerHTML = ''; }
+    },
+    renderPublicPlaylistSettings: function() {
+        var el = document.getElementById('profile-public-playlists'); if (!el) return;
+        var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
+        if (!playlists.length) { el.innerHTML = '<div class="p-5 text-sm text-white/50">Belum ada playlist untuk diatur.</div>'; return; }
+        el.innerHTML = playlists.map(function(pl) { var isPublic = Boolean(pl.isPublic || pl.publicId); return '<div class="flex items-center gap-3 p-4"><img src="'+(pl.image || (pl.songs[0] && pl.songs[0].cover) || FI)+'" class="w-11 h-11 rounded-xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(pl.name)+'</strong><span class="block text-xs text-white/50 mt-1">'+(isPublic ? 'Dapat dibagikan publik' : 'Hanya kamu')+'</span></div><button onclick="Profile.togglePlaylistPublic(\''+String(pl.id).replace(/'/g,'')+'\')" class="shrink-0 rounded-full px-3 py-2 text-[11px] font-black '+(isPublic ? 'bg-amber-300 text-black' : 'bg-white/10 text-white')+'">'+(isPublic ? 'Publik' : 'Jadikan publik')+'</button></div>'; }).join('');
+        lucide.createIcons();
+    },
+    togglePlaylistPublic: async function(id) {
+        var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [], pl = playlists.find(function(item){return item.id === id;}); if (!pl) return;
+        var next = !(pl.isPublic || pl.publicId);
+        try { var response = await fetch('/api/stats?action=publish-playlist', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:pl.name,image:pl.image||'',songs:pl.songs||[],isPublic:next}) }); var data=await response.json(); if(!response.ok||!data.status) throw new Error(); pl.isPublic=next; if(data.id) pl.publicId=data.id; if(!next) delete pl.publicId; if(typeof saveUserPlaylists==='function') saveUserPlaylists(playlists); Profile.render(); showToast(next?'Playlist sekarang publik':'Playlist disembunyikan'); } catch (_) { showToast('Login diperlukan untuk mengatur playlist publik'); }
     },
     showHistory: function() {
         var recent = typeof getRecentTracks === 'function' ? getRecentTracks() : [];

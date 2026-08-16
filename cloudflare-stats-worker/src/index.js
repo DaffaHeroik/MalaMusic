@@ -71,10 +71,16 @@ export default {
       await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, active_days, last_active, updated_at) VALUES (?, ?, ?, 1, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, total_seconds = user_stats.total_seconds + excluded.total_seconds, active_days = (SELECT COUNT(DISTINCT day) FROM user_daily_stats WHERE email = excluded.email), last_active = excluded.last_active, updated_at = excluded.updated_at').bind(body.email, name, seconds, day, new Date().toISOString()).run();
       return Response.json({ status: true, recordedSeconds: seconds });
     }
+    if (url.pathname === '/playlist-settings' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const isPublic = Boolean(body.isPublic);
+      await env.DB.prepare('UPDATE public_playlists SET is_public = ?, updated_at = ? WHERE id = ? AND owner_email = ?').bind(isPublic ? 1 : 0, new Date().toISOString(), body.id, body.email).run();
+      return Response.json({ status: true, isPublic });
+    }
     if (url.pathname === '/playlist' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const id = String(body.id || crypto.randomUUID());
-      await env.DB.prepare('INSERT OR REPLACE INTO public_playlists (id, owner_email, owner_name, name, image, songs_json, updated_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, 1)').bind(id, body.email, body.ownerName || 'Pendengar', body.name || 'Playlist MalaMusic', body.image || '', JSON.stringify(body.songs || []).slice(0, 500000), new Date().toISOString()).run();
+      await env.DB.prepare('INSERT OR REPLACE INTO public_playlists (id, owner_email, owner_name, name, image, songs_json, updated_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, 1)').bind(id, body.email, body.ownerName || 'Pendengar', body.name || 'Playlist MalaMusic', body.image || '', JSON.stringify(body.songs || []).slice(0, 500000), new Date().toISOString(), body.isPublic === false ? 0 : 1).run();
       return Response.json({ status: true, id });
     }
     if (url.pathname.startsWith('/playlist/')) {
