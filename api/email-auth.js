@@ -5,11 +5,13 @@ const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
 function secret() {
-    return process.env.SESSION_SECRET || 'development-only-change-this-session-secret';
+    return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
 }
 
 function sign(value) {
-    return crypto.createHmac('sha256', secret()).update(value).digest('base64url');
+    const currentSecret = secret();
+    if (!currentSecret) return '';
+    return crypto.createHmac('sha256', currentSecret).update(value).digest('base64url');
 }
 
 function encode(payload) {
@@ -23,7 +25,7 @@ function decode(value) {
     const body = parts.shift();
     const signature = parts.join('.');
     const expected = sign(body);
-    if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    if (!expected || signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
     try { return JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch (_) { return null; }
 }
 
@@ -79,6 +81,7 @@ async function sendOtp(email, otp) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new Error('RESEND_API_KEY belum dikonfigurasi di hosting.');
     const from = process.env.RESEND_FROM || 'MalaMusic <otp@malawalipayment.web.id>';
+    if (!/@malawalipayment\.web\.id[>\s]?/i.test(from)) throw new Error('RESEND_FROM harus menggunakan domain malawalipayment.web.id.');
     const response = await fetch(RESEND_ENDPOINT, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -98,6 +101,9 @@ async function sendOtp(email, otp) {
 }
 
 module.exports = async function emailAuth(req, res) {
+    if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+        return res.status(500).json({ status: false, message: 'SESSION_SECRET belum dikonfigurasi di hosting.' });
+    }
     const action = (req.query && req.query.action) || 'me';
     const cookies = parseCookies(req);
     const now = Date.now();
