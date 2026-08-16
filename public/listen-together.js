@@ -177,6 +177,6 @@
         var match = location.pathname.match(/^\/room\/([A-Za-z0-9_-]+)/);
         if (match) setTimeout(function () { joinRoom(match[1]); }, 700);
     }
-    window.ListenTogether = { open: openLobby, leave: leaveRoom, getState: function () { return Object.assign({}, state); } };
+    window.ListenTogether = { open: openLobby, leave: leaveRoom, syncNow: schedulePublish, getState: function () { return Object.assign({}, state); } };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

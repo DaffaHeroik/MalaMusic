@@ -1060,11 +1060,19 @@ async function fetchAutoNextRecommendations(track) {
         var d = await r.json();
         if (d && d.status && d.result && d.result.songs && d.result.songs.length > 0) {
             var currId = track.videoId || track.id;
+            var existingIds = {};
+            (S.pl || []).forEach(function(item){ existingIds[trackId(item)] = true; });
             var newSongs = d.result.songs.filter(function(s) {
                 return (s.videoId || s.id) !== currId;
-            }).map(normalizeTrack);
+            }).map(normalizeTrack).filter(function(item){
+                var id = trackId(item);
+                if (!id || existingIds[id]) return false;
+                existingIds[id] = true;
+                return true;
+            });
             if (newSongs.length > 0) {
-                S.pl = S.pl.concat(newSongs);
+                // Append recommendations; never replace a queue assembled by the user.
+                S.pl = (S.pl || []).concat(newSongs);
                 S.ps = 'queue';
                 return true;
             }
@@ -1848,14 +1856,24 @@ function openTrackContextMenu(id) {
 
 function playTrackFromContext(id) {
     var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
-    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+    S.pl = [normalizeTrack(track)]; S.pi = 0; S.ps = 'queue'; S.ct = S.pl[0]; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct);
 }
 
 function addTrackToQueueFromContext(id, playNext) {
     var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
-    var copy = Object.assign({}, track);
-    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
-    else { var insertAt = playNext ? Math.max(0, (S.pi || 0) + 1) : S.pl.length; S.pl.splice(insertAt, 0, copy); }
+    var copy = normalizeTrack(track);
+    if (!S.pl || !S.pl.length) {
+        S.pl = S.ct ? [normalizeTrack(S.ct), copy] : [copy];
+        S.pi = S.ct ? 0 : -1;
+    } else {
+        var insertAt = playNext ? Math.max(0, (S.pi || 0) + 1) : S.pl.length;
+        if (!S.pl.some(function(item){ return trackId(item) === trackId(copy); })) S.pl.splice(insertAt, 0, copy);
+    }
+    // Once the user edits the queue, all subsequent next/previous operations
+    // must resolve from S.pl instead of the originating Home/Search slice.
+    S.ps = 'queue';
+    if (typeof UU === 'function') UU();
+    if (window.ListenTogether && typeof window.ListenTogether.syncNow === 'function') window.ListenTogether.syncNow();
     showToast(playNext ? 'Akan diputar berikutnya' : 'Ditambahkan ke antrian');
 }
 

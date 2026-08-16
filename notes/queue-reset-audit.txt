@@ -1,0 +1,338 @@
+=== QUEUE FUNCTIONS ===
+public/player.js:905:function PK(s,i){
+public/player.js:916:    else if(s==='queue')l=S.pl||[];
+public/player.js:929:    S.ps=s;S.pl=l;S.pi=i;S.ct=l[i];
+public/player.js:1055:async function fetchAutoNextRecommendations(track) {
+public/player.js:1067:                S.pl = S.pl.concat(newSongs);
+public/player.js:1068:                S.ps = 'queue';
+public/player.js:1076:async function NX(){
+public/player.js:1079:            S.pl = [S.ct];
+public/player.js:1114:function PV(forcePrev){
+public/player.js:1851:    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+public/player.js:1854:function addTrackToQueueFromContext(id, playNext) {
+public/player.js:1857:    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
+public/player.js:2454:    if(gid('queue-popup'))return;
+public/player.js:2456:    popup.id='queue-popup';
+public/player.js:2486:function closeQueue(){var p=gid('queue-popup');if(p)p.remove();}
+public/listen-together.js:61:        jsonFetch('/api/listen-together?action=create', { method: 'POST', body: JSON.stringify({ track: track, queue: currentQueue().length ? currentQueue() : [track], index: Number(S.pi) || 0 }) })
+public/listen-together.js:97:        var queue = Array.isArray(remote.queue) ? remote.queue.map(normalizeTrack).filter(function (x) { return trackId(x); }) : [];
+public/listen-together.js:98:        var remoteTrack = normalizeTrack(remote.track || queue[Number(remote.index) || 0]);
+public/listen-together.js:104:                S.pl = queue.length ? queue : [remoteTrack];
+public/listen-together.js:106:                S.ps = 'listen-together';
+public/listen-together.js:128:        jsonFetch('/api/listen-together?action=command', { method: 'POST', body: JSON.stringify({ roomId: state.roomId, queue: currentQueue().length ? currentQueue() : [track], index: Number(S.pi) || 0, track: track, playing: !!(typeof AU !== 'undefined' && AU && !AU.paused), position: Number((typeof AU !== 'undefined' && AU ? AU.currentTime : S.pt) || 0) }) })
+public/library.js:106:        S.pl = songs;
+public/library.js:108:        S.ps = 'playlist';
+public/library.js:122:        S.pl = songs;
+public/library.js:124:        S.ps = 'playlist';
+public/library.js:366:        S.pl=pl.songs;S.pi=index;S.ps='playlist';S.ct=S.pl[S.pi];UU();MP.show();S.il=true;UB();resetLyricsUI(S.ct.videoId);loadTrack(S.ct);
+public/album.js:264:        S.pl = S['album_'+id];
+public/album.js:266:        S.ps = 'album';
+public/album.js:308:        S.pl = arr;
+public/album.js:310:        S.ps = 'album';
+public/artist.js:419:            S.ps = 'artist';
+public/artist.js:420:            S.pl = topSongs;
+public/artist.js:424:            S.ps='artist';S.pl=[S.ct];S.pi=0;
+=== PLAYER QUEUE BLOCK ===
+    var cover = (coverUrl && coverUrl !== FI) ? coverUrl : 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
+
+    document.title = docTitle;
+
+    setMetaTag('og:title', fullTitle + ' (Album)', true);
+    setMetaTag('og:description', description, true);
+    setMetaTag('og:image', cover, true);
+    setMetaTag('og:image:width', '600', true);
+    setMetaTag('og:image:height', '600', true);
+    setMetaTag('og:url', location.href, true);
+    setMetaTag('twitter:card', 'summary_large_image', false);
+    setMetaTag('twitter:title', fullTitle + ' (Album)', false);
+    setMetaTag('twitter:description', description, false);
+    setMetaTag('twitter:image', cover, false);
+
+}
+
+function UU(){
+    resetAutoNextTransition();
+    if(!S.ct) {
+        updateOG(null);
+        if(typeof MP !== 'undefined' && MP.hide) MP.hide();
+        return;
+    }
+    var origCover = S.ct.cover || '';
+    var hdCover = toHDCover(origCover, S.ct.videoId || S.ct.id);
+
+    var mc=gid('mini-cover'),mt=gid('mini-title'),ma=gid('mini-artist'),fc=gid('full-cover'),ft=gid('full-title'),fa=gid('full-artist'),fh=gid('full-header-artist'),fb=gid('full-bg-blur'),fba=gid('full-bg-artwork');
+    if(mc) updateCoverWithTransition(mc, hdCover, origCover, false);
+    if(mt) mt.innerText=S.ct.title;
+    if(ma) ma.innerText=S.ct.artist;
+    if(fc) updateCoverWithTransition(fc, hdCover, origCover, true);
+    if(ft) ft.innerText=S.ct.title;
+    if(fa) fa.innerText=S.ct.artist;
+    if(fh) fh.innerText=S.ct.artist;
+    if(fb) updateCoverWithTransition(fb, hdCover, origCover, false);
+    if(fba) updateCoverWithTransition(fba, hdCover, origCover, false);
+
+    updateOG(S.ct.title, hdCover, S.ct.artist);
+    if(typeof updateLikeButtons==='function')updateLikeButtons();
+    if(typeof updateOfflineButtons==='function')updateOfflineButtons();
+    if(typeof MP !== 'undefined' && MP.updateBeats) MP.updateBeats(S.ct);
+    if(typeof FullPlayer !== 'undefined' && FullPlayer.updateBeats) FullPlayer.updateBeats(S.ct);
+}
+
+function PK(s,i){
+    var l=[];
+    if(s==='home1')l=(S.ht||[]).slice(0,6);
+    else if(s==='home2')l=(S.ht||[]).slice(6,12);
+    else if(s==='homecat')l=S.hc||[];
+    else if(s==='search')l=S.sr||[];
+    else if(s==='rec0')l=(S.rec0||[]).slice(0,6);
+    else if(s==='rec1')l=(S.rec1||[]).slice(0,6);
+    else if(s==='rec2')l=(S.rec2||[]).slice(0,6);
+    else if(s==='liked')l=typeof getLikedSongs==='function'?getLikedSongs():[];
+    else if(s==='offline')l=typeof getOfflineSongs==='function'?getOfflineSongs():[];
+    else if(s==='queue')l=S.pl||[];
+    else if(S.pl && S.pl.length > 0)l=S.pl;
+
+    if((!l || !l[i]) && S.pl && S.pl[i]){
+        l = S.pl;
+    }
+
+    if(!l || !l[i]) return;
+
+    if(S.ct && ((S.ct.id && S.ct.id === l[i].id) || (S.ct.videoId && S.ct.videoId === l[i].videoId)) && AU.src && !AU.paused){
+        if(typeof MP !== 'undefined' && MP.togglePlay) { MP.togglePlay(); return; }
+    }
+
+    S.ps=s;S.pl=l;S.pi=i;S.ct=l[i];
+    var url=location.origin+'/play/'+(S.ct.videoId||S.ct.id);history.pushState({},'',url);
+    UU();MP.show();S.il=true;UB();
+    
+    resetLyricsUI(S.ct.videoId||S.ct.id);
+    loadTrack(S.ct);
+}
+
+function saveRecentTrack(track){
+    if(!track || !(track.videoId || track.id)) return;
+    try {
+        var id = track.videoId || track.id;
+        var current = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]');
+        current = current.filter(function(item){ return (item.videoId || item.id) !== id; });
+        current.unshift({ id:id, videoId:id, title:track.title || 'Lagu', artist:track.artist || 'MalaMusic', cover:track.cover || FI, artistId:track.artistId || '', ytUrl:track.ytUrl || ('https://youtube.com/watch?v=' + id), playedAt:Date.now() });
+        localStorage.setItem('mala_recent_tracks', JSON.stringify(current.slice(0, 12)));
+    } catch(e) {}
+}
+function getRecentTracks(){
+    try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
+}
+
+function loadTrack(track,resumeAt){
+    if(!track)return;
+    var loadSequence = ++audioLoadSequence;
+    saveRecentTrack(track);
+    if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
+    hasPrefetchedNext = false;
+    isPreloadingNext = false;
+    ST();
+    try{AU.pause();}catch(e){}
+    updateMediaSessionMetadata(track);
+    fetchAudioAndPlay(track,resumeAt,loadSequence);
+    // Resolusi URL lagu sekitar dilakukan di background agar Next/Previous tidak menunggu dari awal.
+    setTimeout(preloadAdjacentTracks, 80);
+}
+
+async function fetchAudioAndPlay(track,resumeAt,loadSequence){
+    S.il=true;UB();
+    function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
+    var vid = track.videoId || track.id;
+    try{
+        var audioUrl = audioUrlCache[vid];
+        if (!audioUrl) {
+            if (!navigator.onLine) {
+                S.il = false; S.ip = false; UB();
+                if(typeof showToast === 'function') showToast('Mode Offline: Lagu ini belum tersimpan di cache PWA');
+                return;
+            }
+            audioUrl = await resolveAudioUrl(track);
+        }
+        if(!isCurrentLoad())return;
+        if(audioUrl){
+            var preloaded = prefetchAudioElements[vid];
+            var nextSrc = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl;
+            if (preloaded && preloaded.src) {
+                nextSrc = preloaded.src;
+                delete prefetchAudioElements[vid];
+            }
+            if (typeof audioCtx !== 'undefined' && audioCtx) {
+                AU.src = nextSrc;
+            } else {
+                AU.removeAttribute('crossorigin');
+                AU.src = nextSrc;
+            }
+            if(resumeAt){
+                var onMeta=function(){AU.currentTime=resumeAt;AU.removeEventListener('loadedmetadata',onMeta);};
+                AU.addEventListener('loadedmetadata',onMeta);
+            }
+            var p = AU.play();
+            if(p !== undefined && p.then){
+                p.then(function(){
+                    if(!isCurrentLoad()) return;
+                    S.il = false;
+                    S.ip = true;
+                    UB();
+                }).catch(function(err){
+                    if(!isCurrentLoad()) return;
+                    // Browser blocked autoplay or requires user interaction
+                    S.il = false;
+                    S.ip = false;
+                    UB();
+                });
+            } else {
+                if(!isCurrentLoad()) return;
+                S.il = false;
+                UB();
+            }
+            }else{
+            if(!isCurrentLoad()) return;
+            S.il=false;S.ip=false;UB();
+            if(typeof showToast === 'function') showToast('Gagal memuat audio lagu ini');
+        }
+    }catch(e){
+        if(isCurrentLoad()){S.il=false;S.ip=false;UB();}
+    }
+}
+
+function TP(){
+    if(!S.ct)return;
+    if(!AU.src){
+        loadTrack(S.ct);
+        return;
+    }
+    if(AU.paused){
+        S.il=true;UB();
+        var p = AU.play();
+        if(p !== undefined && p.then){
+            p.then(function(){
+                S.il = false;
+                S.ip = true;
+                UB();
+            }).catch(function(){
+                S.il = false;
+                S.ip = false;
+                UB();
+            });
+        }
+    } else {
+        AU.pause();
+        S.ip = false;
+        S.il = false;
+        UB();
+    }
+}
+
+async function fetchAutoNextRecommendations(track) {
+    if (!track) return false;
+    try {
+        var query = track.artist ? (track.artist + ' songs') : track.title;
+        var r = await fetch(API.search + '?query=' + encodeURIComponent(query));
+        var d = await r.json();
+        if (d && d.status && d.result && d.result.songs && d.result.songs.length > 0) {
+            var currId = track.videoId || track.id;
+            var newSongs = d.result.songs.filter(function(s) {
+                return (s.videoId || s.id) !== currId;
+            }).map(normalizeTrack);
+            if (newSongs.length > 0) {
+                S.pl = S.pl.concat(newSongs);
+                S.ps = 'queue';
+                return true;
+            }
+        }
+    } catch (e) {}
+    return false;
+}
+
+async function NX(){
+    if(!S.pl || !S.pl.length){
+        if(S.ct){
+            S.pl = [S.ct];
+            S.pi = 0;
+        } else {
+            return;
+        }
+    }
+
+    if(S.pi + 1 >= S.pl.length && S.autoNext){
+        if(S.ct){
+            S.il = true;
+            UB();
+            var fetched = await fetchAutoNextRecommendations(S.ct);
+            S.il = false;
+            UB();
+            if(!fetched){
+                PK(S.ps, 0);
+                return;
+            }
+        }
+    }
+
+    if(S.isShuffle && S.pl.length > 1){
+        var ri = S.pi;
+        var attempts = 0;
+        while(ri === S.pi && attempts < 10){
+            ri = Math.floor(Math.random() * S.pl.length);
+            attempts++;
+=== CONTEXT QUEUE BLOCK ===
+
+function trackMenuButton(track) {
+    var normalized = normalizeTrack(track);
+    var id = trackId(normalized);
+    if (!id) return '';
+    var key = id + '_' + (++trackContextSequence);
+    trackContextRegistry[key] = normalized;
+    return '<button onclick="event.stopPropagation();openTrackContextMenu(\'' + key + '\')" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-none flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all" title="Opsi lagu" aria-label="Opsi lagu"><i data-lucide="more-vertical" class=\"w-4 h-4 sm:w-5 sm:h-5\"></i></button>';
+}
+
+function closeTrackContextMenu() {
+    var menu = gid('track-context-menu');
+    if (menu) menu.remove();
+}
+
+function openTrackContextMenu(id) {
+    closeTrackContextMenu();
+    var track = trackContextRegistry[id];
+    if (!track) return;
+    var liked = isLikedSong(track.videoId || track.id);
+    var offline = typeof isOfflineSong === 'function' && isOfflineSong(track);
+    var menu = document.createElement('div');
+    menu.id = 'track-context-menu';
+    menu.className = 'fixed inset-0 z-[420] flex items-end justify-center bg-black/65';
+    menu.onclick = function(e) { if (e.target === menu) closeTrackContextMenu(); };
+    menu.innerHTML = '<div class="w-full max-w-md rounded-t-3xl bg-[#17171d] border-t border-white/10 p-5 shadow-2xl" style="animation:slideUp .25s ease-out forwards"><div class="flex items-center gap-3 pb-4 border-b border-white/10"><img src="' + (track.cover || FI) + '" class="w-12 h-12 rounded-xl object-cover" onerror="this.src=\'' + FI + '\'" /><div class="min-w-0 flex-1"><h3 class="text-sm font-black text-white truncate">' + es(track.title || 'Lagu') + '</h3><p class="text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</p></div><button onclick="closeTrackContextMenu()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="grid grid-cols-4 gap-2 py-4 border-b border-white/10"><button onclick="playTrackFromContext(\'' + id + '\')" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="play" class="w-5 h-5"></i><span class="text-[10px]">Putar</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',true)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-plus" class="w-5 h-5"></i><span class="text-[10px]">Putar Berikutnya</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',false)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-music" class="w-5 h-5"></i><span class="text-[10px]">Ke Antrian</span></button><button onclick="closeTrackContextMenu();openQueue()" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list" class="w-5 h-5"></i><span class="text-[10px]">Lihat Antrian</span></button></div><div class="space-y-1"><button onclick="closeTrackContextMenu();showPlaylistPicker(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="folder-plus" class="w-5 h-5 text-emerald-300"></i><span>Tambah ke Playlist</span></button><button onclick="closeTrackContextMenu();toggleLikeSong(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="heart" class="w-5 h-5 ' + (liked ? 'text-rose-400 fill-current' : 'text-white/60') + '"></i><span>' + (liked ? 'Hapus dari Lagu Disukai' : 'Tambah ke Lagu Disukai') + '</span></button><button onclick="contextDownloadTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="download" class="w-5 h-5 text-cyan-300"></i><span>' + (offline ? 'Sudah di Mode Offline' : 'Download ke Mode Offline') + '</span></button><button onclick="contextShareTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="share-2" class="w-5 h-5 text-amber-300"></i><span>Bagikan Lagu</span></button></div></div>';
+    document.body.appendChild(menu); lucide.createIcons();
+}
+
+function playTrackFromContext(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+}
+
+function addTrackToQueueFromContext(id, playNext) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    var copy = Object.assign({}, track);
+    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
+    else { var insertAt = playNext ? Math.max(0, (S.pi || 0) + 1) : S.pl.length; S.pl.splice(insertAt, 0, copy); }
+    showToast(playNext ? 'Akan diputar berikutnya' : 'Ditambahkan ke antrian');
+}
+
+function contextDownloadTrack(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    if (typeof isOfflineSong === 'function' && isOfflineSong(track)) { showToast('Lagu sudah ada di Mode Offline'); return; }
+    if (typeof saveTrackForOffline === 'function') saveTrackForOffline(track);
+}
+
+function contextShareTrack(id) {
+    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+    var url = track.ytUrl || ('https://youtube.com/watch?v=' + (track.videoId || track.id));
+    if (navigator.share) navigator.share({ title: track.title || 'MalaMusic', text: (track.title || 'Lagu') + ' — ' + (track.artist || ''), url: url }).catch(function() {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function() { showToast('Link lagu disalin'); });
+    else showToast(url);
+}
+
