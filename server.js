@@ -79,6 +79,7 @@ app.all('/api/suggest', require('./api/suggest.js'));
 app.all('/api/ytplay', require('./api/ytplay.js'));
 app.all('/api/translate', require('./api/translate.js'));
 app.all('/api/transcribe', require('./api/transcribe.js'));
+app.all('/api/google-auth', require('./api/google-auth.js'));
 
 // Proxy audio needs to stream in node, bypassing edge function
 app.get('/api/proxy-audio', (req, res) => {

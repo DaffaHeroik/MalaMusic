@@ -63,3 +63,19 @@ npm run dev        # plain Express server, matches api/*.js exactly
 # or
 npx netlify dev    # runs the static site + Functions + Edge Functions locally
 ```
+
+## Google OAuth dan lagu yang disukai
+
+MalaMusic menyediakan handler OAuth server-side di `/api/google-auth`. Setelah pengguna login dengan Google dan memberikan izin YouTube readonly, endpoint `GET /api/google-auth?action=liked` mengambil video yang diberi Like melalui YouTube Data API v3. Implementasi ini menggunakan cookie sesi terenkripsi; token Google tidak dikirim ke frontend.
+
+Sebelum menjalankan fitur ini, aktifkan **YouTube Data API v3** di Google Cloud Console dan buat OAuth Client tipe **Web application**. Konfigurasikan environment variable berdasarkan `.env.example`:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `SESSION_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `GOOGLE_APP_ORIGIN`
+
+Redirect URI harus sama persis dengan URL yang didaftarkan di Google Cloud Console. Untuk lokal, gunakan `http://localhost:3000/api/google-auth?action=callback`. Untuk hosting, gunakan domain hosting sementara yang aktif.
+
+MalaMusic memakai API resmi YouTube untuk mengambil video yang diberi Like. YouTube Music tidak menyediakan endpoint publik terpisah untuk playlist lagu yang disukai, sehingga hasil sinkronisasi berupa item video YouTube yang terkait dengan rating Like akun pengguna.
