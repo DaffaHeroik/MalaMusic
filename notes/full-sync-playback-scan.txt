@@ -1,0 +1,219 @@
+=== PLAYBACK ENTRYPOINTS ===
+public/album.js:264:        S.pl = S['album_'+id];
+public/album.js:265:        S.pi = index;
+public/album.js:267:        S.ct = S.pl[S.pi];
+public/album.js:268:        UU();
+public/album.js:269:        MP.show();
+public/album.js:272:        resetLyricsUI(S.ct.videoId);
+public/album.js:273:        loadTrack(S.ct);
+public/album.js:308:        S.pl = arr;
+public/album.js:309:        S.pi = 0;
+public/album.js:311:        S.ct = S.pl[S.pi];
+public/album.js:312:        UU();
+public/album.js:313:        MP.show();
+public/album.js:316:        resetLyricsUI(S.ct.videoId);
+public/album.js:317:        loadTrack(S.ct);
+public/app.js:589:    playPublicPlaylist(index){ var songs=(window.__publicPlaylistSongs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }); if(!songs[index]) return; window.__publicPlaylistSongs=songs; S.pl=songs; S.pi=index; S.ps='public-playlist'; S.ct=songs[index]; var playUrl=location.origin+'/play/'+trackId(S.ct); history.pushState({},'',playUrl); UU(); MP.show(); S.il=true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); },
+public/app.js:594:            S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:artistId,ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:595:            S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
+public/app.js:596:            FullPlayer.open();loadTrack(S.ct);
+public/app.js:598:            S.ct={id:videoId,videoId:videoId,title:'Lagu',artist:'MalaMusic',cover:toHDCover('', videoId),artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:599:            S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
+public/app.js:600:            FullPlayer.open();loadTrack(S.ct);
+public/app.js:616:        popup.querySelector('#popup-play').onclick=function(){popup.remove();S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);FullPlayer.open();loadTrack(S.ct);};
+public/artist.js:418:            S.ct = topSongs[idx];
+public/artist.js:420:            S.pl = topSongs;
+public/artist.js:421:            S.pi = idx;
+public/artist.js:423:            S.ct={id:vid,videoId:vid,title:title,artist:artist,cover:cov,artistId:Artist.currentArtistId || '',ytUrl:'https://youtube.com/watch?v='+vid};
+public/artist.js:424:            S.ps='artist';S.pl=[S.ct];S.pi=0;
+public/artist.js:428:        UU();MP.show();S.il=true;UB();
+public/artist.js:429:        resetLyricsUI(vid);
+public/artist.js:430:        loadTrack(S.ct);
+public/fullplayer.js:352:            if(typeof S!=='undefined'&&!S.lo&&typeof MP!=='undefined')MP.show();
+public/library.js:106:        S.pl = songs;
+public/library.js:107:        S.pi = 0;
+public/library.js:109:        S.ct = S.pl[S.pi];
+public/library.js:110:        UU(); MP.show(); S.il = true; UB();
+public/library.js:111:        resetLyricsUI(S.ct.videoId);
+public/library.js:112:        loadTrack(S.ct);
+public/library.js:122:        S.pl = songs;
+public/library.js:123:        S.pi = index;
+public/library.js:125:        S.ct = S.pl[S.pi];
+public/library.js:126:        UU(); MP.show(); S.il = true; UB();
+public/library.js:127:        resetLyricsUI(S.ct.videoId);
+public/library.js:128:        loadTrack(S.ct);
+public/library.js:366:        S.pl=pl.songs;S.pi=index;S.ps='playlist';S.ct=S.pl[S.pi];UU();MP.show();S.il=true;UB();resetLyricsUI(S.ct.videoId);loadTrack(S.ct);
+public/miniplayer.js:5:            <div id="mini-player-inner" onclick="FullPlayer.open()" class="rounded-2xl px-3.5 py-2.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden bg-white/[0.12] backdrop-blur-2xl border border-white/20 shadow-2xl group">
+public/miniplayer.js:27:                <div class="relative w-11 h-11 shrink-0 flex items-center justify-center z-10" onclick="FullPlayer.open(); if(typeof event !== 'undefined') event.stopPropagation();">
+public/player.js:869:function UU(){
+public/player.js:921:    S.ps=s;S.pl=l;S.pi=i;S.ct=l[i];
+public/player.js:923:    UU();MP.show();S.il=true;UB();
+public/player.js:925:    resetLyricsUI(S.ct.videoId||S.ct.id);
+public/player.js:926:    loadTrack(S.ct);
+public/player.js:943:function loadTrack(track,resumeAt){
+public/player.js:1009:        if(S.ct===track){S.il=false;S.ip=false;UB();}
+public/player.js:1016:        loadTrack(S.ct);
+public/player.js:1053:                S.pl = S.pl.concat(newSongs);
+public/player.js:1065:            S.pl = [S.ct];
+public/player.js:1066:            S.pi = 0;
+public/player.js:1167:function resetLyricsUI(vid){
+public/player.js:1551:            if(typeof FullPlayer!=='undefined') FullPlayer.open();
+public/player.js:1553:            if(typeof MP!=='undefined') MP.show();
+public/player.js:1831:    menu.innerHTML = '<div class="w-full max-w-md rounded-t-3xl bg-[#17171d] border-t border-white/10 p-5 shadow-2xl" style="animation:slideUp .25s ease-out forwards"><div class="flex items-center gap-3 pb-4 border-b border-white/10"><img src="' + (track.cover || FI) + '" class="w-12 h-12 rounded-xl object-cover" onerror="this.src=\'' + FI + '\'" /><div class="min-w-0 flex-1"><h3 class="text-sm font-black text-white truncate">' + es(track.title || 'Lagu') + '</h3><p class="text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</p></div><button onclick="closeTrackContextMenu()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="grid grid-cols-4 gap-2 py-4 border-b border-white/10"><button onclick="playTrackFromContext(\'' + id + '\')" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="play" class="w-5 h-5"></i><span class="text-[10px]">Putar</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',true)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-plus" class="w-5 h-5"></i><span class="text-[10px]">Putar Berikutnya</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',false)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-music" class="w-5 h-5"></i><span class="text-[10px]">Ke Antrian</span></button><button onclick="closeTrackContextMenu();openQueue()" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list" class="w-5 h-5"></i><span class="text-[10px]">Lihat Antrian</span></button></div><div class="space-y-1"><button onclick="closeTrackContextMenu();showPlaylistPicker(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="folder-plus" class="w-5 h-5 text-emerald-300"></i><span>Tambah ke Playlist</span></button><button onclick="closeTrackContextMenu();toggleLikeSong(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="heart" class="w-5 h-5 ' + (liked ? 'text-rose-400 fill-current' : 'text-white/60') + '"></i><span>' + (liked ? 'Hapus dari Lagu Disukai' : 'Tambah ke Lagu Disukai') + '</span></button><button onclick="contextDownloadTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="download" class="w-5 h-5 text-cyan-300"></i><span>' + (offline ? 'Sudah di Mode Offline' : 'Download ke Mode Offline') + '</span></button><button onclick="contextShareTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="share-2" class="w-5 h-5 text-amber-300"></i><span>Bagikan Lagu</span></button></div></div>';
+public/player.js:1837:    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+public/player.js:1843:    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
+public/player.js:1848:function contextDownloadTrack(id) {
+public/player.js:2145:        loadTrack(S.ct, currTime);
+public/player.js:2475:    S.pi=i;S.ct=S.pl[i];
+public/player.js:2477:    UU();MP.show();S.il=true;UB();
+public/player.js:2478:    resetLyricsUI(S.ct.videoId);
+public/player.js:2479:    loadTrack(S.ct);
+=== TRACK CREATION OBJECTS ===
+public/album.js:66:            Album.currentAlbumInfo = { id: id, title: a.title, artist: a.artist || '', cover: im };
+public/album.js:111:                        id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist, artistId: s.artistId, cover: sim, ytUrl: 'https://youtube.com/watch?v='+s.videoId
+public/album.js:288:                    id: s.videoId,
+public/album.js:289:                    videoId: s.videoId,
+public/album.js:292:                    cover: im,
+public/album.js:294:                    ytUrl: 'https://youtube.com/watch?v=' + s.videoId
+public/app.js:190:        videoId: vid,
+public/app.js:193:        cover: track.cover || (typeof toHDCover==='function'?toHDCover('', vid):''),
+public/app.js:195:        ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vid),
+public/app.js:594:            S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:artistId,ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:598:            S.ct={id:videoId,videoId:videoId,title:'Lagu',artist:'MalaMusic',cover:toHDCover('', videoId),artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:616:        popup.querySelector('#popup-play').onclick=function(){popup.remove();S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);FullPlayer.open();loadTrack(S.ct);};
+public/artist.js:41:        Artist.currentArtistInfo = { artistId: id, name: name || 'Artist', thumbnail: tImg };
+public/artist.js:66:                Artist.currentArtistInfo = { artistId: id, name: a.name || name || 'Artist', thumbnail: headerImg };
+public/artist.js:410:                    id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist || a.name, cover: toHDCover(sim, s.videoId), artistId: Artist.currentArtistId || '', ytUrl: 'https://youtube.com/watch?v='+s.videoId
+public/artist.js:423:            S.ct={id:vid,videoId:vid,title:title,artist:artist,cover:cov,artistId:Artist.currentArtistId || '',ytUrl:'https://youtube.com/watch?v='+vid};
+public/home.js:184:                            id: s.videoId,
+public/home.js:185:                            videoId: s.videoId,
+public/home.js:189:                            cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:190:                            ytUrl: s.url
+public/home.js:198:                { name: 'XXXTENTACION', id: 'UC8E6Rlb6pPspk1KkLInmPBA', cover: 'https://i.scdn.co/image/ab6761610000e5eb806a16d223847e335e2e8e3c' },
+public/home.js:199:                { name: 'Juice WRLD', id: 'UC0BletW9py84h0beCD26WHQ', cover: 'https://i.scdn.co/image/ab6761610000e5eb1e345853b015b6d510006767' },
+public/home.js:200:                { name: '2Pac', id: 'UC24x07EwV_KkGf-k9o-94qg', cover: 'https://i.scdn.co/image/ab6761610000e5eb1a051d9539d09c2a78f3068e' },
+public/home.js:201:                { name: 'Lil Peep', id: 'UCsR6_b319eYpE8J40tI7G3g', cover: 'https://i.scdn.co/image/ab6761610000e5eb14081c3b5fa78f0f35ef1d55' },
+public/home.js:202:                { name: 'Lil Loaded', id: 'UCz_0qN0d1p8J80K6r49q8BA', cover: 'https://i.scdn.co/image/ab6761610000e5eb871b65e902b66236b568326e' },
+public/home.js:203:                { name: 'NLE Choppa', id: 'UCv_Gq8T1R2W1dY7I7G9G9qg', cover: 'https://i.scdn.co/image/ab6761610000e5ebfa0ee4d9a244434db03405f6' },
+public/home.js:204:                { name: 'Ice Cube', id: 'UCa5K8O9W4A5G6k-7Y8I8G9g', cover: 'https://i.scdn.co/image/ab6761610000e5ebd7f7bbffdf4e45ebef823158' },
+public/home.js:205:                { name: 'Eazy-E', id: 'UCa0G7K8I8W1dY7I7G9G9qg1', cover: 'https://i.scdn.co/image/ab6761610000e5ebf537b0185966bbcd238d227b' },
+public/home.js:206:                { name: 'Eminem', id: 'UCn_128A3X8K2wF7F5Y7O_8g', cover: 'https://i.scdn.co/image/ab6761610000e5eba00b11c129b27a88fc72f36b' }
+public/home.js:250:                        id: s.videoId,
+public/home.js:251:                        videoId: s.videoId,
+public/home.js:255:                        cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:256:                        ytUrl: s.url
+public/home.js:522:                            id: s.videoId,
+public/home.js:523:                            videoId: s.videoId,
+public/home.js:527:                            cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:528:                            ytUrl: s.url
+public/home.js:553:            { name: 'XXXTENTACION', id: 'UCnAcxgRZ065f_eXK1o85c1w', cover: 'https://yt3.googleusercontent.com/No3I8pA9ows2dy6NElEr9mCXLzYxgjVvsQr7h69C03palsH1u8Q8iw-sAAUxav599Wmi64up8lbDGbI=w800-h800-l90-rj' },
+public/home.js:554:            { name: 'Lil Peep', id: 'UCxcyWcW0kZFGRyetDHr3UuA', cover: 'https://yt3.googleusercontent.com/TbvXoTXJz8a2xfkJxZsI0riSyrUSibnVHBFxhHTeJefWY-2-60x0VhUPkO89uF3CGOPLalsTTM-OlEeI=w800-h800-l90-rj' },
+public/home.js:555:            { name: 'Juice WRLD', id: 'UCbn0GRdgsQtl9hlV-IqxFGg', cover: 'https://lh3.googleusercontent.com/6YKQ7fDb3ISfzNUjpJnXX1FLw9EQ8eK5qHa07VANJtkaGagUtqtHiAOKz2AJ1AoASNacrCeg8pd35ao=w800-h800-l90-rj' },
+public/home.js:556:            { name: 'Lil Loaded', id: 'UCzM0GZjC6wQnvpljr3SbKRw', cover: 'https://lh3.googleusercontent.com/jectExZmYnwQhQWHO_gqTHDhDlOpz6HMwR5kd8f6a2fQ7-KVeSGoR_IHuZPIk_PHQEt-0jzQiCCU-io=w800-h800-l90-rj' },
+public/home.js:557:            { name: 'Hindia', id: 'UCzhVLh7xVyH3MpqO_KY6SYg', cover: 'https://yt3.googleusercontent.com/8ImMAMQSD4FA6-gdqCZWSFaB-drHvkdfiFcFAk7Mcyy56ctfWD-Xxno-CHfGC4L6Ql8aR61XT0vX0F4b=w800-h800-l90-rj' }
+public/home.js:649:            plHtml += '<div onclick="Library.open(\''+p.id+'\')" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\''+FI+'\'" /><div class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all shadow-black/40"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></div></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.name)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+p.songs.length+' lagu</p></div></div>';
+public/library.js:147:            '<div class="flex items-center gap-3 mb-5"><img src="'+(pl.image||(pl.songs.length>0?pl.songs[0].cover:FI))+'" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\''+FI+'\'" /><div class="truncate"><h3 class="font-bold text-white truncate">'+es(pl.name)+'</h3><p class="text-white/70 text-xs">'+pl.songs.length+' lagu</p></div></div>'+
+public/library.js:232:                    <img src="${pl.image||(pl.songs.length>0?pl.songs[0].cover:FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+public/library.js:235:                        <img src="${pl.image||(pl.songs.length>0?pl.songs[0].cover:FI)}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
+public/player.js:85:        videoId: id,
+public/player.js:89:        cover: toHDCover(track.cover || track.thumbnail || track.image || '', id),
+public/player.js:90:        ytUrl: track.ytUrl || track.url || (id ? 'https://youtube.com/watch?v=' + id : '')
+public/player.js:935:        current.unshift({ id:id, videoId:id, title:track.title || 'Lagu', artist:track.artist || 'MalaMusic', cover:track.cover || FI, artistId:track.artistId || '', ytUrl:track.ytUrl || ('https://youtube.com/watch?v=' + id), playedAt:Date.now() });
+public/player.js:946:    if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
+public/player.js:1623:            videoId: vId,
+public/player.js:1626:            cover: track.cover || track.thumbnail || '',
+public/player.js:1628:            ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vId)
+public/player.js:1670:            thumbnail: artist.thumbnail
+public/player.js:1745:function addToPlaylistById(playlistId,track){var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===playlistId;});if(!pl)return;if(pl.songs.length>=15){showToast('Playlist penuh (Max 15)');return;}var exists=pl.songs.find(function(s){return s.videoId===track.videoId;});if(!exists){pl.songs.push({id:track.id,videoId:track.videoId,title:track.title,artist:track.artist,cover:track.cover,artistId:track.artistId||'',ytUrl:track.ytUrl});if(!pl.image&&pl.songs.length===1){pl.image=track.cover;}saveUserPlaylists(pls);showToast('Ditambahkan ke '+pl.name);}else{showToast('Sudah ada di playlist');}}
+public/player.js:1802:function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
+public/search.js:50:                S[row.key]=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
+public/search.js:191:                S.ar=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
+api/google-auth.js:187:                thumbnail: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`,
+api/lyrics.js:18:                input: { id: videoId },
+api/lyrics.js:42:                input: { id: videoId },
+api/lyrics.js:58:            input: { id: videoId },
+api/search.js:75:                videoId: urlVid
+api/search.js:99:                        songs: [{ title, videoId: urlVid, thumbnail, url: `https://music.youtube.com/watch?v=${urlVid}`, artist: artist, artistId: '', album: '', albumId: '', duration }],
+api/search.js:154:                        albums.push({ id: browseId, title, artist: m[2].trim(), albumType: m[1], year: m[3], cover: thumb });
+api/search.js:156:                        playlists.push({ id: browseId, title, artist: subtitle, cover: thumb });
+api/search.js:182:                        artists.push({ id: browseId, title: title, artist: subtitle, cover: thumb });
+=== STORAGE WRITES ===
+public/app.js:8:    try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:76:    try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:124:                try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:178:        try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:201:    try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:205:        if (typeof audioUrlCache !== 'undefined' && !audioUrlCache[vid]) {
+public/app.js:214:                audioUrlCache[vid] = d.result.download.audio;
+public/app.js:215:                if (typeof savePwaCaches === 'function') savePwaCaches();
+public/app.js:246:            if (typeof savePwaCaches === 'function') savePwaCaches();
+public/app.js:247:            try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:291:                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
+public/app.js:782:            localStorage.setItem('seen_v2_popup_update', 'true');
+public/fullplayer.js:431:        try { localStorage.setItem('malamusic_bg_glow_enabled', FullPlayer.bgGlowEnabled ? '1' : '0'); } catch (e) {}
+public/home.js:515:            try { localStorage.setItem('mala_home_query', q); } catch(e) {}
+public/player.js:216:    try { localStorage.setItem('malamusic_volume', String(vol)); } catch(e){}
+public/player.js:273:function savePwaCaches() {
+public/player.js:277:        localStorage.setItem('pwa_lyrics_cache', JSON.stringify(lyricsCache));
+public/player.js:280:        if (aKeys.length > 80) delete audioUrlCache[aKeys[0]];
+public/player.js:281:        localStorage.setItem('pwa_audio_cache', JSON.stringify(audioUrlCache));
+public/player.js:295:    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
+public/player.js:304:        audioUrlCache[vid] = url;
+public/player.js:305:        savePwaCaches();
+public/player.js:936:        localStorage.setItem('mala_recent_tracks', JSON.stringify(current.slice(0, 12)));
+public/player.js:961:        var audioUrl = audioUrlCache[vid];
+public/player.js:1144:    try { localStorage.setItem('malamusic_auto_next', S.autoNext); } catch(e) {}
+public/player.js:1315:            if (typeof savePwaCaches === 'function') savePwaCaches();
+public/player.js:1387:            savePwaCaches();
+public/player.js:1395:            savePwaCaches();
+public/player.js:1603:    try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(songs));}catch(e){}
+public/player.js:1651:    try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(artists));}catch(e){}
+public/player.js:1736:            localStorage.setItem('malamusic_playlists',JSON.stringify(pls));
+public/player.js:1741:function saveUserPlaylists(pls){try{localStorage.setItem('malamusic_playlists',JSON.stringify(pls));}catch(e){}}
+public/player.js:2106:        localStorage.setItem('malamusic_playback_rate', speed);
+public/profile.js:119:        input.onchange = function() { var file = input.files && input.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function() { try { var payload = JSON.parse(reader.result); if (!payload || payload.app !== 'MalaMusic' || !payload.data) throw new Error('Format backup tidak cocok'); Object.keys(payload.data).forEach(function(key) { if (payload.data[key] !== null && payload.data[key] !== undefined) localStorage.setItem(key, payload.data[key]); }); showToast('Backup berhasil dipulihkan'); Profile.render(); } catch (e) { showToast('Backup tidak valid'); } }; reader.readAsText(file); };
+public/search.js:184:            try { var recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]').filter(function(item){return item!==S.sq;}); recent.unshift(S.sq); localStorage.setItem('mala_recent_searches',JSON.stringify(recent.slice(0,8))); } catch(e) {}
+public/sw.js:33:    caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:39:              return cache.put(url, res);
+public/sw.js:93:            caches.open(CACHE_DATA_NAME).then((cache) => {
+public/sw.js:94:              cache.put(request, responseToCache);
+public/sw.js:121:          caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, networkResponse.clone()));
+public/sw.js:137:              caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:138:                cache.put(request, networkResponse);
+public/sw.js:149:          caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:150:            cache.put(request, responseToCache);
+=== VERSION REFERENCES ===
+public/index.html:7:                navigator.serviceWorker.register('/sw.js?v=32').then(function(reg) {
+public/index.html:611:    <script type="module" src="/firebase.js?v=47"></script>
+public/index.html:612:    <script src="/player.js?v=47"></script>
+public/index.html:613:    <script src="/home.js?v=47"></script>
+public/index.html:614:    <script src="/search.js?v=47"></script>
+public/index.html:615:    <script src="/leaderboard.js?v=47"></script>
+public/index.html:616:    <script src="/stats.js?v=47"></script>
+public/index.html:617:    <script src="/liked.js?v=47"></script>
+public/index.html:618:    <script src="/library.js?v=47"></script>
+public/index.html:619:    <script src="/profile.js?v=47"></script>
+public/index.html:620:    <script src="/streak.js?v=47"></script>
+public/index.html:621:    <script src="/miniplayer.js?v=47"></script>
+public/index.html:622:    <script src="/fullplayer.js?v=47"></script>
+public/index.html:623:    <script src="/artist.js?v=47"></script>
+public/index.html:624:    <script src="/album.js?v=47"></script>
+public/index.html:625:    <script src="/app.js?v=47"></script>
+public/sw.js:1:const CACHE_STATIC_NAME = 'malamusic-static-v32';
+public/sw.js:2:const CACHE_DATA_NAME = 'malamusic-api-v32';
+public/sw.js:11:  '/firebase.js?v=47',
+public/sw.js:12:  '/app.js?v=47',
+public/sw.js:13:  '/player.js?v=47',
+public/sw.js:16:  '/home.js?v=47',
+public/sw.js:17:  '/library.js?v=47',
+public/sw.js:22:  '/profile.js?v=47',
+public/sw.js:23:  '/streak.js?v=47',
+public/sw.js:24:  '/leaderboard.js?v=47',
+public/sw.js:25:  '/stats.js?v=47',
+public/sw.js:33:    caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:56:          if (key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME) {
+public/sw.js:93:            caches.open(CACHE_DATA_NAME).then((cache) => {
+public/sw.js:121:          caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, networkResponse.clone()));
+public/sw.js:137:              caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:149:          caches.open(CACHE_STATIC_NAME).then((cache) => {
+=== STATIC CHECK ALL ===

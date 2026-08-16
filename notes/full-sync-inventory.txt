@@ -1,0 +1,856 @@
+=== FILE INVENTORY ===
+api/album.js
+api/artist.js
+api/email-auth.js
+api/firebase-admin.js
+api/google-auth.js
+api/index.js
+api/lyrics.js
+api/lyrics1.js
+api/lyrics2.js
+api/search.js
+api/stats.js
+api/streak.js
+api/suggest.js
+api/transcribe.js
+api/translate.js
+api/ytplay.js
+public/album.js
+public/app.js
+public/artist.js
+public/banner.png
+public/firebase.js
+public/fullplayer.js
+public/home.js
+public/index.html
+public/leaderboard.js
+public/library.js
+public/liked.js
+public/logo-mark.png
+public/logo.png
+public/manifest.json
+public/miniplayer.js
+public/player.js
+public/profile.js
+public/search.js
+public/stats.js
+public/streak.js
+public/sw.js
+=== PACKAGE/DEPLOY ===
+{
+  "name": "malamusic",
+  "private": true,
+  "version": "2.0.0",
+  "description": "MalaMusic - Web Music Player",
+  "scripts": {
+    "lint": "node --check public/app.js",
+    "dev": "node server.js",
+    "build": "echo 'No build required'",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.2.0"
+  }
+}
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.js"
+    }
+  ]
+}
+=== TRACK FIELD REFERENCES ===
+public/album.js:53:            if (!im && a.thumbnails && a.thumbnails.length) {
+public/album.js:54:                const lastThumb = a.thumbnails[a.thumbnails.length - 1];
+public/album.js:59:                if (firstSong.thumbnails && firstSong.thumbnails.length) {
+public/album.js:60:                    const firstSongThumb = firstSong.thumbnails[0];
+public/album.js:66:            Album.currentAlbumInfo = { id: id, title: a.title, artist: a.artist || '', cover: im };
+public/album.js:73:                <img src="${im}" class="w-full h-full object-cover" />
+public/album.js:77:                    <img src="${im}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
+public/album.js:105:                    if (!isAlbum && s.thumbnails && s.thumbnails.length) {
+public/album.js:106:                        const sThumb = s.thumbnails[0];
+public/album.js:111:                        id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist, artistId: s.artistId, cover: sim, ytUrl: 'https://youtube.com/watch?v='+s.videoId
+public/album.js:118:                    if (!isAlbum && s.thumbnails && s.thumbnails.length) {
+public/album.js:119:                        const sThumb = s.thumbnails[0];
+public/album.js:124:                    var isCur = S.ct && (
+public/album.js:125:                        S.ct.id === s.videoId ||
+public/album.js:126:                        S.ct.videoId === s.videoId ||
+public/album.js:127:                        (S.ct.title === s.title && S.ct.artist === s.artist)
+public/album.js:149:                        <img src="${sim}" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src='${FI}'" />
+public/album.js:186:            var isCur = S.ct && (
+public/album.js:187:                S.ct.id === s.videoId ||
+public/album.js:188:                S.ct.videoId === s.videoId ||
+public/album.js:189:                (S.ct.title === s.title && S.ct.artist === s.artist)
+public/album.js:223:        var cover = a.cover || FI;
+public/album.js:228:            updateOGForAlbum(title, cover, artist);
+public/album.js:251:        if (typeof S !== 'undefined' && S.ct && S.ct.title && S.ct.cover) {
+public/album.js:252:            if (typeof updateOG === 'function') updateOG(S.ct.title, S.ct.cover, S.ct.artist);
+public/album.js:260:        if (S.ct && (S.ct.id === s.id || S.ct.videoId === s.videoId || (S.ct.title === s.title && S.ct.artist === s.artist)) && AU.src) {
+public/album.js:264:        S.pl = S['album_'+id];
+public/album.js:265:        S.pi = index;
+public/album.js:267:        S.ct = S.pl[S.pi];
+public/album.js:272:        resetLyricsUI(S.ct.videoId);
+public/album.js:273:        loadTrack(S.ct);
+public/album.js:279:    importPlaylist(id, title, cover) {
+public/album.js:281:        const plId = createPlaylist(title, cover || '');
+public/album.js:286:                const im = toHDCover(s.cover, s.videoId);
+public/album.js:288:                    id: s.videoId,
+public/album.js:289:                    videoId: s.videoId,
+public/album.js:292:                    cover: im,
+public/album.js:294:                    ytUrl: 'https://youtube.com/watch?v=' + s.videoId
+public/album.js:308:        S.pl = arr;
+public/album.js:309:        S.pi = 0;
+public/album.js:311:        S.ct = S.pl[S.pi];
+public/album.js:316:        resetLyricsUI(S.ct.videoId);
+public/album.js:317:        loadTrack(S.ct);
+public/app.js:8:    try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:9:} else if (localStorage.getItem('pwa_installed') === 'true') {
+public/app.js:47:        caches.keys().then(function(names) {
+public/app.js:48:            names.forEach(function(name) { caches.delete(name); });
+public/app.js:51:    localStorage.removeItem('pwa_lyrics_cache');
+public/app.js:52:    localStorage.removeItem('pwa_audio_cache');
+public/app.js:54:    if (typeof audioUrlCache !== 'undefined') audioUrlCache = {};
+public/app.js:76:    try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:84:    return isStandaloneApp || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || localStorage.getItem('pwa_installed') === 'true';
+public/app.js:124:                try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
+public/app.js:142:        var data = localStorage.getItem('pwa_offline_tracks');
+public/app.js:151:    var vid = track.videoId || track.id;
+public/app.js:154:        return (s.videoId === vid || s.id === vid);
+public/app.js:165:    var vid = track.videoId || track.id;
+public/app.js:169:    var existingIndex = list.findIndex(function(s) { return (s.videoId === vid || s.id === vid); });
+public/app.js:178:        try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:190:        videoId: vid,
+public/app.js:193:        cover: track.cover || (typeof toHDCover==='function'?toHDCover('', vid):''),
+public/app.js:195:        ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vid),
+public/app.js:201:    try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:205:        if (typeof audioUrlCache !== 'undefined' && !audioUrlCache[vid]) {
+public/app.js:206:            var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+public/app.js:210:                body: JSON.stringify({ query: ytUrl })
+public/app.js:214:                audioUrlCache[vid] = d.result.download.audio;
+public/app.js:247:            try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+public/app.js:288:                var vid = track.videoId || track.id;
+public/app.js:289:                var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
+public/app.js:291:                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
+public/app.js:315:    if (typeof S === 'undefined' || !S.ct) {
+public/app.js:319:    saveTrackForOffline(S.ct);
+public/app.js:324:    var isSaved = S.ct ? isOfflineSong(S.ct) : false;
+public/app.js:354:                var isCur = S.ct && (
+public/app.js:355:                    S.ct.id === s.id ||
+public/app.js:356:                    S.ct.videoId === s.videoId ||
+public/app.js:357:                    (S.ct.title === s.title && S.ct.artist === s.artist)
+public/app.js:382:                        '<img src="'+(s.cover || FI)+'" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
+public/app.js:444:        localStorage.removeItem('theme');
+public/app.js:507:            var videoId = path.split('/play/')[1];
+public/app.js:508:            if(videoId) {
+public/app.js:513:                var qCover = p.get('cover') || p.get('thumb');
+public/app.js:518:                    App.showSharePopup(videoId);
+public/app.js:520:                    App.autoPlayTrack(videoId);
+public/app.js:530:                var qCover = p.get('cover') || p.get('thumb');
+public/app.js:566:                var qCover = p.get('cover') || p.get('thumb');
+public/app.js:585:            modal.innerHTML='<div class="w-full sm:max-w-lg max-h-[88vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="p-5 flex items-center gap-4 border-b border-white/10"><img src="'+(pl.image||((songs[0]&&songs[0].cover)||FI))+'" class="w-20 h-20 rounded-2xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><p class="text-[10px] uppercase tracking-widest text-amber-200/70 font-black">Playlist Publik</p><h2 class="text-xl font-black text-white truncate mt-1">'+es(pl.name)+'</h2><p class="text-xs text-white/50 mt-1">Oleh '+es(pl.owner_name||'Pendengar MalaMusic')+' · '+songs.length+' lagu</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[48vh] overflow-y-auto p-3">'+(songs.length?songs.map(function(s,i){return '<button onclick="App.playPublicPlaylist('+i+')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-left"><img src="'+(s.cover||FI)+'" class="w-10 h-10 rounded-lg object-cover" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(s.title||'Lagu')+'</strong><span class="text-xs text-white/50 truncate">'+es(s.artist||'MalaMusic')+'</span></span></button>';}).join(''):'<p class="p-8 text-center text-sm text-white/50">Playlist ini belum memiliki lagu.</p>')+'</div><div class="p-4 border-t border-white/10"><button onclick="App.playPublicPlaylist(0)" class="w-full rounded-full bg-white text-black py-3 font-black text-sm">Putar Playlist</button></div></div>';
+public/app.js:589:    playPublicPlaylist(index){ var songs=(window.__publicPlaylistSongs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }); if(!songs[index]) return; window.__publicPlaylistSongs=songs; S.pl=songs; S.pi=index; S.ps='public-playlist'; S.ct=songs[index]; var playUrl=location.origin+'/play/'+trackId(S.ct); history.pushState({},'',playUrl); UU(); MP.show(); S.il=true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); },
+public/app.js:590:    autoPlayTrack(videoId){
+public/app.js:591:        fetch(API.search+'?query=https://youtube.com/watch?v='+videoId).then(function(r){return r.json();}).then(function(d){
+public/app.js:592:            var title='Lagu',artist='MalaMusic',cover=toHDCover('', videoId),artistId='';
+public/app.js:593:            if(d.status&&d.result.songs&&d.result.songs.length>0){var song=d.result.songs[0];title=cn(song.title);artist=cn(song.artist);cover=toHDCover(song.thumbnail, videoId);artistId=song.artistId||'';}
+public/app.js:594:            S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:artistId,ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:595:            S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
+public/app.js:596:            FullPlayer.open();loadTrack(S.ct);
+public/app.js:598:            S.ct={id:videoId,videoId:videoId,title:'Lagu',artist:'MalaMusic',cover:toHDCover('', videoId),artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};
+public/app.js:599:            S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
+public/app.js:600:            FullPlayer.open();loadTrack(S.ct);
+public/app.js:603:    showSharePopup(videoId){
+public/app.js:604:        fetch(API.search+'?query=https://youtube.com/watch?v='+videoId).then(function(r){return r.json();}).then(function(d){
+public/app.js:605:            var title='Lagu',artist='MalaMusic',cover=toHDCover('', videoId);
+public/app.js:606:            if(d.status&&d.result.songs&&d.result.songs.length>0){var song=d.result.songs[0];title=cn(song.title);artist=cn(song.artist);cover=toHDCover(song.thumbnail, videoId);}
+public/app.js:607:            App.renderPopup(videoId,title,artist,cover);
+public/app.js:608:        }).catch(function(){App.renderPopup(videoId,'Lagu','MalaMusic',toHDCover('', videoId));});
+public/app.js:610:    renderPopup(videoId,title,artist,cover){
+public/app.js:611:        if(typeof updateOG==='function') updateOG(title, cover, artist);
+public/app.js:614:        popup.innerHTML='<div class="glass-strong w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.4s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><div class="flex items-center gap-4 mb-4"><img src="'+cover+'" class="w-16 h-16 rounded-xl object-cover " onerror="this.src=\''+FI+'\'" /><div class="flex-1 truncate"><h3 class="font-bold text-white truncate">'+title+'</h3><p class="text-[#b3b3b3] text-sm truncate">'+artist+'</p></div></div><p class="text-white/70 text-xs mb-4 text-center">Seseorang membagikan lagu ini kepadamu</p><div class="flex gap-3"><button id="popup-play" class="flex-1 btn-chrome font-bold py-3 rounded-full active:scale-95 flex items-center justify-center gap-2"><i data-lucide="play" class="w-4 h-4 fill-current"></i> Putar Sekarang</button><button id="popup-later" class="px-6 py-3 glass glass-hover text-white rounded-full active:scale-95">Nanti</button></div></div>';
+public/app.js:616:        popup.querySelector('#popup-play').onclick=function(){popup.remove();S.ct={id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId};S.ps='direct';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);FullPlayer.open();loadTrack(S.ct);};
+public/app.js:695:        if(localStorage.getItem('seen_v2_popup_update')) return;
+public/app.js:782:            localStorage.setItem('seen_v2_popup_update', 'true');
+public/app.js:824:        logo.style.objectFit = 'cover';
+public/artist.js:33:    open(id, name, thumbnail) {
+public/artist.js:40:        var tImg = thumbnail || FI;
+public/artist.js:41:        Artist.currentArtistInfo = { artistId: id, name: name || 'Artist', thumbnail: tImg };
+public/artist.js:48:            <img src="${tImg}" class="w-full h-full object-cover opacity-50" onerror="this.src='${FI}'" />
+public/artist.js:51:                <img src="${tImg}" class="w-24 h-24 rounded-full mb-3 object-cover" onerror="this.src='${FI}'" />
+public/artist.js:65:                var headerImg = a.thumbnails && a.thumbnails.length > 0 ? a.thumbnails[a.thumbnails.length-1].url : tImg;
+public/artist.js:66:                Artist.currentArtistInfo = { artistId: id, name: a.name || name || 'Artist', thumbnail: headerImg };
+public/artist.js:80:                    <img src="${headerImg}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+public/artist.js:102:                        if(s.thumbnails && s.thumbnails.length > 0) {
+public/artist.js:103:                            var lastT = s.thumbnails[s.thumbnails.length - 1];
+public/artist.js:107:                        var isCur = S.ct && (
+public/artist.js:108:                            S.ct.id === s.videoId ||
+public/artist.js:109:                            S.ct.videoId === s.videoId ||
+public/artist.js:110:                            (S.ct.title === s.title && S.ct.artist === (s.artist||a.name))
+public/artist.js:135:                        <div onclick="Artist.play('${s.videoId}','${esJs(s.title)}','${esJs(s.artist||a.name)}','${esJs(im)}')" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer active:scale-[0.98] transition-all duration-300 shadow-lg group ${rowBg}">
+public/artist.js:137:                            <img src="${im}" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src='${FI}'" />
+public/artist.js:153:                        if(al.thumbnails && al.thumbnails.length > 0) {
+public/artist.js:154:                            var lastT = al.thumbnails[al.thumbnails.length - 1];
+public/artist.js:160:                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+public/artist.js:174:                        if(sg.thumbnails && sg.thumbnails.length > 0) {
+public/artist.js:175:                            var lastT = sg.thumbnails[sg.thumbnails.length - 1];
+public/artist.js:181:                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+public/artist.js:195:                        if(vd.thumbnails && vd.thumbnails.length > 0) {
+public/artist.js:196:                            var lastT = vd.thumbnails[vd.thumbnails.length - 1];
+public/artist.js:200:                        <div onclick="Artist.play('${vd.videoId||''}','${esJs(vd.name)}','${esJs(vd.artist||a.name)}','${esJs(im)}')" class="flex-shrink-0 w-48 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col">
+public/artist.js:202:                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+public/artist.js:217:                        if(pl.thumbnails && pl.thumbnails.length > 0) {
+public/artist.js:218:                            var lastT = pl.thumbnails[pl.thumbnails.length - 1];
+public/artist.js:224:                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+public/artist.js:237:                        if(fo.thumbnails && fo.thumbnails.length > 0) {
+public/artist.js:238:                            var lastT = fo.thumbnails[fo.thumbnails.length - 1];
+public/artist.js:244:                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+public/artist.js:258:                        if(s.thumbnails && s.thumbnails.length > 0) {
+public/artist.js:259:                            var lastT = s.thumbnails[s.thumbnails.length - 1];
+public/artist.js:265:                                <img src="${im}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+public/artist.js:294:            var isCur = S.ct && (
+public/artist.js:295:                S.ct.id === s.videoId ||
+public/artist.js:296:                S.ct.videoId === s.videoId ||
+public/artist.js:297:                (S.ct.title === s.title && S.ct.artist === (s.artist||a.name))
+public/artist.js:358:        var cover = info.thumbnail || FI;
+public/artist.js:362:            updateOGForArtist(name, cover);
+public/artist.js:384:        if (typeof S !== 'undefined' && S.ct && S.ct.title && S.ct.cover) {
+public/artist.js:385:            if (typeof updateOG === 'function') updateOG(S.ct.title, S.ct.cover, S.ct.artist);
+public/artist.js:390:    play(vid,title,artist,cover){
+public/artist.js:391:        if (S.ct && (S.ct.id === vid || S.ct.videoId === vid || (S.ct.title === title && S.ct.artist === artist)) && AU.src) {
+public/artist.js:395:        var cov = toHDCover(cover, vid);
+public/artist.js:405:                if(s.thumbnails && s.thumbnails.length>0){
+public/artist.js:406:                    var last = s.thumbnails[s.thumbnails.length-1];
+public/artist.js:410:                    id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist || a.name, cover: toHDCover(sim, s.videoId), artistId: Artist.currentArtistId || '', ytUrl: 'https://youtube.com/watch?v='+s.videoId
+public/artist.js:413:            idx = topSongs.findIndex(function(x) { return x.videoId === vid; });
+public/artist.js:418:            S.ct = topSongs[idx];
+public/artist.js:420:            S.pl = topSongs;
+public/artist.js:421:            S.pi = idx;
+public/artist.js:423:            S.ct={id:vid,videoId:vid,title:title,artist:artist,cover:cov,artistId:Artist.currentArtistId || '',ytUrl:'https://youtube.com/watch?v='+vid};
+public/artist.js:424:            S.ps='artist';S.pl=[S.ct];S.pi=0;
+public/artist.js:427:        var url=location.origin+'/play/'+S.ct.videoId;history.pushState({},'',url);
+public/artist.js:430:        loadTrack(S.ct);
+public/fullplayer.js:5:            var saved = localStorage.getItem('malamusic_bg_glow_enabled');
+public/fullplayer.js:38:                    <button id="full-tab-cover" onclick="FullPlayer.switchView('cover')" class="px-4 py-1 rounded-full text-xs font-bold transition-all text-white bg-white/20 shadow-md cursor-pointer">
+public/fullplayer.js:49:                <div id="full-cover-lyrics-wrap" class="relative w-[86%] sm:w-[88%] max-w-[340px] aspect-square flex items-center justify-center transition-all duration-300">
+public/fullplayer.js:51:                    <div id="full-cover-view" class="w-full h-full relative flex items-center justify-center">
+public/fullplayer.js:52:                        <img id="full-cover" src="" class="w-full h-full object-cover rounded-2xl transition-transform duration-300 border border-white/10 shadow-2xl" />
+public/fullplayer.js:55:                        <div id="full-cover-next-overlay" class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none opacity-0 z-10">
+public/fullplayer.js:56:                            <img id="full-cover-next-img" src="" class="w-full h-full object-cover rounded-2xl border border-white/10 shadow-2xl" />
+public/fullplayer.js:60:                        <div id="full-cover-overlay" class="absolute inset-0 rounded-2xl flex flex-col items-center justify-center bg-black/65 backdrop-blur-md p-4 transition-opacity duration-200 opacity-0 pointer-events-none z-20">
+public/fullplayer.js:61:                            <div id="full-cover-icon" class="mb-3 text-white flex items-center justify-center"></div>
+public/fullplayer.js:62:                            <span id="full-cover-text" class="text-xs font-bold text-white leading-relaxed text-center drop-shadow-md px-2"></span>
+public/fullplayer.js:68:                        <!-- Mini Header: small cover thumbnail + title/artist, stays above lyrics (does NOT replace the cover) -->
+public/fullplayer.js:70:                            <img id="full-lyrics-mini-cover" src="" class="w-11 h-11 rounded-lg object-cover shadow-md border border-white/10 shrink-0" />
+public/fullplayer.js:206:                    <img id="lyrics-header-cover" src="" class="w-12 h-12 rounded-md object-cover shadow-md flex-shrink-0 bg-white/5" />
+public/fullplayer.js:251:                    <img id="lyrics-desktop-cover" src="" class="w-[350px] max-w-full aspect-square rounded-2xl mb-8 object-cover bg-white/5 shadow-2xl border border-white/10" />
+public/fullplayer.js:265:    currentViewMode: 'cover',
+public/fullplayer.js:268:        var coverView = gid('full-cover-view');
+public/fullplayer.js:270:        var tabCover = gid('full-tab-cover');
+public/fullplayer.js:272:        var wrap = gid('full-cover-lyrics-wrap');
+public/fullplayer.js:275:            if (coverView) coverView.classList.add('hidden');
+public/fullplayer.js:278:            // so the lyrics list has room below the small cover header.
+public/fullplayer.js:284:            // Fill the mini header (small cover thumbnail stays visible, lyrics go below it — not replacing it)
+public/fullplayer.js:285:            var miniCover = gid('full-lyrics-mini-cover');
+public/fullplayer.js:288:            var mainCoverImg = gid('full-cover');
+public/fullplayer.js:308:            if (coverView) coverView.classList.remove('hidden');
+public/fullplayer.js:340:                if(S.ct && typeof FullPlayer.updateBeats === 'function') FullPlayer.updateBeats(S.ct);
+public/fullplayer.js:355:    openArtist(){if(S.ct&&S.ct.artistId){FullPlayer.close();setTimeout(function(){Artist.open(S.ct.artistId,S.ct.artist);},400);}},
+public/fullplayer.js:370:                <img src="${(S.ct && S.ct.cover) ? S.ct.cover : FI}" class="w-12 h-12 rounded-xl object-cover" onerror="this.src='${FI}'" />
+public/fullplayer.js:372:                    <h4 class="font-bold text-white text-sm truncate">${(S.ct && S.ct.title) ? es(S.ct.title) : 'Pilih Lagu'}</h4>
+public/fullplayer.js:373:                    <p class="text-xs text-[#a0a5b0] truncate">${(S.ct && S.ct.artist) ? es(S.ct.artist) : ''}</p>
+public/fullplayer.js:431:        try { localStorage.setItem('malamusic_bg_glow_enabled', FullPlayer.bgGlowEnabled ? '1' : '0'); } catch (e) {}
+public/fullplayer.js:492:        if (track.cover) {
+public/fullplayer.js:495:                if (el) el.src = track.cover;
+public/fullplayer.js:497:            var miniCover = gid('full-lyrics-mini-cover');
+public/fullplayer.js:498:            if (miniCover) miniCover.src = track.cover;
+public/home.js:26:        var recentHtml = recentTracks.length ? '<div><div class="flex items-center justify-between mb-3"><h2 class="text-lg font-bold text-white tracking-wide flex items-center gap-2.5"><i data-lucide="history" class="w-5 h-5 text-rose-400"></i><span>Recently Played</span></h2><button onclick="App.switch(\'library\')" class="text-xs font-bold text-white/50 hover:text-white">Lihat koleksi</button></div><div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">' + recentTracks.slice(0,6).map(function(t){ return '<button onclick="App.autoPlayTrack(\'' + String(t.videoId || t.id).replace(/'/g,'') + '\')" class="w-32 sm:w-40 shrink-0 text-left group"><div class="aspect-square rounded-xl overflow-hidden bg-white/10 border border-white/10 shadow-lg mb-2"><img src="' + (t.cover || FI) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src=\'' + FI + '\'" /></div><p class="text-sm font-semibold text-white truncate">' + es(t.title || 'Lagu') + '</p><p class="text-xs text-white/50 truncate">' + es(t.artist || '') + '</p></button>'; }).join('') + '</div></div>' : '';
+public/home.js:40:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/home.js:184:                            id: s.videoId,
+public/home.js:185:                            videoId: s.videoId,
+public/home.js:189:                            cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:190:                            ytUrl: s.url
+public/home.js:198:                { name: 'XXXTENTACION', id: 'UC8E6Rlb6pPspk1KkLInmPBA', cover: 'https://i.scdn.co/image/ab6761610000e5eb806a16d223847e335e2e8e3c' },
+public/home.js:199:                { name: 'Juice WRLD', id: 'UC0BletW9py84h0beCD26WHQ', cover: 'https://i.scdn.co/image/ab6761610000e5eb1e345853b015b6d510006767' },
+public/home.js:200:                { name: '2Pac', id: 'UC24x07EwV_KkGf-k9o-94qg', cover: 'https://i.scdn.co/image/ab6761610000e5eb1a051d9539d09c2a78f3068e' },
+public/home.js:201:                { name: 'Lil Peep', id: 'UCsR6_b319eYpE8J40tI7G3g', cover: 'https://i.scdn.co/image/ab6761610000e5eb14081c3b5fa78f0f35ef1d55' },
+public/home.js:202:                { name: 'Lil Loaded', id: 'UCz_0qN0d1p8J80K6r49q8BA', cover: 'https://i.scdn.co/image/ab6761610000e5eb871b65e902b66236b568326e' },
+public/home.js:203:                { name: 'NLE Choppa', id: 'UCv_Gq8T1R2W1dY7I7G9G9qg', cover: 'https://i.scdn.co/image/ab6761610000e5ebfa0ee4d9a244434db03405f6' },
+public/home.js:204:                { name: 'Ice Cube', id: 'UCa5K8O9W4A5G6k-7Y8I8G9g', cover: 'https://i.scdn.co/image/ab6761610000e5ebd7f7bbffdf4e45ebef823158' },
+public/home.js:205:                { name: 'Eazy-E', id: 'UCa0G7K8I8W1dY7I7G9G9qg1', cover: 'https://i.scdn.co/image/ab6761610000e5ebf537b0185966bbcd238d227b' },
+public/home.js:206:                { name: 'Eminem', id: 'UCn_128A3X8K2wF7F5Y7O_8g', cover: 'https://i.scdn.co/image/ab6761610000e5eba00b11c129b27a88fc72f36b' }
+public/home.js:217:                            if (art.cover) matched.cover = art.cover;
+public/home.js:250:                        id: s.videoId,
+public/home.js:251:                        videoId: s.videoId,
+public/home.js:255:                        cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:256:                        ytUrl: s.url
+public/home.js:276:                var isCur = S.ct && (
+public/home.js:277:                    S.ct.id === t.id ||
+public/home.js:278:                    S.ct.videoId === t.id ||
+public/home.js:279:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/home.js:280:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/home.js:281:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/home.js:298:                    '<img src="'+t.cover+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" referrerPolicy="no-referrer" onerror="this.src=\''+FI+'\'" />'+
+public/home.js:310:                return '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="flex-shrink-0 w-36 cursor-pointer active:scale-95 group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square mb-2 relative rounded-xl overflow-hidden shadow-md"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" onerror="this.src=\''+FI+'\'" /></div><h3 class="font-semibold text-xs truncate text-white px-0.5">'+es(p.title)+'</h3><p class="text-white/60 text-[10px] truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div>';
+public/home.js:319:                        <img src="/logo.png" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+public/home.js:385:                var isCur = S.ct && (
+public/home.js:386:                    S.ct.id === t.id ||
+public/home.js:387:                    S.ct.videoId === t.id ||
+public/home.js:388:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/home.js:389:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/home.js:390:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/home.js:407:                    '<img src="'+t.cover+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src=\''+FI+'\'" />'+
+public/home.js:419:                return '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="flex-shrink-0 w-36 cursor-pointer active:scale-95 group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col animate-card-left" style="animation-delay:'+Math.min(i*40, 400)+'ms"><div class="w-full aspect-square mb-2 relative rounded-xl overflow-hidden shadow-md"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src=\''+FI+'\'" /></div><h3 class="font-semibold text-xs truncate text-white px-0.5">'+es(p.title)+'</h3><p class="text-white/60 text-[10px] truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div>';
+public/home.js:426:                return '<div onclick="Artist.open(\''+p.id+'\', \''+esJs(p.name||p.title)+'\')" class="flex-shrink-0 w-32 cursor-pointer active:scale-95 group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col items-center animate-card-left" style="animation-delay:'+Math.min(i*40, 400)+'ms"><div class="w-24 h-24 mb-2 relative rounded-full overflow-hidden shadow-md border-2 border-white/10 group-hover:scale-105 transition-transform duration-300"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover" onerror="this.src=\''+FI+'\'" /></div><h3 class="font-semibold text-center text-xs truncate text-white w-full px-0.5">'+es(p.name||p.title)+'</h3><p class="text-white/60 text-[10px] uppercase tracking-wider font-semibold mt-0.5">Artist</p></div>';
+public/home.js:512:            try { previousQuery = localStorage.getItem('mala_home_query') || ''; } catch(e) {}
+public/home.js:515:            try { localStorage.setItem('mala_home_query', q); } catch(e) {}
+public/home.js:522:                            id: s.videoId,
+public/home.js:523:                            videoId: s.videoId,
+public/home.js:527:                            cover: toHDCover(s.thumbnail, s.videoId),
+public/home.js:528:                            ytUrl: s.url
+public/home.js:530:                    }).filter(function(song, index, list){ return list.findIndex(function(item){ return item.videoId === song.videoId; }) === index; }).sort(function(){ return Math.random() - 0.5; });
+public/home.js:553:            { name: 'XXXTENTACION', id: 'UCnAcxgRZ065f_eXK1o85c1w', cover: 'https://yt3.googleusercontent.com/No3I8pA9ows2dy6NElEr9mCXLzYxgjVvsQr7h69C03palsH1u8Q8iw-sAAUxav599Wmi64up8lbDGbI=w800-h800-l90-rj' },
+public/home.js:554:            { name: 'Lil Peep', id: 'UCxcyWcW0kZFGRyetDHr3UuA', cover: 'https://yt3.googleusercontent.com/TbvXoTXJz8a2xfkJxZsI0riSyrUSibnVHBFxhHTeJefWY-2-60x0VhUPkO89uF3CGOPLalsTTM-OlEeI=w800-h800-l90-rj' },
+public/home.js:555:            { name: 'Juice WRLD', id: 'UCbn0GRdgsQtl9hlV-IqxFGg', cover: 'https://lh3.googleusercontent.com/6YKQ7fDb3ISfzNUjpJnXX1FLw9EQ8eK5qHa07VANJtkaGagUtqtHiAOKz2AJ1AoASNacrCeg8pd35ao=w800-h800-l90-rj' },
+public/home.js:556:            { name: 'Lil Loaded', id: 'UCzM0GZjC6wQnvpljr3SbKRw', cover: 'https://lh3.googleusercontent.com/jectExZmYnwQhQWHO_gqTHDhDlOpz6HMwR5kd8f6a2fQ7-KVeSGoR_IHuZPIk_PHQEt-0jzQiCCU-io=w800-h800-l90-rj' },
+public/home.js:557:            { name: 'Hindia', id: 'UCzhVLh7xVyH3MpqO_KY6SYg', cover: 'https://yt3.googleusercontent.com/8ImMAMQSD4FA6-gdqCZWSFaB-drHvkdfiFcFAk7Mcyy56ctfWD-Xxno-CHfGC4L6Ql8aR61XT0vX0F4b=w800-h800-l90-rj' }
+public/home.js:569:                        if (art.cover) matched.cover = art.cover;
+public/home.js:611:                var isCur = S.ct && (
+public/home.js:612:                    S.ct.id === t.id ||
+public/home.js:613:                    S.ct.videoId === t.id ||
+public/home.js:614:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/home.js:615:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/home.js:616:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/home.js:634:                    '<img src="'+t.cover+'" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
+public/home.js:649:            plHtml += '<div onclick="Library.open(\''+p.id+'\')" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\''+FI+'\'" /><div class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all shadow-black/40"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></div></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.name)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+p.songs.length+' lagu</p></div></div>';
+public/home.js:656:                plHtml += '<div onclick="Album.open(&quot;'+p.id+'&quot;)" class="flex-shrink-0 w-36 md:w-44 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col"><div class="w-full aspect-square rounded-xl overflow-hidden relative shadow-md mb-2"><img src="'+(p.cover||FI)+'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=&quot;/logo.png&quot;" /></div><h3 class="font-semibold text-sm text-white truncate px-0.5">'+es(p.title)+'</h3><p class="text-xs text-white/60 truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div></div>';
+public/home.js:668:                    var imgUrl = toWebp(p.cover) || FI;
+public/home.js:669:                    return '<div onclick="Artist.open(\''+p.id+'\', \''+esJs(p.name||p.title)+'\', \''+(p.cover||'')+'\')" class="flex-shrink-0 w-32 cursor-pointer active:scale-95 transition-all group"><div class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl group-hover:bg-[#282b38] transition-all flex flex-col items-center"><div class="w-24 h-24 rounded-full overflow-hidden relative shadow-md mb-2 border-2 border-white/10 group-hover:scale-105 transition-transform duration-300"><img src="'+imgUrl+'" class="w-full h-full object-cover" onerror="handleImgError(this)" /></div><h3 class="font-semibold text-center text-xs text-white truncate w-full px-0.5">'+es(p.name||p.title)+'</h3><p class="text-white/60 text-[10px] mt-0.5 uppercase tracking-wider font-semibold">Artist</p></div></div>';
+public/home.js:698:                var isCur = S.ct && (
+public/home.js:699:                    S.ct.id === t.id ||
+public/home.js:700:                    S.ct.videoId === t.id ||
+public/home.js:701:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/home.js:702:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/home.js:703:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/home.js:741:            var isCur = S.ct && (
+public/home.js:742:                S.ct.id === t.id ||
+public/home.js:743:                S.ct.videoId === t.id ||
+public/home.js:744:                (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/home.js:745:                (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/home.js:746:                (S.ct.title === t.title && S.ct.artist === t.artist)
+public/index.html:5:        if ('serviceWorker' in navigator) {
+public/index.html:7:                navigator.serviceWorker.register('/sw.js?v=32').then(function(reg) {
+public/index.html:18:    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+public/index.html:164:        .artist-photo { width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--border-color); box-shadow:var(--nm-shadow-flat); background:var(--bg-color); }
+public/index.html:247:            object-fit: cover;
+public/index.html:289:            object-fit: cover;
+public/index.html:509:        .spotify-brand img { width:36px; height:36px; border-radius:10px; object-fit:cover; }
+public/library.js:15:        var html = '<div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url(\'/banner.png\') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">' +
+public/library.js:46:                html += '<div class="space-y-2">' + likedSongs.map(function(s, i){ return '<div class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10 text-left hover:bg-white/[.08]"><button onclick="Library.playLikedIndex(' + i + ')" class="flex items-center gap-3 flex-1 min-w-0"><img src="' + (s.cover || FI) + '" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(s.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(s.artist || '') + '</span></span></button>' + trackMenuButton(s) + '</div>'; }).join('') + '</div>';
+public/library.js:64:                            '<img src="' + a.thumbnail + '" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" />' +
+public/library.js:87:                            '<img src="' + (p.image || (p.songs.length > 0 ? p.songs[0].cover : FI)) + '" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\'' + FI + '\'" />' +
+public/library.js:106:        S.pl = songs;
+public/library.js:107:        S.pi = 0;
+public/library.js:109:        S.ct = S.pl[S.pi];
+public/library.js:111:        resetLyricsUI(S.ct.videoId);
+public/library.js:112:        loadTrack(S.ct);
+public/library.js:118:        if (S.ct && (S.ct.id === s.id || S.ct.videoId === s.videoId || (S.ct.title === s.title && S.ct.artist === s.artist)) && AU.src) {
+public/library.js:122:        S.pl = songs;
+public/library.js:123:        S.pi = index;
+public/library.js:125:        S.ct = S.pl[S.pi];
+public/library.js:127:        resetLyricsUI(S.ct.videoId);
+public/library.js:128:        loadTrack(S.ct);
+public/library.js:147:            '<div class="flex items-center gap-3 mb-5"><img src="'+(pl.image||(pl.songs.length>0?pl.songs[0].cover:FI))+'" class="w-12 h-12 rounded-lg object-cover" onerror="this.src=\''+FI+'\'" /><div class="truncate"><h3 class="font-bold text-white truncate">'+es(pl.name)+'</h3><p class="text-white/70 text-xs">'+pl.songs.length+' lagu</p></div></div>'+
+public/library.js:232:                    <img src="${pl.image||(pl.songs.length>0?pl.songs[0].cover:FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+public/library.js:235:                        <img src="${pl.image||(pl.songs.length>0?pl.songs[0].cover:FI)}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
+public/library.js:252:                var isCur = S.ct && (
+public/library.js:253:                    S.ct.id === s.id ||
+public/library.js:254:                    S.ct.videoId === s.videoId ||
+public/library.js:255:                    (S.ct.title === s.title && S.ct.artist === s.artist)
+public/library.js:274:                html+='<div class="flex items-center gap-2 p-2 rounded-lg active:scale-[0.98] ' + rowBg + '"><div onclick="Library.playSong(\''+id+'\','+i+')" class="flex items-center gap-3 flex-1 cursor-pointer overflow-hidden"><div class="relative w-10 h-10 rounded overflow-hidden shrink-0"><img src="'+s.cover+'" class="w-full h-full object-cover" onerror="this.src=\'' + FI + '\'" /><div class="absolute inset-0 bg-black/80 ' + (isCur ? 'opacity-100' : 'opacity-0 group-hover:opacity-100') + ' transition-all flex items-center justify-center">' + iconOverlay + '</div></div><div class="truncate flex-1 min-w-0"><p class="text-sm truncate ' + titleClass + '">'+es(s.title)+'</p><p class="text-white/70 text-xs truncate">'+es(s.artist)+'</p></div></div>'+trackMenuButton(s)+'<button onclick="Library.removeSong(\''+id+'\','+i+')" class="text-white/70 hover:text-red-400 p-2 active:scale-90 shrink-0" title="Hapus"><i data-lucide="x" class="w-5 h-5"></i></button></div>';
+public/library.js:310:            var isCur = S.ct && (
+public/library.js:311:                S.ct.id === s.id ||
+public/library.js:312:                S.ct.videoId === s.videoId ||
+public/library.js:313:                (S.ct.title === s.title && S.ct.artist === s.artist)
+public/library.js:329:            var coverOverlay = el.querySelector('.relative.w-10 .absolute');
+public/library.js:330:            if (coverOverlay) {
+public/library.js:331:                coverOverlay.innerHTML = iconOverlay;
+public/library.js:332:                coverOverlay.className = 'absolute inset-0 bg-black/80 ' + (isCur ? 'opacity-100' : 'opacity-0 group-hover:opacity-100') + ' transition-all flex items-center justify-center';
+public/library.js:362:        if (S.ct && (S.ct.id === s.id || S.ct.videoId === s.videoId || (S.ct.title === s.title && S.ct.artist === s.artist)) && AU.src) {
+public/library.js:366:        S.pl=pl.songs;S.pi=index;S.ps='playlist';S.ct=S.pl[S.pi];UU();MP.show();S.il=true;UB();resetLyricsUI(S.ct.videoId);loadTrack(S.ct);
+public/liked.js:9:                var isCur = S.ct && (
+public/liked.js:10:                    S.ct.id === s.id ||
+public/liked.js:11:                    S.ct.videoId === s.videoId ||
+public/liked.js:12:                    (S.ct.title === s.title && S.ct.artist === s.artist)
+public/liked.js:32:                        '<img src="'+s.cover+'" class="w-14 h-14 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
+public/liked.js:51:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/miniplayer.js:11:                            <img id="mini-cover-next" src="" class="w-full h-full object-cover rounded-full spin-record" style="animation-play-state: paused;" />
+public/miniplayer.js:33:                        <img id="mini-cover" src="" class="w-full h-full object-cover rounded-full spin-record" style="animation-play-state: paused;" />
+public/miniplayer.js:59:        if (!S || !S.ct || (!S.ct.id && !S.ct.videoId && !S.ct.title)) {
+public/miniplayer.js:67:        if (typeof S !== 'undefined' && S.ct) {
+public/miniplayer.js:68:            MP.updateBeats(S.ct);
+public/miniplayer.js:79:        var str = (track.videoId || '') + (track.title || '') + (track.artist || '');
+public/miniplayer.js:248:        if (!track.cover) return;
+public/miniplayer.js:251:        if (MP._colorCache[track.cover]) {
+public/miniplayer.js:252:            MP.applyColors(MP._colorCache[track.cover]);
+public/miniplayer.js:256:        // Upgrade to real colors extracted from the actual cover artwork.
+public/miniplayer.js:265:                MP._colorCache[track.cover] = extracted;
+public/miniplayer.js:267:                if (typeof S === 'undefined' || !S.ct || S.ct.cover === track.cover) {
+public/miniplayer.js:273:        img.src = '/api/proxy-image?url=' + encodeURIComponent(track.cover);
+public/player.js:25:function toHDCover(url, videoId) {
+public/player.js:26:    if (!url && videoId) return 'https://i.ytimg.com/vi_webp/' + videoId + '/hqdefault.webp';
+public/player.js:74:try{S.playbackRate=parseFloat(localStorage.getItem('malamusic_playback_rate'))||1.0;}catch(e){S.playbackRate=1.0;}
+public/player.js:75:try{var storedAutoNext = localStorage.getItem('malamusic_auto_next');if(storedAutoNext!==null){S.autoNext = storedAutoNext==='true';}}catch(e){}
+public/player.js:82:    var id = String(track.videoId || track.id || track.video_id || '').trim();
+public/player.js:85:        videoId: id,
+public/player.js:89:        cover: toHDCover(track.cover || track.thumbnail || track.image || '', id),
+public/player.js:90:        ytUrl: track.ytUrl || track.url || (id ? 'https://youtube.com/watch?v=' + id : '')
+public/player.js:93:function trackId(track){return String(track && (track.videoId || track.id || track.video_id) || '').trim();}
+public/player.js:110:        if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
+public/player.js:111:        if(typeof StatsTracker !== 'undefined' && S.ct) StatsTracker.tick(S.ct, AU.currentTime);
+public/player.js:115:AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
+public/player.js:172:        var cover = (typeof toHDCover==='function') ? toHDCover(track.cover, track.videoId||track.id) : (track.cover||FI);
+public/player.js:178:                {src: cover, sizes: '96x96', type: 'image/webp'},
+public/player.js:179:                {src: cover, sizes: '256x256', type: 'image/webp'},
+public/player.js:180:                {src: cover, sizes: '512x512', type: 'image/webp'}
+public/player.js:202:    var storedVol = parseFloat(localStorage.getItem('malamusic_volume'));
+public/player.js:216:    try { localStorage.setItem('malamusic_volume', String(vol)); } catch(e){}
+public/player.js:261:var audioUrlCache = {};
+public/player.js:263:    var storedAudio = localStorage.getItem('pwa_audio_cache');
+public/player.js:264:    if (storedAudio) audioUrlCache = JSON.parse(storedAudio);
+public/player.js:269:    var storedLyrics = localStorage.getItem('pwa_lyrics_cache');
+public/player.js:277:        localStorage.setItem('pwa_lyrics_cache', JSON.stringify(lyricsCache));
+public/player.js:279:        var aKeys = Object.keys(audioUrlCache);
+public/player.js:280:        if (aKeys.length > 80) delete audioUrlCache[aKeys[0]];
+public/player.js:281:        localStorage.setItem('pwa_audio_cache', JSON.stringify(audioUrlCache));
+public/player.js:290:function getTrackId(track) { return track && (track.videoId || track.id); }
+public/player.js:295:    if (audioUrlCache[vid]) return Promise.resolve(audioUrlCache[vid]);
+public/player.js:298:    var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+public/player.js:300:        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
+public/player.js:304:        audioUrlCache[vid] = url;
+public/player.js:326:    if (!S.pl || !S.pl.length || S.pi < 0) return;
+public/player.js:328:    if (S.pl.length > 1) {
+public/player.js:330:            var nextIndex = (S.pi + 1) % S.pl.length;
+public/player.js:331:            var prevIndex = (S.pi - 1 + S.pl.length) % S.pl.length;
+public/player.js:332:            adjacent.push(S.pl[nextIndex], S.pl[prevIndex]);
+public/player.js:334:            if (S.pi + 1 < S.pl.length) adjacent.push(S.pl[S.pi + 1]);
+public/player.js:335:            if (S.pi - 1 >= 0) adjacent.push(S.pl[S.pi - 1]);
+public/player.js:386:        if (S.isShuffle && S.pl && S.pl.length > 1) {
+public/player.js:387:            var ni = (S.pi + 1) % S.pl.length;
+public/player.js:388:            nextTrack = S.pl[ni];
+public/player.js:389:        } else if (S.pl && S.pi + 1 < S.pl.length) {
+public/player.js:390:            nextTrack = S.pl[S.pi + 1];
+public/player.js:408:    var nextVid = nextTrack.videoId || nextTrack.id;
+public/player.js:409:    var nextCover = toHDCover(nextTrack.cover, nextVid);
+public/player.js:419:    var miniCover = gid('mini-cover-next');
+public/player.js:434:            var curMiniCover = gid('mini-cover');
+public/player.js:455:        fullHeaderArtist.innerText = progress >= 50 ? nextArtist : (S.ct ? S.ct.artist : '');
+public/player.js:473:    var fullCoverCur = gid('full-cover');
+public/player.js:474:    var fullCoverNext = gid('full-cover-next-overlay');
+public/player.js:475:    var fullCoverImg = gid('full-cover-next-img');
+public/player.js:533:        fullHeaderArtist.innerText = S.ct ? S.ct.artist : '';
+public/player.js:545:    var fullCoverCur = gid('full-cover');
+public/player.js:551:    var fullCoverNext = gid('full-cover-next-overlay');
+public/player.js:559:    var fullCoverImg = gid('full-cover-next-img');
+public/player.js:616:    var coverOverlay=gid('full-cover-overlay'),coverIcon=gid('full-cover-icon'),coverText=gid('full-cover-text');
+public/player.js:617:    var fullCover=gid('full-cover');
+public/player.js:624:    var miniCover = gid('mini-cover');
+public/player.js:637:        if(coverOverlay){
+public/player.js:638:            coverOverlay.classList.remove('opacity-0', 'pointer-events-none');
+public/player.js:639:            coverOverlay.classList.add('opacity-100');
+public/player.js:640:            if(coverIcon) coverIcon.innerHTML='<div class="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-zinc-900/80 border border-white/10 p-2"><img src="/logo.png" class="w-8 h-8 object-contain animate-pulse" alt="Logo"/><div class="absolute inset-0 border-2 border-white/10 border-t-white rounded-2xl animate-spin"></div></div>';
+public/player.js:641:            if(coverText) {
+public/player.js:642:                coverText.className = 'text-xs font-semibold text-zinc-300 leading-relaxed text-center drop-shadow-md px-2';
+public/player.js:643:                coverText.innerText='Sabar yaa, server kami perlu waktu buat siapin lagu';
+public/player.js:660:        if(coverOverlay){
+public/player.js:661:            coverOverlay.classList.remove('opacity-100');
+public/player.js:662:            coverOverlay.classList.add('opacity-0', 'pointer-events-none');
+public/player.js:677:        if(coverOverlay){
+public/player.js:678:            if(S.ct){
+public/player.js:679:                coverOverlay.classList.remove('opacity-0', 'pointer-events-none');
+public/player.js:680:                coverOverlay.classList.add('opacity-100');
+public/player.js:681:                if(coverIcon) coverIcon.innerHTML='<svg class="w-12 h-12 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>';
+public/player.js:682:                if(coverText) coverText.innerText='DIPAUSE';
+public/player.js:684:                coverOverlay.classList.remove('opacity-100');
+public/player.js:685:                coverOverlay.classList.add('opacity-0', 'pointer-events-none');
+public/player.js:689:            if(S.ct){
+public/player.js:698:            if(S.ct){
+public/player.js:766:    // Immediately set src so image changes right away and doesn't get stuck showing previous track cover
+public/player.js:787:function updateOG(title, cover, artist) {
+public/player.js:788:    if (title && cover) {
+public/player.js:797:        setMetaTag('og:image', cover, true);
+public/player.js:804:        setMetaTag('twitter:image', cover, false);
+public/player.js:824:function updateOGForArtist(artistName, coverUrl) {
+public/player.js:829:    var cover = (coverUrl && coverUrl !== FI) ? coverUrl : 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
+public/player.js:835:    setMetaTag('og:image', cover, true);
+public/player.js:842:    setMetaTag('twitter:image', cover, false);
+public/player.js:846:function updateOGForAlbum(albumTitle, coverUrl, artistName) {
+public/player.js:852:    var cover = (coverUrl && coverUrl !== FI) ? coverUrl : 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
+public/player.js:858:    setMetaTag('og:image', cover, true);
+public/player.js:865:    setMetaTag('twitter:image', cover, false);
+public/player.js:871:    if(!S.ct) {
+public/player.js:876:    var origCover = S.ct.cover || '';
+public/player.js:877:    var hdCover = toHDCover(origCover, S.ct.videoId || S.ct.id);
+public/player.js:879:    var mc=gid('mini-cover'),mt=gid('mini-title'),ma=gid('mini-artist'),fc=gid('full-cover'),ft=gid('full-title'),fa=gid('full-artist'),fh=gid('full-header-artist'),fb=gid('full-bg-blur'),fba=gid('full-bg-artwork');
+public/player.js:881:    if(mt) mt.innerText=S.ct.title;
+public/player.js:882:    if(ma) ma.innerText=S.ct.artist;
+public/player.js:884:    if(ft) ft.innerText=S.ct.title;
+public/player.js:885:    if(fa) fa.innerText=S.ct.artist;
+public/player.js:886:    if(fh) fh.innerText=S.ct.artist;
+public/player.js:890:    updateOG(S.ct.title, hdCover, S.ct.artist);
+public/player.js:893:    if(typeof MP !== 'undefined' && MP.updateBeats) MP.updateBeats(S.ct);
+public/player.js:894:    if(typeof FullPlayer !== 'undefined' && FullPlayer.updateBeats) FullPlayer.updateBeats(S.ct);
+public/player.js:908:    else if(s==='queue')l=S.pl||[];
+public/player.js:909:    else if(S.pl && S.pl.length > 0)l=S.pl;
+public/player.js:911:    if((!l || !l[i]) && S.pl && S.pl[i]){
+public/player.js:912:        l = S.pl;
+public/player.js:917:    if(S.ct && ((S.ct.id && S.ct.id === l[i].id) || (S.ct.videoId && S.ct.videoId === l[i].videoId)) && AU.src && !AU.paused){
+public/player.js:921:    S.ps=s;S.pl=l;S.pi=i;S.ct=l[i];
+public/player.js:922:    var url=location.origin+'/play/'+(S.ct.videoId||S.ct.id);history.pushState({},'',url);
+public/player.js:925:    resetLyricsUI(S.ct.videoId||S.ct.id);
+public/player.js:926:    loadTrack(S.ct);
+public/player.js:930:    if(!track || !(track.videoId || track.id)) return;
+public/player.js:932:        var id = track.videoId || track.id;
+public/player.js:933:        var current = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]');
+public/player.js:934:        current = current.filter(function(item){ return (item.videoId || item.id) !== id; });
+public/player.js:935:        current.unshift({ id:id, videoId:id, title:track.title || 'Lagu', artist:track.artist || 'MalaMusic', cover:track.cover || FI, artistId:track.artistId || '', ytUrl:track.ytUrl || ('https://youtube.com/watch?v=' + id), playedAt:Date.now() });
+public/player.js:936:        localStorage.setItem('mala_recent_tracks', JSON.stringify(current.slice(0, 12)));
+public/player.js:940:    try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
+public/player.js:946:    if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
+public/player.js:959:    var vid = track.videoId || track.id;
+public/player.js:961:        var audioUrl = audioUrlCache[vid];
+public/player.js:970:        if(S.ct!==track)return;
+public/player.js:1009:        if(S.ct===track){S.il=false;S.ip=false;UB();}
+public/player.js:1014:    if(!S.ct)return;
+public/player.js:1016:        loadTrack(S.ct);
+public/player.js:1048:            var currId = track.videoId || track.id;
+public/player.js:1050:                return (s.videoId || s.id) !== currId;
+public/player.js:1053:                S.pl = S.pl.concat(newSongs);
+public/player.js:1063:    if(!S.pl || !S.pl.length){
+public/player.js:1064:        if(S.ct){
+public/player.js:1065:            S.pl = [S.ct];
+public/player.js:1066:            S.pi = 0;
+public/player.js:1072:    if(S.pi + 1 >= S.pl.length && S.autoNext){
+public/player.js:1073:        if(S.ct){
+public/player.js:1076:            var fetched = await fetchAutoNextRecommendations(S.ct);
+public/player.js:1086:    if(S.isShuffle && S.pl.length > 1){
+public/player.js:1087:        var ri = S.pi;
+public/player.js:1089:        while(ri === S.pi && attempts < 10){
+public/player.js:1090:            ri = Math.floor(Math.random() * S.pl.length);
+public/player.js:1095:        var ni = S.pi + 1;
+public/player.js:1096:        if(ni >= S.pl.length){ ni = 0; }
+public/player.js:1101:    if(!S.pl || !S.pl.length)return;
+public/player.js:1110:    var pi = S.pi - 1;
+public/player.js:1111:    if(pi < 0) pi = S.pl.length - 1;
+public/player.js:1144:    try { localStorage.setItem('malamusic_auto_next', S.autoNext); } catch(e) {}
+public/player.js:1158:    if(!S.ct||!S.ct.videoId)return;
+public/player.js:1159:    var url=location.origin+'/play/'+S.ct.videoId+'?share=true';
+public/player.js:1160:    updateOG(S.ct.title,S.ct.cover,S.ct.artist);
+public/player.js:1161:    if(navigator.share){navigator.share({title:S.ct.title,text:S.ct.title+' - '+S.ct.artist,url:url}).catch(function(){});}
+public/player.js:1187:    if (S.ct) {
+public/player.js:1188:        var cov = S.ct.cover || FI;
+public/player.js:1189:        ['lyrics-header-cover', 'lyrics-desktop-cover', 'lyrics-bg-blur'].forEach(function(id){
+public/player.js:1193:            var el = gid(id); if(el) el.innerText = S.ct.title || 'Unknown';
+public/player.js:1196:            var el = gid(id); if(el) el.innerText = S.ct.artist || 'Unknown';
+public/player.js:1199:            FullPlayer.updateBeats(S.ct);
+public/player.js:1312:        var offlineTrack = offlineList.find(function(s){ return (s.videoId === vid || s.id === vid); });
+public/player.js:1347:            var activeVid = S.ct ? (S.ct.videoId || S.ct.id) : null;
+public/player.js:1351:                var offlineTrack = offlineList.find(function(s){ return (s.videoId === vid || s.id === vid); });
+public/player.js:1369:        var curTitle = (S.ct && S.ct.title) ? '&title=' + encodeURIComponent(S.ct.title) : '';
+public/player.js:1370:        var curArtist = (S.ct && S.ct.artist) ? '&artist=' + encodeURIComponent(S.ct.artist) : '';
+public/player.js:1378:        var activeVid = S.ct ? (S.ct.videoId || S.ct.id) : null;
+public/player.js:1405:        var activeVid = S.ct ? (S.ct.videoId || S.ct.id) : null;
+public/player.js:1569:        if (S.ct) {
+public/player.js:1570:            ['lyrics-header-cover', 'lyrics-desktop-cover', 'lyrics-bg-blur'].forEach(function(id){
+public/player.js:1571:                var el = gid(id); if(el) el.src = S.ct.cover || FI;
+public/player.js:1574:                var el = gid(id); if(el) el.innerText = S.ct.title || 'Unknown';
+public/player.js:1577:                var el = gid(id); if(el) el.innerText = S.ct.artist || 'Unknown';
+public/player.js:1589:        if(S.ct&&S.ct.videoId&&S.ld.lines.length===0){
+public/player.js:1590:            FL(S.ct.videoId);
+public/player.js:1600:    try{return JSON.parse(localStorage.getItem('malamusic_liked_songs')||'[]');}catch(e){return[];}
+public/player.js:1603:    try{localStorage.setItem('malamusic_liked_songs',JSON.stringify(songs));}catch(e){}
+public/player.js:1605:function isLikedSong(videoId){
+public/player.js:1606:    if(!videoId) return false;
+public/player.js:1608:    return songs.some(function(s){ return (s.videoId === videoId || s.id === videoId); });
+public/player.js:1612:    var vId = track.videoId || track.id;
+public/player.js:1615:    var index = songs.findIndex(function(s){ return (s.videoId === vId || s.id === vId); });
+public/player.js:1623:            videoId: vId,
+public/player.js:1626:            cover: track.cover || track.thumbnail || '',
+public/player.js:1628:            ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vId)
+public/player.js:1642:    if(!S.ct) return;
+public/player.js:1643:    toggleLikeSong(S.ct);
+public/player.js:1648:    try{return JSON.parse(localStorage.getItem('malamusic_liked_artists')||'[]');}catch(e){return[];}
+public/player.js:1651:    try{localStorage.setItem('malamusic_liked_artists',JSON.stringify(artists));}catch(e){}
+public/player.js:1670:            thumbnail: artist.thumbnail
+public/player.js:1684:    var isLiked = S.ct ? isLikedSong(S.ct.videoId) : false;
+public/player.js:1715:        var pls=JSON.parse(localStorage.getItem('malamusic_playlists')||'[]');
+public/player.js:1724:                    if(!s.cover || s.cover.includes('uZKDQkZ3c5VK.png') || s.cover.includes('logo.png')){
+public/player.js:1725:                        s.cover = toHDCover('', s.videoId);
+public/player.js:1731:                p.image=p.songs[0].cover;
+public/player.js:1736:            localStorage.setItem('malamusic_playlists',JSON.stringify(pls));
+public/player.js:1741:function saveUserPlaylists(pls){try{localStorage.setItem('malamusic_playlists',JSON.stringify(pls));}catch(e){}}
+public/player.js:1745:function addToPlaylistById(playlistId,track){var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===playlistId;});if(!pl)return;if(pl.songs.length>=15){showToast('Playlist penuh (Max 15)');return;}var exists=pl.songs.find(function(s){return s.videoId===track.videoId;});if(!exists){pl.songs.push({id:track.id,videoId:track.videoId,title:track.title,artist:track.artist,cover:track.cover,artistId:track.artistId||'',ytUrl:track.ytUrl});if(!pl.image&&pl.songs.length===1){pl.image=track.cover;}saveUserPlaylists(pls);showToast('Ditambahkan ke '+pl.name);}else{showToast('Sudah ada di playlist');}}
+public/player.js:1801:function addCurrentToPlaylist(){if(!S.ct)return;var pls=getUserPlaylists();if(pls.length===0){showToast('Belum ada playlist! Buat di Library dulu');return;}showPlaylistPicker(S.ct);}
+public/player.js:1802:function showPlaylistPicker(track){var pls=getUserPlaylists();var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';popup.onclick=function(e){if(e.target===popup)popup.remove();};var listHtml=pls.map(function(p){return'<button onclick="addToPlaylistById(\''+p.id+'\',track);this.parentElement.parentElement.remove();" class="w-full text-left p-4 hover:bg-white/5 flex items-center gap-3 border-b border-white/5"><img src="'+(p.image||(p.songs.length>0?p.songs[0].cover:FI))+'" class="w-10 h-10 rounded object-cover" /><div><p class="font-medium text-white">'+p.name+'</p><p class="text-[#6b7280] text-xs">'+p.songs.length+' lagu</p></div></button>';}).join('');popup.innerHTML='<div class="bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.3s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><h3 class="font-bold text-white mb-3">Tambah ke Playlist</h3><div class="max-h-72 overflow-y-auto hide-scrollbar">'+listHtml+'</div><button onclick="this.parentElement.parentElement.remove()" class="w-full mt-3 py-3 border border-white/20 text-white rounded-full">Batal</button></div>';document.body.appendChild(popup);}
+public/player.js:1804:var trackContextRegistry = {};
+public/player.js:1812:    trackContextRegistry[key] = normalized;
+public/player.js:1823:    var track = trackContextRegistry[id];
+public/player.js:1825:    var liked = isLikedSong(track.videoId || track.id);
+public/player.js:1831:    menu.innerHTML = '<div class="w-full max-w-md rounded-t-3xl bg-[#17171d] border-t border-white/10 p-5 shadow-2xl" style="animation:slideUp .25s ease-out forwards"><div class="flex items-center gap-3 pb-4 border-b border-white/10"><img src="' + (track.cover || FI) + '" class="w-12 h-12 rounded-xl object-cover" onerror="this.src=\'' + FI + '\'" /><div class="min-w-0 flex-1"><h3 class="text-sm font-black text-white truncate">' + es(track.title || 'Lagu') + '</h3><p class="text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</p></div><button onclick="closeTrackContextMenu()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="grid grid-cols-4 gap-2 py-4 border-b border-white/10"><button onclick="playTrackFromContext(\'' + id + '\')" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="play" class="w-5 h-5"></i><span class="text-[10px]">Putar</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',true)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-plus" class="w-5 h-5"></i><span class="text-[10px]">Putar Berikutnya</span></button><button onclick="addTrackToQueueFromContext(\'' + id + '\',false)" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list-music" class="w-5 h-5"></i><span class="text-[10px]">Ke Antrian</span></button><button onclick="closeTrackContextMenu();openQueue()" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 text-white"><i data-lucide="list" class="w-5 h-5"></i><span class="text-[10px]">Lihat Antrian</span></button></div><div class="space-y-1"><button onclick="closeTrackContextMenu();showPlaylistPicker(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="folder-plus" class="w-5 h-5 text-emerald-300"></i><span>Tambah ke Playlist</span></button><button onclick="closeTrackContextMenu();toggleLikeSong(trackContextRegistry[\'' + id + '\'])" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="heart" class="w-5 h-5 ' + (liked ? 'text-rose-400 fill-current' : 'text-white/60') + '"></i><span>' + (liked ? 'Hapus dari Lagu Disukai' : 'Tambah ke Lagu Disukai') + '</span></button><button onclick="contextDownloadTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="download" class="w-5 h-5 text-cyan-300"></i><span>' + (offline ? 'Sudah di Mode Offline' : 'Download ke Mode Offline') + '</span></button><button onclick="contextShareTrack(\'' + id + '\')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white text-sm"><i data-lucide="share-2" class="w-5 h-5 text-amber-300"></i><span>Bagikan Lagu</span></button></div></div>';
+public/player.js:1836:    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+public/player.js:1837:    S.pl = [track]; S.pi = 0; S.ps = 'context'; S.ct = track; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(track.videoId || track.id); loadTrack(track);
+public/player.js:1841:    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+public/player.js:1843:    if (!S.pl || !S.pl.length) { S.pl = [copy]; S.pi = S.ct ? 0 : -1; }
+public/player.js:1844:    else { var insertAt = playNext ? Math.max(0, (S.pi || 0) + 1) : S.pl.length; S.pl.splice(insertAt, 0, copy); }
+public/player.js:1849:    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+public/player.js:1855:    var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
+public/player.js:1856:    var url = track.ytUrl || ('https://youtube.com/watch?v=' + (track.videoId || track.id));
+public/player.js:2071:    var currentSpeed = S.playbackRate || 1.0;
+public/player.js:2104:    S.playbackRate = speed;
+public/player.js:2106:        localStorage.setItem('malamusic_playback_rate', speed);
+public/player.js:2115:    var speed = S.playbackRate || 1.0;
+public/player.js:2125:    var speed = S.playbackRate || 1.0;
+public/player.js:2142:    if (!hadAudioCtx && audioCtx && S.ct && !AU.paused) {
+public/player.js:2145:        loadTrack(S.ct, currTime);
+public/player.js:2267:    if (!S.ct) {
+public/player.js:2285:            '<img src="' + S.ct.cover + '" class="w-48 h-48 object-cover rounded-2xl  border border-white/5" />' +
+public/player.js:2287:                '<p class="text-white font-black text-lg truncate">' + es(S.ct.title) + '</p>' +
+public/player.js:2288:                '<p class="text-[#a0a5b0] text-xs font-bold mt-1 truncate">' + es(S.ct.artist) + '</p>' +
+public/player.js:2318:    if(!S.ct || !S.ct.videoId) return;
+public/player.js:2319:    var url = location.origin + '/play/' + S.ct.videoId + '?share=true';
+public/player.js:2328:    if(!S.ct || !S.ct.videoId) return;
+public/player.js:2329:    var url = location.origin + '/play/' + S.ct.videoId + '?share=true';
+public/player.js:2332:            title: S.ct.title,
+public/player.js:2333:            text: 'Dengarkan ' + S.ct.title + ' - ' + S.ct.artist + ' di MalaMusic!',
+public/player.js:2342:    if (!S.ct) return;
+public/player.js:2349:    var isLight = localStorage.getItem('theme') === 'light';
+public/player.js:2389:        ctx.fillText(S.ct.title, 300, 540, 480);
+public/player.js:2393:        ctx.fillText(S.ct.artist, 300, 585, 480);
+public/player.js:2402:            a.download = S.ct.title.replace(/[^a-zA-Z0-9]/g, '_') + '_malamusic.png';
+public/player.js:2414:        ctx.fillText(S.ct.title, 300, 300, 480);
+public/player.js:2418:        ctx.fillText(S.ct.artist, 300, 360, 480);
+public/player.js:2427:            a.download = S.ct.title.replace(/[^a-zA-Z0-9]/g, '_') + '_malamusic.png';
+public/player.js:2430:            showToast('Berhasil mengunduh Share Card (tanpa cover)!');
+public/player.js:2435:    img.src = S.ct.cover || FI;
+public/player.js:2447:    if(!S.pl||S.pl.length===0){
+public/player.js:2450:        listHtml=S.pl.map(function(t,i){
+public/player.js:2451:            var active=i===S.pi;
+public/player.js:2453:                '<img src="'+t.cover+'" class="w-11 h-11 rounded-lg object-cover flex-shrink-0" onerror="this.src=\''+FI+'\'" />'+
+public/player.js:2463:            '<div><h3 class="font-black text-white text-lg">Daftar Antrian</h3><p class="text-[#6b7280] text-xs">'+(S.pl?S.pl.length:0)+' lagu dalam antrian</p></div>'+
+public/player.js:2474:    if(!S.pl||!S.pl[i])return;
+public/player.js:2475:    S.pi=i;S.ct=S.pl[i];
+public/player.js:2476:    var url=location.origin+'/play/'+S.ct.videoId;history.pushState({},'',url);
+public/player.js:2478:    resetLyricsUI(S.ct.videoId);
+public/player.js:2479:    loadTrack(S.ct);
+public/player.js:2485:    if(!S.ct)return;
+public/player.js:2487:    var ytUrl=S.ct.ytUrl||('https://youtube.com/watch?v='+S.ct.videoId);
+public/player.js:2488:    fetch(API.ytplay,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:ytUrl})})
+public/player.js:2495:                a.download=(S.ct.title||'lagu').replace(/[^a-zA-Z0-9]/g,'_')+'.mp3';
+public/profile.js:9:        try { recent = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch (_) {}
+public/profile.js:68:                var id = track.id || track.videoId;
+public/profile.js:69:                return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
+public/profile.js:88:        el.innerHTML = playlists.map(function(pl) { var isPublic = Boolean(pl.isPublic || pl.publicId); return '<div class="flex items-center gap-3 p-4"><img src="'+(pl.image || (pl.songs[0] && pl.songs[0].cover) || FI)+'" class="w-11 h-11 rounded-xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(pl.name)+'</strong><span class="block text-xs text-white/50 mt-1">'+(isPublic ? 'Dapat dibagikan publik' : 'Hanya kamu')+'</span></div><button onclick="Profile.togglePlaylistPublic(\''+String(pl.id).replace(/'/g,'')+'\')" class="shrink-0 rounded-full px-3 py-2 text-[11px] font-black '+(isPublic ? 'bg-amber-300 text-black' : 'bg-white/10 text-white')+'">'+(isPublic ? 'Publik' : 'Jadikan publik')+'</button></div>'; }).join('');
+public/profile.js:102:            var id = String(track.id || track.videoId || '').replace(/'/g, '');
+public/profile.js:103:            return '<button onclick="App.autoPlayTrack(\'' + id + '\');this.closest(\'.fixed\').remove()" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-11 h-11 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span><i data-lucide="play" class="w-4 h-4 text-white/60"></i></button>';
+public/profile.js:105:        modal.innerHTML = '<div class="w-full sm:max-w-lg max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-white/10"><div><h3 class="font-black text-white text-lg">Riwayat Pemutaran</h3><p class="text-xs text-white/50 mt-1">Lagu yang baru kamu dengarkan</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[55vh] overflow-y-auto">' + rows + '</div><div class="p-4 border-t border-white/10 flex gap-2"><button onclick="localStorage.removeItem(\'mala_recent_tracks\');this.closest(\'.fixed\').remove();Profile.render();showToast(\'Riwayat dihapus\')" class="flex-1 rounded-xl bg-rose-500/15 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat</button><button onclick="this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-white/10 text-white py-3 text-xs font-bold">Tutup</button></div></div>';
+public/profile.js:111:        keys.forEach(function(key) { data.data[key] = localStorage.getItem(key); });
+public/profile.js:119:        input.onchange = function() { var file = input.files && input.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function() { try { var payload = JSON.parse(reader.result); if (!payload || payload.app !== 'MalaMusic' || !payload.data) throw new Error('Format backup tidak cocok'); Object.keys(payload.data).forEach(function(key) { if (payload.data[key] !== null && payload.data[key] !== undefined) localStorage.setItem(key, payload.data[key]); }); showToast('Backup berhasil dipulihkan'); Profile.render(); } catch (e) { showToast('Backup tidak valid'); } }; reader.readAsText(file); };
+public/profile.js:123:        var autoNext = typeof S !== 'undefined' ? S.autoNext !== false : localStorage.getItem('malamusic_auto_next') !== 'false';
+public/profile.js:124:        var glow = typeof FullPlayer !== 'undefined' ? FullPlayer.bgGlowEnabled !== false : localStorage.getItem('malamusic_bg_glow_enabled') !== '0';
+public/profile.js:128:        modal.innerHTML = '<div class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-center justify-between mb-5"><div><h3 class="font-black text-white text-lg">Pengaturan</h3><p class="text-xs text-white/50 mt-1">Preferensi MalaMusic di perangkat ini</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="space-y-2"><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="skip-forward" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Putar otomatis</strong><span class="block text-xs text-white/50">Lanjutkan ke lagu berikutnya</span></span><input type="checkbox" ' + (autoNext ? 'checked' : '') + ' onchange="toggleAutoNext()" class="accent-rose-500 w-5 h-5" /></label><label class="flex items-center gap-3 p-3 rounded-xl bg-white/[.04] border border-white/10"><i data-lucide="sparkles" class="w-4 h-4 text-white/60"></i><span class="flex-1"><strong class="block text-sm text-white">Latar bergerak</strong><span class="block text-xs text-white/50">Warna cover pada pemutar</span></span><input type="checkbox" ' + (glow ? 'checked' : '') + ' onchange="FullPlayer.toggleBgGlow()" class="accent-rose-500 w-5 h-5" /></label></div><div class="mt-4 pt-4 border-t border-white/10 space-y-2"><p class="text-[11px] text-white/40">Koleksi saat ini tersimpan di perangkat ini. Buat backup sebelum mengganti browser atau perangkat.</p><div class="grid grid-cols-2 gap-2"><button onclick="Profile.exportLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Backup Data</button><button onclick="Profile.importLocalData()" class="rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Pulihkan Data</button></div><button onclick="localStorage.removeItem(\'mala_recent_tracks\');localStorage.removeItem(\'mala_recent_searches\');Profile.render();showToast(\'Data aktivitas lokal dihapus\')" class="w-full rounded-xl bg-rose-500/10 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat & Pencarian</button></div></div>';
+public/search.js:4:        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+public/search.js:40:        try { recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]'); } catch(e) {}
+public/search.js:50:                S[row.key]=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
+public/search.js:60:                var isCur = S.ct && (
+public/search.js:61:                    S.ct.id === t.id ||
+public/search.js:62:                    S.ct.videoId === t.id ||
+public/search.js:63:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/search.js:64:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/search.js:65:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/search.js:86:                return '<div onclick="PK(\''+row.key+'\','+i+')" class="search-rec-item flex-shrink-0 w-36 cursor-pointer active:scale-95 group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col animate-card-left" style="animation-delay:'+Math.min(i*50, 450)+'ms"><div class="search-rec-cover w-full aspect-square mb-2 relative rounded-xl overflow-hidden shadow-md transition-all '+ringClass+'"><img src="'+t.cover+'" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.src=\''+FI+'\'" /><div class="search-rec-btn">'+recBtn+'</div></div><h3 class="search-rec-title font-semibold text-xs truncate text-white px-0.5 '+(isCur?'font-black':'')+'">'+es(t.title)+'</h3><p class="text-white/60 text-[10px] truncate mt-0.5 px-0.5">'+es(t.artist)+'</p></div>';
+public/search.js:99:                var isCur = S.ct && (
+public/search.js:100:                    S.ct.id === t.id ||
+public/search.js:101:                    S.ct.videoId === t.id ||
+public/search.js:102:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/search.js:103:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/search.js:104:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/search.js:139:                    var isCur = S.ct && (
+public/search.js:140:                        S.ct.id === t.id ||
+public/search.js:141:                        S.ct.videoId === t.id ||
+public/search.js:142:                        (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/search.js:143:                        (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/search.js:144:                        (S.ct.title === t.title && S.ct.artist === t.artist)
+public/search.js:167:                        var cover = card.querySelector('.search-rec-cover');
+public/search.js:168:                        if(cover) cover.className = 'search-rec-cover w-32 h-32 mb-2 relative rounded-xl overflow-hidden glass-edge  transition-all ' + ringClass;
+public/search.js:184:            try { var recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]').filter(function(item){return item!==S.sq;}); recent.unshift(S.sq); localStorage.setItem('mala_recent_searches',JSON.stringify(recent.slice(0,8))); } catch(e) {}
+public/search.js:191:                S.ar=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
+public/search.js:235:                var isCur = S.ct && (
+public/search.js:236:                    S.ct.id === t.id ||
+public/search.js:237:                    S.ct.videoId === t.id ||
+public/search.js:238:                    (S.ct.id && t.videoId && S.ct.id === t.videoId) ||
+public/search.js:239:                    (S.ct.videoId && t.id && S.ct.videoId === t.id) ||
+public/search.js:240:                    (S.ct.title === t.title && S.ct.artist === t.artist)
+public/search.js:261:                    '<img src="'+toWebp(t.cover)+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="handleImgError(this)" />'+
+public/search.js:269:                return '<div onclick="Artist.open(\''+p.id+'\', \''+esJs(p.name||p.title)+'\')" class="p-3 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><div class="relative w-20 h-20 mb-2.5 rounded-full overflow-hidden border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300"><img src="'+toWebp(p.cover)+'" class="w-full h-full object-cover" onerror="handleImgError(this)" /></div><h3 class="font-bold text-sm truncate text-white w-full px-1">'+es(p.name||p.title)+'</h3><p class="text-white/60 text-[10px] uppercase tracking-wider font-semibold mt-0.5">'+es(p.subtitle||'Artist')+'</p></div>';
+public/search.js:274:                return '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex flex-col animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><div class="w-full aspect-square mb-2.5 rounded-xl overflow-hidden shadow-md"><img src="'+toWebp(p.cover)+'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="handleImgError(this)" /></div><h3 class="font-semibold text-sm truncate text-white px-0.5">'+es(p.title)+'</h3><p class="text-white/60 text-xs truncate mt-0.5 px-0.5">'+es(p.artist)+'</p></div>';
+public/sw.js:1:const CACHE_STATIC_NAME = 'malamusic-static-v32';
+public/sw.js:2:const CACHE_DATA_NAME = 'malamusic-api-v32';
+public/sw.js:33:    caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:53:    caches.keys().then((keys) => {
+public/sw.js:56:          if (key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME) {
+public/sw.js:58:            return caches.delete(key);
+public/sw.js:80:        return caches.match('/index.html', { ignoreSearch: true }) || caches.match('/', { ignoreSearch: true });
+public/sw.js:93:            caches.open(CACHE_DATA_NAME).then((cache) => {
+public/sw.js:100:          return caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
+public/sw.js:121:          caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, networkResponse.clone()));
+public/sw.js:124:      }).catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('/index.html', { ignoreSearch: true })))
+public/sw.js:131:    caches.match(request).then((cachedResponse) => {
+public/sw.js:137:              caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:149:          caches.open(CACHE_STATIC_NAME).then((cache) => {
+public/sw.js:157:          return caches.match('/logo.png');
+public/streak.js:23:        var id = track && (track.videoId || track.id);
+api/album.js:6:function toHDThumbnail(url, videoId) {
+api/album.js:7:    if (!url && videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+api/album.js:25:function transformThumbs(thumbs, videoId) {
+api/album.js:27:        return videoId ? [{ url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` }] : [];
+api/album.js:29:    return thumbs.map(t => ({ ...t, url: toHDThumbnail(t.url, videoId) }));
+api/album.js:78:        let thumbnails = [];
+api/album.js:87:                const thumbs = sidebars[0].thumbnailRenderer?.playlistVideoThumbnailRenderer?.thumbnail?.thumbnails || sidebars[0].thumbnailRenderer?.playlistCustomThumbnailRenderer?.thumbnail?.thumbnails || data?.microformat?.microformatDataRenderer?.thumbnail?.thumbnails || [];
+api/album.js:89:                    thumbnails = [{ url: thumbs[thumbs.length - 1].url.split('?')[0] }];
+api/album.js:97:                const videoId = lock.contentId || '';
+api/album.js:98:                if (!videoId || songs.find(s => s.videoId === videoId)) continue;
+api/album.js:114:                    const badges = lock.contentImage?.thumbnailViewModel?.overlays?.[0]?.thumbnailBottomOverlayViewModel?.badges || [];
+api/album.js:115:                    if (badges[0]?.thumbnailBadgeViewModel?.text) {
+api/album.js:116:                        duration = badges[0].thumbnailBadgeViewModel.text;
+api/album.js:120:                const sources = lock.contentImage?.thumbnailViewModel?.image?.sources || [];
+api/album.js:121:                let thumb = transformThumbs(sources.map(s => ({ url: s.url })), videoId);
+api/album.js:124:                    videoId,
+api/album.js:129:                    thumbnails: thumb
+api/album.js:135:            thumbnails = data?.microformat?.microformatDataRenderer?.thumbnail?.thumbnails || [];
+api/album.js:139:            if (h.thumbnail?.croppedSquareThumbnailRenderer?.thumbnail?.thumbnails) {
+api/album.js:140:                headerThumbnails = h.thumbnail.croppedSquareThumbnailRenderer.thumbnail.thumbnails;
+api/album.js:141:            } else if (h.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails) {
+api/album.js:142:                headerThumbnails = h.thumbnail.musicThumbnailRenderer.thumbnail.thumbnails;
+api/album.js:145:            if (thumbnails.length === 0 && headerThumbnails.length > 0) {
+api/album.js:146:                thumbnails = headerThumbnails;
+api/album.js:169:                    const videoId = i.playlistItemData?.videoId || i.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.[0]?.navigationEndpoint?.watchEndpoint?.videoId || '';
+api/album.js:170:                    if (!videoId) continue;
+api/album.js:180:                    const rawThumb = i.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/album.js:181:                    const thumb = transformThumbs(rawThumb, videoId);
+api/album.js:184:                        videoId,
+api/album.js:189:                        thumbnails: thumb
+api/album.js:195:        thumbnails = transformThumbs(thumbnails);
+api/album.js:196:        if (thumbnails.length === 0 && songs.length > 0) {
+api/album.js:197:            thumbnails = songs[0].thumbnails || [];
+api/album.js:207:                thumbnails,
+api/artist.js:7:function toHDThumbnail(url, videoId) {
+api/artist.js:8:    if (!url && videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+api/artist.js:26:function transformThumbs(thumbs, videoId) {
+api/artist.js:28:        return videoId ? [{ url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` }] : [];
+api/artist.js:30:    return thumbs.map(t => ({ ...t, url: toHDThumbnail(t.url, videoId) }));
+api/artist.js:54:        let name='', thumbnails=[];
+api/artist.js:59:            thumbnails = transformThumbs(h.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || []);
+api/artist.js:68:                                const videoId = i.playlistItemData?.videoId||'';
+api/artist.js:69:                                const rawThumbs = i.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails||[];
+api/artist.js:70:                                const thumbnails = transformThumbs(rawThumbs, videoId);
+api/artist.js:71:                                topSongs.push({ videoId, title: getRunsText(i.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs||[]), artist: getRunsText(i.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs||[]), thumbnails });
+api/artist.js:81:                                const rawItemThumbs = it.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails||[];
+api/artist.js:82:                                const vId = it.navigationEndpoint?.watchEndpoint?.videoId||'';
+api/artist.js:83:                                const parsed = { name: getRunsText(it.title?.runs||[]), artist: getRunsText(it.subtitle?.runs||[]), browseId: it.navigationEndpoint?.browseEndpoint?.browseId || it.title?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || '', thumbnails: transformThumbs(rawItemThumbs, vId) };
+api/artist.js:86:                                else if (/video/i.test(ht)) { parsed.videoId = it.navigationEndpoint?.watchEndpoint?.videoId||''; topVideos.push(parsed); }
+api/artist.js:97:        const result = { status: true, input: { id: artistId }, result: { artistId, name, thumbnails, topSongs, topAlbums, topSingles, topVideos, playlists, featuredOn, similarArtists, creator: 'MalaMusic' } };
+api/google-auth.js:187:                thumbnail: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`,
+api/lyrics.js:7:    const videoId = (req.query.id || req.body?.id || '').trim();
+api/lyrics.js:10:    if (!videoId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
+api/lyrics.js:14:        const data1 = await getLyrics1(videoId, title, artist).catch(() => null);
+api/lyrics.js:18:                input: { id: videoId },
+api/lyrics.js:20:                    videoId,
+api/lyrics.js:38:        const data2 = await getLyrics2(videoId).catch(() => null);
+api/lyrics.js:42:                input: { id: videoId },
+api/lyrics.js:44:                    videoId,
+api/lyrics.js:58:            input: { id: videoId },
+api/lyrics.js:60:                videoId,
+api/lyrics1.js:60:async function getLyrics1(videoId, queryTitle = '', queryArtist = '') {
+api/lyrics1.js:70:                path: '/oembed?url=https://www.youtube.com/watch?v=' + encodeURIComponent(videoId) + '&format=json',
+api/lyrics1.js:92:            }, { context: { client: { clientName: 'WEB_REMIX', clientVersion: '1.20240101.00.00', hl: 'en', gl: 'ID' } }, videoId });
+api/lyrics1.js:160:    return { videoId, title: title || cTitle, artist: artist || cArtist, album, lyrics: lyricsData };
+api/lyrics1.js:165:    const videoId = (req.query.id || req.body?.id || '').trim();
+api/lyrics1.js:169:    if (!videoId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
+api/lyrics1.js:172:        const result = await getLyrics1(videoId, title, artist);
+api/lyrics2.js:4:async function getLyrics2(videoId) {
+api/lyrics2.js:9:        const transcribed = await getTranscribe(videoId);
+api/lyrics2.js:35:    return { videoId, title, artist, lyrics: lyricsData };
+api/lyrics2.js:40:    const videoId = (req.query.id || req.body?.id || '').trim();
+api/lyrics2.js:41:    if (!videoId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
+api/lyrics2.js:44:        const result = await getLyrics2(videoId);
+api/search.js:9:function toHDThumbnail(url, videoId) {
+api/search.js:10:    if (!url && videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+api/search.js:75:                videoId: urlVid
+api/search.js:80:            if (item && item.videoId === urlVid) {
+api/search.js:84:                const thumbs = item.thumbnail?.thumbnails || [];
+api/search.js:86:                const thumbnail = toHDThumbnail(rawThumb, urlVid);
+api/search.js:99:                        songs: [{ title, videoId: urlVid, thumbnail, url: `https://music.youtube.com/watch?v=${urlVid}`, artist: artist, artistId: '', album: '', albumId: '', duration }],
+api/search.js:133:                    const browseId = item?.navigationEndpoint?.browseEndpoint?.browseId || item?.title?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || item?.title?.runs?.[0]?.navigationEndpoint?.watchEndpoint?.videoId || '';
+api/search.js:142:                        thumbs = item.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/search.js:146:                        thumbs = item.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails || item.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/search.js:154:                        albums.push({ id: browseId, title, artist: m[2].trim(), albumType: m[1], year: m[3], cover: thumb });
+api/search.js:156:                        playlists.push({ id: browseId, title, artist: subtitle, cover: thumb });
+api/search.js:166:                    const browseId = item?.navigationEndpoint?.browseEndpoint?.browseId || item?.title?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || item?.title?.runs?.[0]?.navigationEndpoint?.watchEndpoint?.videoId || '';
+api/search.js:173:                        thumbs = item.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/search.js:177:                        thumbs = item.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails || item.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/search.js:182:                        artists.push({ id: browseId, title: title, artist: subtitle, cover: thumb });
+api/search.js:234:                            const videoId = r?.playlistItemData?.videoId || '';
+api/search.js:235:                            const thumbs = r?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+api/search.js:237:                            const thumbnail = toHDThumbnail(rawSongThumb, videoId);
+api/search.js:238:                            if (!videoId) continue;
+api/search.js:240:                            songs.push({ title, videoId, thumbnail, url: `https://music.youtube.com/watch?v=${videoId}`, artist: artist || (subRuns[1]?.text || ''), artistId, album: album || '', albumId, duration });
+api/transcribe.js:159:    const videoId = urlOrVideoId.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/)?.[1] || (urlOrVideoId.length === 11 ? urlOrVideoId : null);
+api/transcribe.js:160:    if (!videoId) throw new Error('URL YouTube tidak valid');
+api/transcribe.js:164:        const infoRes = await axios.get(`https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${videoId}&format=json`, { timeout: 8000 });
+api/transcribe.js:170:        const { data } = await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
+api/transcribe.js:183:                        title, videoId, method: 'subtitle',
+api/transcribe.js:194:    const fullUrl = `https://www.youtube.com/watch?v=${videoId}`;
+api/transcribe.js:199:    const mp3Path = path.join(os.tmpdir(), `${videoId}_${Date.now()}.mp3`);
+api/transcribe.js:232:            videoId,
+=== API ROUTES ===
+server.js:72:app.all('/api/search', require('./api/search.js'));
+server.js:73:app.all('/api/lyrics', require('./api/lyrics.js'));
+server.js:74:app.all('/api/lyrics1', require('./api/lyrics1.js'));
+server.js:75:app.all('/api/lyrics2', require('./api/lyrics2.js'));
+server.js:76:app.all('/api/artist', require('./api/artist.js'));
+server.js:77:app.all('/api/album', require('./api/album.js'));
+server.js:78:app.all('/api/suggest', require('./api/suggest.js'));
+server.js:79:app.all('/api/ytplay', require('./api/ytplay.js'));
+server.js:80:app.all('/api/translate', require('./api/translate.js'));
+server.js:81:app.all('/api/transcribe', require('./api/transcribe.js'));
+server.js:82:app.all('/api/google-auth', require('./api/google-auth.js'));
+server.js:83:app.all('/api/email-auth', require('./api/email-auth.js'));
+server.js:84:app.all('/api/streak', require('./api/streak.js'));
+server.js:85:app.all('/api/stats', require('./api/stats.js'));
+server.js:88:app.get('/api/proxy-audio', (req, res) => {
+server.js:268:module.exports = app;
+api/album.js:52:module.exports = async (req, res) => {
+api/artist.js:41:module.exports = async (req, res) => {
+api/email-auth.js:130:module.exports = async function emailAuth(req, res) {
+api/firebase-admin.js:47:module.exports = { admin, getAdminApp, getAuth };
+api/google-auth.js:196:module.exports = handler;
+api/index.js:3:module.exports = app;
+api/lyrics.js:4:module.exports = async (req, res) => {
+api/lyrics1.js:180:module.exports = handler;
+api/lyrics2.js:52:module.exports = handler;
+api/search.js:55:module.exports = async (req, res) => {
+api/stats.js:17:module.exports = async function stats(req, res) {
+api/streak.js:72:module.exports = async function streak(req, res) {
+api/suggest.js:3:module.exports = async (req, res) => {
+api/transcribe.js:269:module.exports = handler;
+api/translate.js:199:module.exports = handler;
+api/ytplay.js:101:module.exports = async (req, res) => {
