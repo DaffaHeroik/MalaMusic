@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   '/firebase.js?v=48',
   '/app.js?v=48',
   '/player.js?v=48',
+  '/listen-together.js?v=48',
   '/fullplayer.js',
   '/miniplayer.js',
   '/home.js?v=48',

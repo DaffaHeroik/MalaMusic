@@ -34,7 +34,10 @@ function getAdminApp() {
             initialized = true;
             return admin.app();
         }
-        admin.initializeApp({ credential: admin.credential.cert(getServiceAccount()) });
+        admin.initializeApp({
+            credential: admin.credential.cert(getServiceAccount()),
+            databaseURL: process.env.FIREBASE_DATABASE_URL || 'https://heroikzre-default-rtdb.asia-southeast1.firebasedatabase.app'
+        });
         initialized = true;
     }
     return admin.app();
@@ -44,4 +47,9 @@ function getAuth() {
     return getAdminApp() && admin.auth();
 }
 
-module.exports = { admin, getAdminApp, getAuth };
+function getDatabase() {
+    getAdminApp();
+    return admin.database();
+}
+
+module.exports = { admin, getAdminApp, getAuth, getDatabase };

@@ -83,6 +83,7 @@ app.all('/api/google-auth', require('./api/google-auth.js'));
 app.all('/api/email-auth', require('./api/email-auth.js'));
 app.all('/api/streak', require('./api/streak.js'));
 app.all('/api/stats', require('./api/stats.js'));
+app.all('/api/listen-together', require('./api/listen-together.js'));
 
 // Proxy audio needs to stream in node, bypassing edge function
 app.get('/api/proxy-audio', (req, res) => {

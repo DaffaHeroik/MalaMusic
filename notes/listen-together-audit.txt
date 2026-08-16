@@ -1,0 +1,191 @@
+=== BACKEND ===
+album.js
+artist.js
+email-auth.js
+firebase-admin.js
+google-auth.js
+index.js
+lyrics.js
+lyrics1.js
+lyrics2.js
+search.js
+stats.js
+streak.js
+suggest.js
+transcribe.js
+translate.js
+ytplay.js
+const app = require('../server.js');
+
+module.exports = app;
+=== FIREBASE CLIENT ===
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
+import { getAnalytics, isSupported, logEvent } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk',
+  authDomain: 'heroikzre.firebaseapp.com',
+  databaseURL: 'https://heroikzre-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'heroikzre',
+  storageBucket: 'heroikzre.firebasestorage.app',
+  messagingSenderId: '834111954916',
+  appId: '1:834111954916:web:a13ebb552f18bc253131f1',
+  measurementId: 'G-XHCH3JMFSZ'
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+window.MalaFirebase = {
+  app: firebaseApp,
+  config: firebaseConfig,
+  analytics: null,
+  log: function(name, params) {
+    if (this.analytics) logEvent(this.analytics, name, params || {});
+  }
+};
+
+isSupported().then(function(supported) {
+  if (supported) return getAnalytics(firebaseApp);
+  return null;
+}).then(function(analytics) {
+  window.MalaFirebase.analytics = analytics;
+}).catch(function() {});
+=== PACKAGE ===
+{
+  "name": "malamusic",
+  "private": true,
+  "version": "2.0.0",
+  "description": "MalaMusic - Web Music Player",
+  "scripts": {
+    "lint": "node --check public/app.js",
+    "dev": "node server.js",
+    "build": "echo 'No build required'",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.2.0"
+  }
+}
+=== PLAYER STATE ===
+123:AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+125:AU.addEventListener('playing',function(){S.il=false;UB();updateMediaSessionPlaybackState();});
+176:function updateMediaSessionMetadata(track){
+193:function updateMediaSessionPlaybackState(){
+294:var audioLoadSequence = 0;
+630:    updateMediaSessionPlaybackState();
+905:function PK(s,i){
+951:function loadTrack(track,resumeAt){
+953:    var loadSequence = ++audioLoadSequence;
+960:    updateMediaSessionMetadata(track);
+968:    function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
+1027:function TP(){
+1076:async function NX(){
+1114:function PV(forcePrev){
+=== MAIN HTML SCRIPTS ===
+        <div id="view-offline" style="display:none;"></div>
+        <div id="view-liked" style="display:none;"></div>
+        <div id="view-dev" style="display:none;"></div>
+    </div>
+
+    <!-- PWA Offline Banner -->
+    <div id="pwa-offline-banner" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-[500] bg-amber-500/90 text-black font-bold text-xs px-4 py-1.5 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 border border-amber-400/50">
+        <i data-lucide="wifi-off" class="w-4 h-4"></i>
+        <span id="pwa-offline-text">Mode Offline (PWA) - Memutar data tersimpan</span>
+    </div>
+
+    <div id="nav-container"></div>
+    <div id="mini-container"></div>
+    <div id="full-container"></div>
+    <div id="lyrics-container"></div>
+    <div id="artist-container"></div>
+    <div id="yt-player" style="position:absolute;top:-9999px;left:-9999px;width:1px;height:1px;"></div>
+    <audio id="audio-player" preload="auto" style="display:none;"></audio>
+
+    <script type="module" src="/firebase.js?v=48"></script>
+    <script src="/player.js?v=48"></script>
+    <script src="/home.js?v=48"></script>
+    <script src="/search.js?v=48"></script>
+    <script src="/leaderboard.js?v=48"></script>
+    <script src="/stats.js?v=48"></script>
+    <script src="/liked.js?v=48"></script>
+    <script src="/library.js?v=48"></script>
+    <script src="/profile.js?v=48"></script>
+    <script src="/streak.js?v=48"></script>
+    <script src="/miniplayer.js?v=48"></script>
+    <script src="/fullplayer.js?v=48"></script>
+    <script src="/artist.js?v=48"></script>
+    <script src="/album.js?v=48"></script>
+    <script src="/app.js?v=48"></script>
+    <script>(function () {
+  document.addEventListener('visibilitychange', function () {
+    document.documentElement.classList.toggle('tab-hidden', document.hidden);
+  });
+  // Failsafe timer to hide splash screen if anything delays
+  setTimeout(function() {
+      var sp = document.getElementById('splash-screen');
+      if (sp && !sp.classList.contains('hide')) {
+          sp.classList.add('hide');
+          setTimeout(function() { if (sp && sp.parentNode) sp.parentNode.removeChild(sp); }, 700);
+      }
+  }, 2200);
+})();</script>
+</body>
+
+</html>=== AUTH USAGE ===
+public/firebase.js:16:window.MalaFirebase = {
+public/firebase.js:29:  window.MalaFirebase.analytics = analytics;
+public/player.js:105:// Keep playback as a normal Android media session. The browser/Android audio
+public/player.js:955:    if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
+public/player.js:1119:    // from a media-session control.
+public/profile.js:173:            var response = await fetch('/api/email-auth?action=' + (this.entryMode === 'register' ? 'register' : 'login'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password, name: name.trim() }) });
+public/profile.js:181:        await fetch('/api/email-auth?action=logout', { credentials: 'same-origin' });
+public/profile.js:187:            var response = await fetch('/api/email-auth?action=me', { credentials: 'same-origin' });
+public/streak.js:9:        if (window.MalaFirebase) MalaFirebase.log('streak_increased', { surface: 'home' });
+api/email-auth.js:8:    return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
+api/email-auth.js:95:        WEAK_PASSWORD: 'Password Firebase harus minimal 6 karakter.',
+api/email-auth.js:98:    return messages[code] || 'Autentikasi Firebase gagal. Coba lagi.';
+api/email-auth.js:102:    const session = { ...safeUser(user), exp: Date.now() + SESSION_TTL_SECONDS * 1000 };
+api/email-auth.js:103:    setCookies(res, [cookie('mm_session', encode(session), SESSION_TTL_SECONDS)]);
+api/email-auth.js:104:    return session;
+api/email-auth.js:107:async function loginWithFirebasePassword(email, password) {
+api/email-auth.js:122:async function verifyFirebaseToken(idToken) {
+api/email-auth.js:123:    if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) throw new Error('Token Firebase tidak valid.');
+api/email-auth.js:140:        const session = decode(cookies.mm_session);
+api/email-auth.js:141:        if (!session || !session.email || !session.exp || session.exp < now) return res.status(200).json({ authenticated: false });
+api/email-auth.js:142:        return res.status(200).json({ authenticated: true, user: session });
+api/email-auth.js:146:        setCookies(res, [cookie('mm_session', '', 0)]);
+api/email-auth.js:164:            const idToken = await loginWithFirebasePassword(email, password);
+api/email-auth.js:165:            const decoded = await verifyFirebaseToken(idToken);
+api/email-auth.js:176:        if (code.includes('invalid-password')) return res.status(400).json({ status: false, message: 'Password tidak memenuhi aturan Firebase.' });
+api/firebase-admin.js:21:        throw new Error('Firebase Admin belum dikonfigurasi. Set FIREBASE_SERVICE_ACCOUNT_JSON atau FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, dan FIREBASE_PRIVATE_KEY.');
+api/google-auth.js:3:const SESSION_COOKIE = 'mm_google_session';
+api/google-auth.js:90:    let session = cookies[SESSION_COOKIE] ? decrypt(cookies[SESSION_COOKIE]) : null;
+api/google-auth.js:91:    if (!session) return null;
+api/google-auth.js:92:    if (session.expiresAt && Date.now() < session.expiresAt - 60000) return session;
+api/google-auth.js:93:    if (!session.refreshToken) return null;
+api/google-auth.js:97:        refresh_token: session.refreshToken,
+api/google-auth.js:100:    session.accessToken = tokens.access_token;
+api/google-auth.js:101:    session.expiresAt = Date.now() + (Number(tokens.expires_in || 3600) * 1000);
+api/google-auth.js:102:    return session;
+api/google-auth.js:105:function saveSession(res, session, req) {
+api/google-auth.js:106:    setCookie(res, SESSION_COOKIE, encrypt(session), { secure: !((req.headers.host || '').startsWith('localhost')) });
+api/google-auth.js:147:        const session = {
+api/google-auth.js:153:        saveSession(res, session, req);
+api/google-auth.js:165:    let session;
+api/google-auth.js:166:    try { session = await getSession(req); } catch (error) { return jsonError(res, 401, error.message); }
+api/google-auth.js:167:    if (!session) return res.status(401).json({ status: false, authenticated: false });
+api/google-auth.js:168:    saveSession(res, session, req);
+api/google-auth.js:170:    if (action === 'me') return res.json({ status: true, authenticated: true, user: session.user });
+api/google-auth.js:179:        const data = await googleJson(`https://www.googleapis.com/youtube/v3/videos?${params}`, session.accessToken);
+api/stats.js:12:function user(req) { const u = decode(cookies(req).mm_session); return u && u.email && u.exp > Date.now() ? u : null; }
+api/stats.js:22:        const currentUser = user(req);
+api/stats.js:23:        if (!currentUser) return res.status(401).json({ status: false, authenticated: false, message: 'Login diperlukan.' });
+api/stats.js:24:        if (action === 'me') return res.status(200).json(await call('/me', { method: 'POST', body: JSON.stringify({ email: currentUser.email }) }));
+api/stats.js:29:            return res.status(200).json(await call('/listen', { method: 'POST', body: JSON.stringify({ email: currentUser.email, name: currentUser.name, seconds }) }));
+api/stats.js:34:            return res.status(200).json(await call('/playlist', { method: 'POST', body: JSON.stringify({ ...data, email: currentUser.email, ownerName: currentUser.name }) }));
+api/streak.js:4:    return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
+api/streak.js:74:    const session = decode(cookies(req).mm_session);
+api/streak.js:75:    if (!session || !session.email || !session.exp || session.exp < Date.now()) return res.status(401).json({ status: false, authenticated: false, message: 'Login diperlukan.' });
+api/streak.js:78:    const dates = currentCookie && currentCookie.email === session.email && Array.isArray(currentCookie.dates) ? currentCookie.dates.slice(-180) : [];
+api/streak.js:85:        const payload = { email: session.email, dates: Array.from(new Set(dates)).sort().slice(-180) };
