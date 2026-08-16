@@ -14,7 +14,7 @@ var Profile = {
                 <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
                 <div class="relative flex items-end gap-5 sm:gap-7 max-w-5xl mx-auto">
                     <div id="profile-avatar-wrap" class="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0 overflow-hidden bg-gradient-to-br from-rose-400 to-purple-700 shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
-                        <img id="profile-avatar" src="/logo.png" class="w-full h-full object-cover" alt="Profil" onerror="this.style.display='none'" />
+                        <img id="profile-avatar" src="/logo-mark.png" class="w-full h-full object-contain p-2" alt="Profil" onerror="this.style.display='none'" />
                         <i data-lucide="user" class="w-12 h-12 text-white/80"></i>
                     </div>
                     <div class="min-w-0 pb-1">

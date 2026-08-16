@@ -446,7 +446,7 @@ var App={
         gid('nav-container').innerHTML=`
         <aside class="spotify-sidebar" aria-label="Navigasi MalaMusic">
             <div class="spotify-brand">
-                <img src="/logo.png" alt="MalaMusic">
+                <img src="/logo-mark.png" alt="MalaMusic">
                 <span class="spotify-brand-title">MalaMusic</span>
             </div>
             <div class="spotify-nav-section">
