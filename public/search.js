@@ -17,9 +17,9 @@ var Search = {
             <div id="suggestions" class="hidden mt-2 glass-strong rounded-2xl max-h-72 overflow-y-auto hide-scrollbar border border-white/10"></div>
         </div>
         <div id="filter-tabs" class="hidden flex gap-2 p-1.5 glass rounded-full mx-4 mb-3 mt-4 border border-white/10">
-            <button onclick="setFilter('songs')" id="f-songs" class="filter-tab active flex-1 py-2 px-4 rounded-full text-xs font-bold btn-chrome text-white border border-white/30">Musik</button>
-            <button onclick="setFilter('playlists')" id="f-playlists" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all">Playlist</button>
-            <button onclick="setFilter('artists')" id="f-artists" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all">Artis</button>
+            <button type="button" onclick="setFilter('songs')" id="f-songs" aria-pressed="true" class="filter-tab active flex-1 py-2 px-4 rounded-full text-xs font-bold btn-chrome text-white border border-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Musik</button>
+            <button type="button" onclick="setFilter('playlists')" id="f-playlists" aria-pressed="false" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Playlist</button>
+            <button type="button" onclick="setFilter('artists')" id="f-artists" aria-pressed="false" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Artis</button>
         </div>
         <div class="px-4 mt-2" id="search-results"></div>
         <div id="search-recs" class="px-4 mt-2 space-y-6 pb-8"></div>`;
@@ -257,10 +257,11 @@ var Search = {
     },
     updateFilterUI(){
         document.querySelectorAll('.filter-tab').forEach(function(el){
-            el.className = 'filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all';
+            el.className = 'filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white';
+            el.setAttribute('aria-pressed', el.id === 'f-'+S.filter ? 'true' : 'false');
         });
         var a=gid('f-'+S.filter);
-        if(a){a.className = 'filter-tab active flex-1 py-2 px-4 rounded-full text-xs font-bold btn-chrome text-white  border border-white/30 scale-105';}
+        if(a){a.className = 'filter-tab active flex-1 py-2 px-4 rounded-full text-xs font-bold btn-chrome text-white border border-white/30 scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white'; a.setAttribute('aria-pressed', 'true');}
     },
     show(loading){
         var c=gid('search-results'),rc=gid('search-recs');if(!c)return;
@@ -296,10 +297,12 @@ var Search = {
                 var titleColor = isCur ? 'text-white font-black' : 'text-white font-semibold';
                 var badgeHtml = isPlay ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold uppercase tracking-wider ml-2 border border-white/30">Diputar</span>' : (isCur ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/80 font-bold uppercase tracking-wider ml-2 border border-white/20">Dijeda</span>' : '');
 
-                return '<div onclick="PK(\'search\','+i+')" class="search-song-item flex items-center gap-3.5 p-2.5 mb-2 rounded-2xl cursor-pointer active:scale-[0.98] transition-all shadow-lg shadow-black/25 animate-card-up '+itemBg+'" style="animation-delay:'+Math.min(i*35, 500)+'ms">'+
+                return '<div class="search-song-item flex items-center gap-3.5 p-2.5 mb-2 rounded-2xl transition-all shadow-lg shadow-black/25 animate-card-up '+itemBg+'" style="animation-delay:'+Math.min(i*35, 500)+'ms">'+
+                    '<button type="button" onclick="PK(\'search\','+i+')" aria-label="Putar '+es(t.title)+' oleh '+es(t.artist)+'" class="search-song-main flex items-center gap-3.5 flex-1 min-w-0 text-left cursor-pointer active:scale-[0.98] transition-all rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">'+
                     '<img src="'+toWebp(t.cover)+'" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="handleImgError(this)" />'+
-                    '<div class="truncate flex-1 min-w-0"><div class="flex items-center"><h3 class="search-song-title font-semibold text-sm truncate '+titleColor+'">'+es(t.title)+'</h3><span class="search-song-badge">'+badgeHtml+'</span></div><p class="text-white/60 text-xs truncate mt-0.5">'+es(t.artist)+'</p></div>'+
-                    '<div class="search-song-btn">'+btnHtml+'</div>'+trackMenuButton(t)+
+                    '<span class="truncate flex-1 min-w-0"><span class="flex items-center"><span class="search-song-title block font-semibold text-sm truncate '+titleColor+'">'+es(t.title)+'</span><span class="search-song-badge">'+badgeHtml+'</span></span><span class="text-white/60 text-xs truncate mt-0.5 block">'+es(t.artist)+'</span></span>'+
+                    '<span class="search-song-btn">'+btnHtml+'</span>'+
+                    '</button>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
             lucide.createIcons();
