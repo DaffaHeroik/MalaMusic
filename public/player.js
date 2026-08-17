@@ -279,28 +279,53 @@ function updateVolumeUI() {
     }
 }
 
+var PWA_CACHE_SCHEMA_VERSION = 2;
+function isStorageMap(value) {
+    return value && typeof value === 'object' && !Array.isArray(value);
+}
 function readStorageMap(key){
     try {
         var parsed = JSON.parse(localStorage.getItem(key) || '{}');
-        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        var isVersioned = parsed && parsed.version === PWA_CACHE_SCHEMA_VERSION && isStorageMap(parsed.data);
+        var safe = isVersioned ? parsed.data : (isStorageMap(parsed) && parsed.version === undefined ? parsed : {});
+        if (!isVersioned && isStorageMap(safe)) {
+            try { localStorage.setItem(key, JSON.stringify({ version: PWA_CACHE_SCHEMA_VERSION, updatedAt: Date.now(), data: safe })); } catch (__) {}
+        }
+        return safe;
     } catch (_) {
         try { localStorage.removeItem(key); } catch (__) {}
         return {};
+    }
+}
+function writeStorageMap(key, map) {
+    var keys = Object.keys(map);
+    while (keys.length > 80) {
+        delete map[keys.shift()];
+    }
+    var payload = { version: PWA_CACHE_SCHEMA_VERSION, updatedAt: Date.now(), data: map };
+    try {
+        localStorage.setItem(key, JSON.stringify(payload));
+        return true;
+    } catch (_) {
+        var retryKeys = Object.keys(map);
+        while (retryKeys.length > 10) delete map[retryKeys.shift()];
+        try {
+            payload.data = map;
+            localStorage.setItem(key, JSON.stringify(payload));
+            return true;
+        } catch (__) {
+            return false;
+        }
     }
 }
 var audioUrlCache = readStorageMap('pwa_audio_cache');
 var lyricsCache = readStorageMap('pwa_lyrics_cache');
 
 function savePwaCaches() {
-    try {
-        var lKeys = Object.keys(lyricsCache);
-        if (lKeys.length > 80) delete lyricsCache[lKeys[0]];
-        localStorage.setItem('pwa_lyrics_cache', JSON.stringify(lyricsCache));
-
-        var aKeys = Object.keys(audioUrlCache);
-        if (aKeys.length > 80) delete audioUrlCache[aKeys[0]];
-        localStorage.setItem('pwa_audio_cache', JSON.stringify(audioUrlCache));
-    } catch(e) {}
+    var lyricsSaved = writeStorageMap('pwa_lyrics_cache', lyricsCache);
+    var audioSaved = writeStorageMap('pwa_audio_cache', audioUrlCache);
+    if (!lyricsSaved) console.warn('[MalaMusic] Lirik tidak dapat disimpan karena quota localStorage.');
+    if (!audioSaved) console.warn('[MalaMusic] URL audio tidak dapat disimpan karena quota localStorage.');
 }
 
 var hasPrefetchedNext = false;

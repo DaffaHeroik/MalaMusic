@@ -145,19 +145,44 @@ function installPWA(){
 }
 
 // Offline PWA Storage Helper
+var PWA_STORAGE_SCHEMA_VERSION = 2;
+function isPwaArrayKey(key) {
+    return key === 'pwa_offline_tracks';
+}
+function sanitizeStorageArray(value) {
+    return Array.isArray(value) ? value.filter(function(item){ return item && typeof item === 'object'; }) : [];
+}
 function readJsonArray(key) {
     try {
         var parsed = JSON.parse(localStorage.getItem(key) || '[]');
-        return Array.isArray(parsed) ? parsed.filter(function(item){ return item && typeof item === 'object'; }) : [];
+        var isVersioned = parsed && parsed.version === PWA_STORAGE_SCHEMA_VERSION && Array.isArray(parsed.items);
+        var safe = sanitizeStorageArray(isVersioned ? parsed.items : parsed);
+        if (isPwaArrayKey(key) && !isVersioned) {
+            try { localStorage.setItem(key, JSON.stringify({ version: PWA_STORAGE_SCHEMA_VERSION, updatedAt: Date.now(), items: safe })); } catch (__) {}
+        }
+        return safe;
     } catch (_) {
         try { localStorage.removeItem(key); } catch (__) {}
         return [];
     }
 }
 function writeJsonArray(key, value) {
-    var safe = Array.isArray(value) ? value.filter(function(item){ return item && typeof item === 'object'; }) : [];
-    try { localStorage.setItem(key, JSON.stringify(safe)); return true; }
-    catch (_) { showToast('Penyimpanan perangkat penuh. Hapus beberapa data offline.'); return false; }
+    var safe = sanitizeStorageArray(value);
+    var payload = isPwaArrayKey(key)
+        ? { version: PWA_STORAGE_SCHEMA_VERSION, updatedAt: Date.now(), items: safe }
+        : safe;
+    try { localStorage.setItem(key, JSON.stringify(payload)); return true; }
+    catch (_) {
+        if (isPwaArrayKey(key) && safe.length > 20) {
+            try {
+                payload.items = safe.slice(0, 20);
+                localStorage.setItem(key, JSON.stringify(payload));
+                return true;
+            } catch (__) {}
+        }
+        if (typeof showToast === 'function') showToast('Penyimpanan perangkat penuh. Hapus beberapa data offline.');
+        return false;
+    }
 }
 function getOfflineSongs() {
     return readJsonArray('pwa_offline_tracks').filter(function(song){ return !!(song.videoId || song.id); });
