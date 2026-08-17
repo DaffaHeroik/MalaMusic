@@ -203,6 +203,12 @@ var Search = {
             Search.queryController = queryController;
             S.sq=si.value.trim();
             var submittedQuery = S.sq;
+            // FIXED: invalidate and abort in-flight suggestions so a late response cannot reopen the panel after submit.
+            ++Search.suggestSeq;
+            if (Search.suggestController) {
+                try { Search.suggestController.abort(); } catch (err) {}
+                Search.suggestController = null;
+            }
             gid('suggestions').classList.add('hidden');
             if(!S.sq){S.ar=[];S.pr=[];S.sr=[];Search.show();return;}
             try { var recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]').filter(function(item){return item!==S.sq;}); recent.unshift(S.sq); localStorage.setItem('mala_recent_searches',JSON.stringify(recent.slice(0,8))); } catch(e) {}
