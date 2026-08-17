@@ -40,3 +40,7 @@ Launcher Listen Together tidak lagi dibuat sebagai pill floating di atas konten.
 ## v72 Home cover verification
 
 Kartu Quick Picks Home sebelumnya memakai padding `p-2.5` pada seluruh kartu dan thumbnail 48/56px, sehingga cover terlihat memiliki ruang kosong di sekelilingnya. Pada v72, kartu memakai wrapper cover flush di sisi kiri dengan `overflow-hidden`, thumbnail 64x64px pada mobile dan 72x72px pada desktop, `object-fit: cover`, serta padding wrapper 0px. Pengukuran production menunjukkan gambar dan wrapper memiliki ukuran yang sama, tanpa overflow horizontal pada Android.
+
+## v73 Recently Played cover verification
+
+Versi v73 memperbaiki renderer Recently Played dengan menghapus `border border-white/10`, menambahkan `block` pada `<img>`, dan menerapkan `safeMediaUrl()`. Production memuat `home.js?v=73` dan Service Worker `malamusic-static-v73`. Pengukuran aktual pada production menunjukkan kartu Recently Played berukuran 160x204px, wrapper cover 160x160px, gambar 160x160px, padding wrapper 0px, border 0px, display gambar `block`, serta overflow horizontal 0px. Perubahan sudah dipush pada commit `67cd671`.
