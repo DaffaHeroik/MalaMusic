@@ -175,6 +175,10 @@ async function cacheOfflineAudioBinary(vid, rawUrl){
         return true;
     } catch (_) { return false; }
 }
+async function hasOfflineAudioBinary(vid){
+    if (!window.caches || !vid) return false;
+    try { return !!(await caches.match(offlineAudioPath(vid))); } catch (_) { return false; }
+}
 async function removeOfflineAudioBinary(vid){
     if (!window.caches) return;
     try { var cache = await caches.open(OFFLINE_AUDIO_CACHE); await cache.delete(offlineAudioPath(vid)); } catch (_) {}
@@ -199,25 +203,33 @@ async function saveTrackForOffline(track, options) {
     var list = getOfflineSongs();
     var existingIndex = list.findIndex(function(s) { return (s.videoId === vid || s.id === vid); });
 
+    var songObj;
     if (existingIndex !== -1) {
         if (options.keepExisting) {
-            if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: track });
-            return true;
-        }
-        // Remove from offline
-        list.splice(existingIndex, 1);
+            songObj = list[existingIndex];
+            if (await hasOfflineAudioBinary(vid)) {
+                songObj.offlineStatus = 'ready';
+                writeJsonArray('pwa_offline_tracks', list);
+                if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: songObj });
+                return true;
+            }
+        } else {
+            // Remove from offline
+            list.splice(existingIndex, 1);
         writeJsonArray('pwa_offline_tracks', list);
         await removeOfflineAudioBinary(vid);
-        showToast('Lagu dihapus dari Mode Offline PWA');
-        updateOfflineButtons();
-        if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
-        return false;
+            showToast('Lagu dihapus dari Mode Offline PWA');
+            updateOfflineButtons();
+            if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+            return false;
+        }
     }
 
-    if (!options.silent) showToast('Menyimpan lagu ke Mode Offline PWA...');
+    if (!songObj) {
+        if (!options.silent) showToast('Menyimpan lagu ke Mode Offline PWA...');
 
-    // 1. Add track metadata to list
-    var songObj = {
+        // 1. Add track metadata to list
+        songObj = {
         id: vid,
         videoId: vid,
         title: track.title || 'Lagu',
@@ -227,14 +239,19 @@ async function saveTrackForOffline(track, options) {
         ytUrl: track.ytUrl || ('https://youtube.com/watch?v=' + vid),
         savedAt: Date.now(),
         offlinePlaylistId: options.playlistId || '',
-        offlinePlaylistName: options.playlistName || ''
-    };
-    list.unshift(songObj);
-    try { localStorage.setItem('pwa_offline_tracks', JSON.stringify(list)); } catch(e){}
+            offlinePlaylistName: options.playlistName || '',
+            offlineStatus: 'pending'
+        };
+        list.unshift(songObj);
+    }
+    writeJsonArray('pwa_offline_tracks', list);
 
     // 2. Pre-fetch & cache Audio URL
+    var binarySaved = false;
     try {
-        if (typeof audioUrlCache !== 'undefined' && !audioUrlCache[vid]) {
+        // Partial/legacy entries must resolve a fresh URL; resolver URLs can expire.
+        var rawAudioUrl = existingIndex === -1 && typeof audioUrlCache !== 'undefined' && audioUrlCache[vid] ? audioUrlCache[vid] : '';
+        if (!rawAudioUrl) {
             var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
             var r = await fetch(API.ytplay, {
                 method: 'POST',
@@ -242,14 +259,16 @@ async function saveTrackForOffline(track, options) {
                 body: JSON.stringify({ query: ytUrl })
             });
             var d = await r.json();
-            if (d && d.result && d.result.download && d.result.download.audio) {
-                audioUrlCache[vid] = d.result.download.audio;
-                if (typeof savePwaCaches === 'function') savePwaCaches();
-                var binarySaved = await cacheOfflineAudioBinary(vid, d.result.download.audio);
-                if (!binarySaved && typeof showToast === 'function') showToast('Audio belum tersimpan penuh; coba download lagi saat jaringan stabil.');
-            }
+            rawAudioUrl = d && d.result && d.result.download && d.result.download.audio || '';
+        }
+        if (rawAudioUrl) {
+            if (typeof audioUrlCache !== 'undefined') audioUrlCache[vid] = rawAudioUrl;
+            if (typeof savePwaCaches === 'function') savePwaCaches();
+            binarySaved = await cacheOfflineAudioBinary(vid, rawAudioUrl);
         }
     } catch(e) {}
+    songObj.offlineStatus = binarySaved ? 'ready' : 'partial';
+    if (!binarySaved && typeof showToast === 'function') showToast('Audio belum tersimpan penuh; coba download lagi saat jaringan stabil.');
 
     // 3. Pre-fetch & cache Lyrics
     try {
@@ -282,13 +301,13 @@ async function saveTrackForOffline(track, options) {
         }
     } catch(e) {}
 
-    if (typeof options.onProgress === 'function') options.onProgress({ status: 'saved', track: track });
-    if (!options.silent) showToast('Lagu "' + track.title + '" tersimpan untuk Mode Offline!');
+    writeJsonArray('pwa_offline_tracks', list);
+    if (typeof options.onProgress === 'function') options.onProgress({ status: binarySaved ? 'saved' : 'partial', track: songObj });
+    if (!options.silent) showToast(binarySaved ? 'Lagu "' + track.title + '" tersimpan untuk Mode Offline!' : 'Metadata tersimpan, tetapi audio offline belum lengkap.');
     updateOfflineButtons();
     if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
-    return true;
+    return binarySaved;
 }
-
 var offlinePlaylistJob = null;
 
 function downloadPlaylistOffline(playlistId) {
@@ -322,8 +341,8 @@ function downloadPlaylistOffline(playlistId) {
                 var vid = track.videoId || track.id;
                 var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
                 var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name });
-                var hasAudio = typeof audioUrlCache !== 'undefined' && !!audioUrlCache[vid];
-                if (before) already++; else if (!result || !hasAudio) failed++;
+                var hasAudio = await hasOfflineAudioBinary(vid);
+                if (before && hasAudio) already++; else if (!result || !hasAudio) failed++;
             } catch (e) { failed++; }
             done++;
             bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
@@ -416,7 +435,7 @@ var OfflineView = {
                         '<img src="'+(s.cover || FI)+'" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
                         '<div class="min-w-0 flex-1">'+
                             '<h3 class="'+titleClass+' text-sm truncate">'+es(s.title)+'</h3>'+
-                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
+                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlineStatus === 'partial' ? ' • <span class="text-amber-300/80">Audio belum lengkap</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
                         '</div>'+
                     '</div>'+trackMenuButton(s)+
                     '<button onclick="event.stopPropagation();saveTrackForOffline('+safeSongJson+');" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-red-400 border border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all" title="Hapus dari Mode Offline PWA">'+
