@@ -44,3 +44,8 @@ This batch addresses fresh static-scan warnings confirmed in the current reposit
 The player now invalidates the previous audio source before resolving a newly selected track and tracks the active source by both object identity and load sequence. Native `timeupdate`, `play`, `pause`, `waiting`, `playing`, `ended`, and `error` events ignore obsolete sources. Delayed loaded-metadata callbacks and auto-next recommendation fetches also verify the original load sequence and track before mutating state. Frontend/service-worker assets were bumped from v81 to v82.
 
 A local browser timing harness replayed five selections at 30 ms intervals with delayed synthetic resolver responses. A stale `ended` event fired while the final resolver was pending did not call `NX`; the current final-track `ended` event called `NX` exactly once. The repeatable static invariant check is `npm run test:playback-race`.
+
+
+## Resolver/cache reliability fix — 2026-08-18
+
+The playback audit confirmed that `pwa_audio_cache` stores only resolver URL metadata, not audio bytes. The production Offline screen showed no `/offline-audio/{videoId}` binary, so lagging playback still depended on the resolver and external stream/proxy. The player now checks real offline binaries first, reuses a cached URL only as an online fast path, aborts a resolver request after 12 seconds, and arms a generation-safe 12-second startup watchdog after assigning the audio source. A failed non-offline source invalidates its cached URL and receives one fresh resolver retry; a failed offline binary receives a clear re-download message. Assets were bumped from v82 to v83.

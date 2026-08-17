@@ -137,9 +137,9 @@ AU.addEventListener('timeupdate',function(){
 AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
 AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
-AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; S.il=false;UB();updateMediaSessionPlaybackState();});
+AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
 AU.addEventListener('ended',function(){if(!isCurrentAudioSource()) return; if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
-AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; if(AU.src){S.il=false;S.ip=false;UB();}});
+AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; handleAudioSourceError();});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
 if('mediaSession' in navigator){
@@ -334,10 +334,25 @@ var isPreloadingNext = false;
 var audioLoadSequence = 0;
 var activeAudioTrack = null;
 var activeAudioSequence = 0;
+var activeAudioIsOffline = false;
+var audioStartTimer = null;
+var audioRecoveryKey = '';
+var audioRecoveryAttempts = 0;
 var audioUrlFetchPromises = {};
 
 function isCurrentAudioSource(){
     return !!activeAudioTrack && activeAudioSequence === audioLoadSequence && S.ct === activeAudioTrack;
+}
+function clearAudioStartTimer(){
+    if(audioStartTimer){ clearTimeout(audioStartTimer); audioStartTimer = null; }
+}
+function armAudioStartTimer(track, sequence){
+    clearAudioStartTimer();
+    audioStartTimer = setTimeout(function(){
+        audioStartTimer = null;
+        if(sequence !== audioLoadSequence || S.ct !== track || !isCurrentAudioSource()) return;
+        handleAudioSourceError();
+    }, 12000);
 }
 var prefetchAudioElements = {};
 
@@ -358,15 +373,21 @@ function resolveAudioUrl(track) {
         if (audioUrlCache[vid]) return audioUrlCache[vid];
         if (!navigator.onLine) throw new Error('Offline dan audio belum tersimpan');
         var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
-        return fetch(API.ytplay, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: ytUrl})
-        }).then(function(r){ return r.json(); }).then(function(d){
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timeoutId = setTimeout(function(){ if(controller) controller.abort(); }, 12000);
+        var requestOptions = {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: ytUrl})
+        };
+        if (controller) requestOptions.signal = controller.signal;
+        return fetch(API.ytplay, requestOptions).then(function(r){ return r.json(); }).then(function(d){
             var url = d && d.status && d.result && d.result.download && d.result.download.audio;
             if (!url) throw new Error('URL audio tidak tersedia');
             audioUrlCache[vid] = url;
             savePwaCaches();
             return url;
-        });
+        }).finally(function(){ clearTimeout(timeoutId); });
     }).finally(function(){ delete audioUrlFetchPromises[vid]; });
     return audioUrlFetchPromises[vid];
 }
@@ -1004,11 +1025,18 @@ function getRecentTracks(){
     try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
 }
 
-function loadTrack(track,resumeAt){
+function loadTrack(track,resumeAt,isRecoveryRetry){
     if(!track)return;
+    var recoveryKey = trackId(track);
+    if (!isRecoveryRetry || audioRecoveryKey !== recoveryKey) {
+        audioRecoveryKey = recoveryKey;
+        audioRecoveryAttempts = 0;
+    }
     var loadSequence = ++audioLoadSequence;
+    clearAudioStartTimer();
     activeAudioTrack = null;
     activeAudioSequence = 0;
+    activeAudioIsOffline = false;
     saveRecentTrack(track);
     if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
@@ -1030,15 +1058,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
     function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
     var vid = track.videoId || track.id;
     try{
-        var audioUrl = audioUrlCache[vid];
-        if (!audioUrl) {
-            if (!navigator.onLine) {
-                S.il = false; S.ip = false; UB();
-                if(typeof showToast === 'function') showToast('Mode Offline: Lagu ini belum tersimpan di cache PWA');
-                return;
-            }
-            audioUrl = await resolveAudioUrl(track);
-        }
+        var audioUrl = await resolveAudioUrl(track);
         if(!isCurrentLoad())return;
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
@@ -1050,12 +1070,14 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
             }
             activeAudioTrack = track;
             activeAudioSequence = loadSequence;
+            activeAudioIsOffline = isOfflineBinary;
             if (typeof audioCtx !== 'undefined' && audioCtx) {
                 AU.src = nextSrc;
             } else {
                 AU.removeAttribute('crossorigin');
                 AU.src = nextSrc;
             }
+            armAudioStartTimer(track, loadSequence);
             if(resumeAt){
                 var onMeta=function(){
                     AU.removeEventListener('loadedmetadata',onMeta);
@@ -1073,6 +1095,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
                     UB();
                 }).catch(function(err){
                     if(!isCurrentLoad()) return;
+                    clearAudioStartTimer();
                     // Browser blocked autoplay or requires user interaction
                     S.il = false;
                     S.ip = false;
@@ -1089,8 +1112,46 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
             if(typeof showToast === 'function') showToast('Gagal memuat audio lagu ini');
         }
     }catch(e){
-        if(isCurrentLoad()){S.il=false;S.ip=false;UB();}
+        if(isCurrentLoad()){
+            S.il=false;S.ip=false;UB();
+            if(typeof showToast === 'function') showToast(navigator.onLine ? 'Gagal menyiapkan lagu. Coba lagi.' : 'Mode Offline: Lagu ini belum tersimpan di cache PWA');
+        }
     }
+}
+
+function handleAudioSourceError(){
+    clearAudioStartTimer();
+    var failedTrack = activeAudioTrack;
+    var failedSequence = activeAudioSequence;
+    if (!failedTrack || !failedSequence) return;
+    if (activeAudioIsOffline) {
+        activeAudioTrack = null;
+        activeAudioSequence = 0;
+        activeAudioIsOffline = false;
+        S.il = false; S.ip = false; UB();
+        if(typeof showToast === 'function') showToast('File offline tidak dapat diputar. Download ulang saat online.');
+        return;
+    }
+    if (audioRecoveryAttempts >= 1) {
+        activeAudioTrack = null;
+        activeAudioSequence = 0;
+        S.il = false; S.ip = false; UB();
+        if(typeof showToast === 'function') showToast('Lagu gagal dimuat. Coba lagi saat jaringan stabil.');
+        return;
+    }
+    audioRecoveryAttempts += 1;
+    var vid = getTrackId(failedTrack);
+    if (vid && audioUrlCache[vid]) {
+        delete audioUrlCache[vid];
+        savePwaCaches();
+    }
+    activeAudioTrack = null;
+    activeAudioSequence = 0;
+    activeAudioIsOffline = false;
+    S.il = true; S.ip = false; UB();
+    setTimeout(function(){
+        if (S.ct === failedTrack && audioLoadSequence === failedSequence) loadTrack(failedTrack, undefined, true);
+    }, 0);
 }
 
 function TP(){
