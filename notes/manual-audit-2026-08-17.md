@@ -44,3 +44,7 @@ Kartu Quick Picks Home sebelumnya memakai padding `p-2.5` pada seluruh kartu dan
 ## v73 Recently Played cover verification
 
 Versi v73 memperbaiki renderer Recently Played dengan menghapus `border border-white/10`, menambahkan `block` pada `<img>`, dan menerapkan `safeMediaUrl()`. Production memuat `home.js?v=73` dan Service Worker `malamusic-static-v73`. Pengukuran aktual pada production menunjukkan kartu Recently Played berukuran 160x204px, wrapper cover 160x160px, gambar 160x160px, padding wrapper 0px, border 0px, display gambar `block`, serta overflow horizontal 0px. Perubahan sudah dipush pada commit `67cd671`.
+
+## v74 mobile visual spacing verification
+
+Screenshot pengguna menggunakan alamat branch alias Vercel (`malamusic-git-main-daffaheroiks-projects.vercel.app`), bukan deployment berbeda yang tidak terhubung. Branch alias dan domain production sama-sama memuat `/home.js?v=74` serta `malamusic-static-v74`. Pada v74, tombol Recently Played diberi `p-0 m-0 border-0 bg-transparent`, wrapper cover diberi `p-0 m-0 border-0 shadow-none bg-transparent`, dan gambar diberi `block p-0 m-0 border-0`, untuk menghilangkan shadow/background yang masih tampak sebagai celah pada screenshot Android. Commit source: `85d0f46`.
