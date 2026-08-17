@@ -24,3 +24,16 @@ The first batch built successfully but the live Vercel deployment returned `FUNC
 ## Pending verification
 
 Production deployment and browser verification remain necessary after commit. The `YOUTUBE_MUSIC_API_KEY`, `FIREBASE_WEB_API_KEY`, `SESSION_SECRET`, Firebase Admin credentials, `MALAMUSIC_INTERNAL_SECRET`, and `CRON_SECRET` values must be present in the Vercel environment before publishing v79.
+
+
+## Review batch 2 — 2026-08-18
+
+This batch addresses fresh static-scan warnings confirmed in the current repository.
+
+| Area | Change | Validation |
+|---|---|---|
+| Legacy Google OAuth | Replaced the `error.message` response in Google session refresh with a static client-safe message and server-side logging. | `node --check api/google-auth.js`; residual raw-client-error scan passed. |
+| Album, artist, lyrics, and suggestions | Replaced upstream exception text in generic responses with stable client-safe messages and server-side diagnostics. | `node --check` checks; residual raw-client-error scan passed. |
+| Upstream TLS | Removed `rejectUnauthorized: false` from artist, lyrics, and suggestion upstream HTTPS requests so normal certificate validation remains enabled. | Residual TLS-disable scan passed; syntax and local smoke checks passed. |
+
+| Translation | Replaced the translation endpoint’s raw exception text with a static client-safe 502 message and server-side diagnostics. | `node --check api/translate.js`; complete API response audit passed. |

@@ -66,7 +66,9 @@ module.exports = async (req, res) => {
             }
         });
     } catch(e) {
-        res.status(500).json({ status: false, message: 'Gagal: ' + e.message });
+        // FIXED: do not expose upstream exception details to clients.
+        console.error('[lyrics] request failed', e && e.stack ? e.stack : e);
+        res.status(502).json({ status: false, message: 'Lirik sementara belum tersedia.' });
     }
 };
 

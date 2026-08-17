@@ -189,7 +189,9 @@ const handler = async (req, res) => {
             return res.status(200).json({ status: true, result: { original: text, translated: translatedText, targetLang, creator: 'MalaMusic' } });
         }
     } catch(e) {
-        return res.status(500).json({ status: false, message: 'Gagal menerjemahkan: ' + e.message });
+        // FIXED: do not expose upstream exception details to clients.
+        console.error('[translate] request failed', e && e.stack ? e.stack : e);
+        return res.status(502).json({ status: false, message: 'Terjemahan sementara belum tersedia.' });
     }
 };
 

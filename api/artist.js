@@ -50,7 +50,8 @@ module.exports = async (req, res) => {
         const data = await makeRequest({
             hostname: 'music.youtube.com', path: '/youtubei/v1/browse?key='+API_KEY, method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0', 'Origin': 'https://music.youtube.com' },
-            rejectUnauthorized: false, timeout: 15000
+            // FIXED: keep upstream HTTPS certificate validation enabled.
+            timeout: 15000
         }, { context: { client: { clientName: 'WEB_REMIX', clientVersion: '1.20240101.00.00', hl: 'en', gl: 'ID' } }, browseId: artistId });
 
         let name='', thumbnails=[];
@@ -99,5 +100,9 @@ module.exports = async (req, res) => {
         const result = { status: true, input: { id: artistId }, result: { artistId, name, thumbnails, topSongs, topAlbums, topSingles, topVideos, playlists, featuredOn, similarArtists, creator: 'MalaMusic' } };
         removeKeysRecursive(result, ['creator']);
         res.status(200).json(result);
-    } catch(e) { res.status(500).json({ status: false, message: 'Gagal: '+e.message }); }
+    } catch(e) {
+        // FIXED: do not expose upstream exception details to clients.
+        console.error('[artist] request failed', e && e.stack ? e.stack : e);
+        res.status(502).json({ status: false, message: 'Data artis sementara belum tersedia.' });
+    }
 };

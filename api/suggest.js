@@ -12,11 +12,16 @@ module.exports = async (req, res) => {
                 hostname: 'suggestqueries.google.com',
                 path: '/complete/search?client=youtube&ds=yt&q=' + encodeURIComponent(query),
                 headers: { 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0' },
-                rejectUnauthorized: false, timeout: 15000
+                // FIXED: keep upstream HTTPS certificate validation enabled.
+                timeout: 15000
             }, res => { let d=''; res.on('data', c=>d+=c); res.on('end', ()=>resolve(d)); }).on('error', reject);
         });
         const json = JSON.parse(data.replace(/^window\.google\.ac\.h\(/, '').replace(/\)$/, ''));
         const suggestions = (Array.isArray(json) && Array.isArray(json[1])) ? json[1].filter(i => Array.isArray(i) && i[0]).map(i => i[0]) : [];
         res.status(200).json(suggestions);
-    } catch(e) { res.status(500).json({ status: false, message: 'Gagal: '+e.message }); }
+    } catch(e) {
+        // FIXED: do not expose upstream exception details to clients.
+        console.error('[suggest] request failed', e && e.stack ? e.stack : e);
+        res.status(502).json({ status: false, message: 'Saran pencarian sementara belum tersedia.' });
+    }
 };

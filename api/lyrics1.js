@@ -88,7 +88,7 @@ async function getLyrics1(videoId, queryTitle = '', queryArtist = '') {
                 path: '/youtubei/v1/next?key=' + API_KEY,
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0', 'Origin': 'https://music.youtube.com' },
-                rejectUnauthorized: false,
+                // FIXED: keep upstream HTTPS certificate validation enabled.
                 timeout: 4000
             }, { context: { client: { clientName: 'WEB_REMIX', clientVersion: '1.20240101.00.00', hl: 'en', gl: 'ID' } }, videoId });
 
@@ -134,7 +134,7 @@ async function getLyrics1(videoId, queryTitle = '', queryArtist = '') {
                 path: '/api/search?q=' + sq,
                 method: 'GET',
                 headers: { 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0' },
-                rejectUnauthorized: false,
+                // FIXED: keep upstream HTTPS certificate validation enabled.
                 timeout: 5000
             }, null);
 

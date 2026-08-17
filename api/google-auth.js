@@ -163,7 +163,11 @@ async function handler(req, res) {
     }
 
     let session;
-    try { session = await getSession(req); } catch (error) { return jsonError(res, 401, error.message); }
+    // FIXED: hide Google token-refresh details from client responses.
+    try { session = await getSession(req); } catch (error) {
+        console.error('[google-auth] session refresh failed', error && error.stack ? error.stack : error);
+        return jsonError(res, 401, 'Sesi Google tidak valid.');
+    }
     if (!session) return res.status(401).json({ status: false, authenticated: false });
     saveSession(res, session, req);
 
