@@ -1,7 +1,8 @@
-var StatsTracker = {
+var Stats = {
     total: 0,
     last: null,
     pending: 0,
+    inFlight: false,
     tick: function(track, position) {
         if (!track || !position || !isFinite(position)) return;
         if (this.last !== null) { var delta = position - this.last; if (delta > 0 && delta <= 5) this.pending += delta; }
@@ -10,9 +11,30 @@ var StatsTracker = {
     },
     reset: function() { this.last = null; },
     flush: async function() {
-        var seconds = Math.floor(this.pending);
+        if (this.inFlight) return;
+        var seconds = Math.min(120, Math.floor(this.pending));
         if (seconds < 10) return;
         this.pending -= seconds;
-        try { await fetch('/api/stats?action=listen', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seconds: Math.min(120, seconds) }) }); } catch (_) { this.pending += seconds; }
+        this.inFlight = true;
+        try {
+            var response = await fetch('/api/stats?action=listen', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seconds: seconds }) });
+            if (!response.ok) throw new Error('stats request failed');
+        } catch (_) {
+            this.pending += seconds;
+        } finally {
+            this.inFlight = false;
+        }
+    },
+    flushBeacon: function() {
+        var seconds = Math.min(120, Math.floor(this.pending));
+        if (seconds < 10) return;
+        this.pending -= seconds;
+        try {
+            var body = new Blob([JSON.stringify({ seconds: seconds })], { type: 'application/json' });
+            if (!navigator.sendBeacon('/api/stats?action=listen', body)) this.pending += seconds;
+        } catch (_) {
+            this.pending += seconds;
+        }
     }
 };
+window.addEventListener('pagehide', function() { Stats.flushBeacon(); }, { capture: true });

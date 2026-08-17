@@ -90,10 +90,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. API Routes -> network first only for public, non-session data.
-  // Auth, stats, streak, room, and write endpoints must never enter shared cache.
+  // 2. API Routes -> cache only explicitly public catalog/content reads.
+  // Auth, profile, library, stats, streak, rooms, resolver/audio, and all writes stay network-only.
   if (url.pathname.startsWith('/api/')) {
-    const privateApi = /\/api\/(email-auth|google-auth|stats|streak|listen-together)(\/|$)/.test(url.pathname) || request.method !== 'GET' || request.headers.has('cookie');
+    const publicCatalogApi = /^\/api\/(search|suggest|artist|album|lyrics)$/.test(url.pathname);
+    const privateApi = !publicCatalogApi || request.method !== 'GET' || request.headers.has('cookie');
     if (privateApi) {
       event.respondWith(fetch(request).catch(() => new Response(JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline' }), { headers: { 'Content-Type': 'application/json' } })));
       return;
@@ -114,7 +115,6 @@ self.addEventListener('fetch', (event) => {
             if (cachedResponse) {
               return cachedResponse;
             }
-            // Fallback JSON for offline API requests
             return new Response(
               JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline (PWA Offline Mode)' }),
               { headers: { 'Content-Type': 'application/json' } }
