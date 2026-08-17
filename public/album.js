@@ -34,6 +34,7 @@ var Album = {
     requestSeq: 0,
     requestController: null,
     open(id, passedCoverUrl) {
+        if (typeof Artist !== 'undefined' && typeof Artist.close === 'function' && gid('artist-modal') && gid('artist-modal').style.display !== 'none') Artist.close();
         var requestId = ++Album.requestSeq;
         if (Album.requestController) {
             try { Album.requestController.abort(); } catch (e) {}

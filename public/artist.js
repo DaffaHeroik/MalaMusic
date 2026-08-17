@@ -33,6 +33,7 @@ var Artist={
     requestSeq: 0,
     requestController: null,
     open(id, name, thumbnail) {
+        if (typeof Album !== 'undefined' && typeof Album.close === 'function' && gid('album-modal') && gid('album-modal').style.display !== 'none') Album.close();
         var requestId = ++Artist.requestSeq;
         if (Artist.requestController) {
             try { Artist.requestController.abort(); } catch (e) {}
