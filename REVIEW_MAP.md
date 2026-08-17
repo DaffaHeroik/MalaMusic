@@ -1,4 +1,3 @@
-# MalaMusic Review Map
 
 ## Stack
 - Frontend: vanilla JavaScript, HTML, Tailwind CDN, Firebase compat SDK
@@ -77,6 +76,7 @@
 ./notes/listen-together-v77-audit.md
 ./notes/malamusic-spotify-feature-audit.md
 ./notes/manual-audit-2026-08-17.md
+./notes/production-review-browser-verification.md
 ./notes/production-sync-check.md
 ./notes/production-verification-v63-media-safety.md
 ./notes/production-verification-v64-hardening.md
@@ -90,17 +90,5 @@
 ./notes/vps-platform-login-map.md
 
 ## Git state
- [31mM[m notes/firebase-custom-auth-domain-research.md
- [31mM[m notes/google-login-verification.md
- [31mM[m notes/production-sync-check.md
-[31m??[m REVIEW_MAP.md
-[31m??[m notes/auth-recovery-verification.md
-[31m??[m notes/auth-ui-verification.md
-[31m??[m notes/feature-audit-inventory.md
-[31m??[m notes/firebase-auth-config-reference.md
-[31m??[m notes/google-provider-cli-audit.md
-[31m??[m notes/malamusic-spotify-feature-audit.md
-[31m??[m notes/profile-settings-verification.md
-[31m??[m notes/spotify-gap-audit.md
-[31m??[m notes/visual-regression-2026-08-17.md
-[31m??[m notes/vps-platform-login-map.md
+
+At the start of this review loop, `main` was clean and aligned with `origin/main` at `b65a1c4`. The review fixes were committed as `26c7670` and pushed to `origin/main`; the final scan state is recorded in `REVIEW_LOOP_2026-08-18.md`.
