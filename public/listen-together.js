@@ -32,10 +32,19 @@
 
     function ensureLauncher() {
         if (document.getElementById('listen-together-launcher')) return;
-        var button = el('button', { id: 'listen-together-launcher', className: 'fixed right-4 bottom-28 z-[280] rounded-full bg-emerald-400 text-black px-4 py-3 text-xs font-black shadow-2xl border border-white/30 active:scale-95 transition-all', title: 'Dengarkan bersama teman' });
-        button.innerHTML = '<span class="mr-1">●</span> Dengarkan Bersama';
+        var sidebar = document.querySelector('.spotify-sidebar');
+        if (!sidebar) {
+            window.setTimeout(ensureLauncher, 80);
+            return;
+        }
+        var section = el('div', { className: 'spotify-nav-section listen-together-section' });
+        section.innerHTML = '<div class="spotify-section-label">Sosial</div><button id="listen-together-launcher" class="spotify-nav-item listen-together-nav-item" aria-label="Dengarkan bersama teman" title="Dengarkan bersama teman"><i data-lucide="headphones"></i><span>Dengar bersama</span></button>';
+        var button = section.querySelector('#listen-together-launcher');
         button.onclick = openLobby;
-        document.body.appendChild(button);
+        var user = sidebar.querySelector('.spotify-user');
+        sidebar.insertBefore(section, user || null);
+        sidebar.classList.add('has-social-nav');
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     }
     function openLobby() {
         closeModal();
