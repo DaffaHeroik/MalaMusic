@@ -492,7 +492,7 @@ var OfflineView = {
                     <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Mode Offline</h1>
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border ${isOnline ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-white/20 text-white/60 bg-white/5'}">${isOnline ? 'Online' : 'Offline'}</span>
                 </div>
-                <p class="text-xs text-white/50 mt-0.5">Penyimpanan PWA dan lagu tersimpan</p><p id="offline-storage-summary" class="text-[11px] text-cyan-300/70 mt-1">Menghitung penyimpanan...</p>
+                <p class="text-xs text-white/50 mt-0.5">Penyimpanan perangkat dan audio offline</p><p id="offline-storage-summary" class="text-[11px] text-cyan-300/70 mt-1">Menghitung penyimpanan...</p>
             </div>
             <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-md">
                 <i data-lucide="wifi-off" class="w-4 h-4"></i>
@@ -511,7 +511,7 @@ var OfflineView = {
         </div>`;
 
         if (window.lucide) lucide.createIcons();
-        if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function(info){ var target = gid('offline-storage-summary'); if (!target) return; var used = Number(info.usage || 0), quota = Number(info.quota || 0); function fmt(n){ return n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; } target.textContent = 'Audio tersimpan: ' + fmt(used) + (quota ? ' dari sekitar ' + fmt(quota) : ''); }).catch(function(){});
+        if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function(info){ var target = gid('offline-storage-summary'); if (!target) return; var used = Number(info.usage || 0), quota = Number(info.quota || 0); function fmt(n){ return n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; } target.textContent = 'Penyimpanan perangkat: ' + fmt(used) + (quota ? ' dari sekitar ' + fmt(quota) : '') + (offlineSongs.length ? ' • Audio offline: ' + offlineSongs.length + ' lagu' : ' • Belum ada audio offline'); }).catch(function(){});
     }
 };
 
