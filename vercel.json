@@ -8,6 +8,14 @@
   ],
   "routes": [
     {
+      "src": "/__/auth/(.*)",
+      "dest": "https://heroikzre.firebaseapp.com/__/auth/$1"
+    },
+    {
+      "src": "/__/firebase/(.*)",
+      "dest": "https://heroikzre.firebaseapp.com/__/firebase/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.js"
     }
