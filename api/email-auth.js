@@ -280,6 +280,6 @@ module.exports = async function emailAuth(req, res) {
         if (code.includes('invalid-password')) return res.status(400).json({ status: false, message: 'Password tidak memenuhi aturan Firebase.' });
         if (code.includes('auth/')) return res.status(401).json({ status: false, message: firebaseErrorMessage(code.replace('auth/', '').toUpperCase()) });
         console.error('[email-auth]', error && error.stack ? error.stack : error);
-        return res.status(502).json({ status: false, message: (error && typeof error.message === 'string' && error.message) || 'Server autentikasi belum siap.' });
+        return res.status(502).json({ status: false, message: 'Server autentikasi belum siap.' });
     }
 };
