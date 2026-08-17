@@ -1681,24 +1681,75 @@ function getLikedSongs(){
     return typeof readJsonArray === 'function' ? readJsonArray('malamusic_liked_songs') : (function(){ try { var x=JSON.parse(localStorage.getItem('malamusic_liked_songs')||'[]'); return Array.isArray(x)?x:[]; } catch (_) { return []; } })();
 }
 var librarySyncTimer = null;
+var libraryLoadSeq = 0;
+var libraryLoadController = null;
+var librarySyncInFlight = false;
+var librarySyncQueued = false;
+function libraryArray(value) { return Array.isArray(value) ? value : []; }
+function mergeLibraryCollections(local, remote) {
+    var mergeBy = function(localItems, remoteItems, keyFn) {
+        var result = [];
+        var seen = Object.create(null);
+        libraryArray(remoteItems).concat(libraryArray(localItems)).forEach(function(item) {
+            if (!item || typeof item !== 'object') return;
+            var key = String(keyFn(item) || '');
+            if (!key || seen[key]) return;
+            seen[key] = true;
+            result.push(item);
+        });
+        return result;
+    };
+    return {
+        likedSongs: mergeBy(local.likedSongs, remote.likedSongs, function(x){ return x.videoId || x.id; }),
+        likedArtists: mergeBy(local.likedArtists, remote.likedArtists, function(x){ return x.artistId; }),
+        playlists: mergeBy(local.playlists, remote.playlists, function(x){ return x.id; })
+    };
+}
+function saveMergedLibraryLocal(lib) {
+    if(typeof writeJsonArray==='function'){
+        writeJsonArray('malamusic_liked_songs', lib.likedSongs);
+        writeJsonArray('malamusic_liked_artists', lib.likedArtists);
+        writeJsonArray('malamusic_playlists', lib.playlists);
+    } else {
+        try {
+            localStorage.setItem('malamusic_liked_songs',JSON.stringify(lib.likedSongs));
+            localStorage.setItem('malamusic_liked_artists',JSON.stringify(lib.likedArtists));
+            localStorage.setItem('malamusic_playlists',JSON.stringify(lib.playlists));
+        } catch(e) {}
+    }
+}
 function loadLibraryRemote(){
-    return fetch('/api/library',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(data){
+    var requestId = ++libraryLoadSeq;
+    if (libraryLoadController) {
+        try { libraryLoadController.abort(); } catch (e) {}
+    }
+    libraryLoadController = new AbortController();
+    return fetch('/api/library',{credentials:'same-origin',cache:'no-store',signal:libraryLoadController.signal}).then(function(r){return r.ok?r.json():null;}).then(function(data){
+        if (requestId !== libraryLoadSeq) return;
         var lib=data&&data.status&&data.library; if(!lib) return;
-        var hasRemote=lib.likedSongs.length||lib.likedArtists.length||lib.playlists.length;
-        if(hasRemote){
-            if(typeof writeJsonArray==='function'){writeJsonArray('malamusic_liked_songs',lib.likedSongs);writeJsonArray('malamusic_liked_artists',lib.likedArtists);writeJsonArray('malamusic_playlists',lib.playlists);} else {localStorage.setItem('malamusic_liked_songs',JSON.stringify(lib.likedSongs));localStorage.setItem('malamusic_liked_artists',JSON.stringify(lib.likedArtists));localStorage.setItem('malamusic_playlists',JSON.stringify(lib.playlists));}
-            if(typeof Library!=='undefined'&&Library.render) Library.render();
-        } else syncLibraryRemote();
-    }).catch(function(){});
+        var local = { likedSongs:getLikedSongs(), likedArtists:getLikedArtists(), playlists:getUserPlaylists() };
+        var merged = mergeLibraryCollections(local, lib);
+        var changed = JSON.stringify(merged) !== JSON.stringify(local);
+        saveMergedLibraryLocal(merged);
+        if(typeof Library!=='undefined'&&Library.render && changed) Library.render();
+        if (merged.likedSongs.length || merged.likedArtists.length || merged.playlists.length) syncLibraryRemote();
+    }).catch(function(e){ if (e && e.name !== 'AbortError') {} });
 }
 function syncLibraryRemote(){
     clearTimeout(librarySyncTimer);
+    if (librarySyncInFlight) { librarySyncQueued = true; return; }
     librarySyncTimer = setTimeout(function(){
         if (typeof EmailAuth === 'undefined') return;
+        librarySyncInFlight = true;
         fetch('/api/email-auth?action=me',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(me){
-            if (!me.authenticated) return;
+            if (!me.authenticated) return null;
             return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists()})});
-        }).catch(function(){});
+        }).then(function(response){
+            if (response && !response.ok) throw new Error('library sync failed');
+        }).catch(function(){}).finally(function(){
+            librarySyncInFlight = false;
+            if (librarySyncQueued) { librarySyncQueued = false; syncLibraryRemote(); }
+        });
     }, 700);
 }
 function saveLikedSongs(songs){
