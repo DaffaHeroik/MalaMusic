@@ -99,3 +99,7 @@ Evidence: `/tmp/malamusic-api-contracts-2.txt` and `/tmp/malamusic-operator-audi
 The security scan found `api/email-auth.js` returning `error.message` in its generic HTTP 502 fallback. Known Firebase auth codes were already mapped to safe messages, but unexpected Firebase/configuration exceptions could expose implementation or upstream details. The fallback now logs the detailed exception server-side and returns only `Server autentikasi belum siap.`
 
 Validation passed: `node --check api/email-auth.js`, `git diff --check`, `npm audit --omit=dev --audit-level=moderate`, and the raw-error scan.
+
+## [REG-001] Service-worker cache name lagged behind v81 asset URLs
+
+The first v81 production smoke test found that `sw.js?v=81` contained v81 precache URLs but still declared `CACHE_STATIC_NAME = 'malamusic-static-v80'`. This could leave the new release sharing the old static cache namespace and weaken the intended cache-bust behavior. The cache name was corrected to `malamusic-static-v81`; the release must be revalidated and redeployed. This finding resets the clean streak.
