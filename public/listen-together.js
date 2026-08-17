@@ -126,9 +126,9 @@
     function publishState() {
         if (!state.roomId || !isHost() || state.applying || typeof S === 'undefined') return;
         var track = currentTrack(); if (!track) return;
-        jsonFetch('/api/listen-together?action=command', { method: 'POST', body: JSON.stringify({ roomId: state.roomId, queue: currentQueue().length ? currentQueue() : [track], index: Number(S.pi) || 0, track: track, playing: !!(typeof AU !== 'undefined' && AU && !AU.paused), position: Number((typeof AU !== 'undefined' && AU ? AU.currentTime : S.pt) || 0) }) })
+        jsonFetch('/api/listen-together?action=command', { method: 'POST', body: JSON.stringify({ roomId: state.roomId, expectedVersion: Number(state.lastVersion || 0), queue: currentQueue().length ? currentQueue() : [track], index: Number(S.pi) || 0, track: track, playing: !!(typeof AU !== 'undefined' && AU && !AU.paused), position: Number((typeof AU !== 'undefined' && AU ? AU.currentTime : S.pt) || 0) }) })
             .then(function (data) { if (data.room) { state.lastVersion = Number(data.room.state.version || state.lastVersion); renderRoomBadge(data.room); } })
-            .catch(function () {});
+            .catch(function (e) { if (e && /sudah berubah|sinkronkan ulang/i.test(e.message)) poll(); });
     }
     function renderRoomBadge(room) {
         var badge = document.getElementById('listen-together-badge');

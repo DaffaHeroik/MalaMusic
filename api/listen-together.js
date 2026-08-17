@@ -149,6 +149,10 @@ module.exports = async function listenTogether(req, res) {
         if (action === 'command' && method === 'POST') {
             if (!isHost) return responseError(res, 403, 'Hanya host yang dapat mengontrol pemutaran.');
             const state = room.state || {};
+            const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
+            if (expectedVersion !== null && Number.isFinite(expectedVersion) && expectedVersion !== Number(state.version || 0)) {
+                return res.status(409).json({ status: false, conflict: true, message: 'State room sudah berubah. Sinkronkan ulang sebelum mengirim command.' });
+            }
             const queue = body.queue ? cleanQueue(body.queue) : cleanQueue(state.queue);
             const nextState = {
                 queue: queue.length ? queue : cleanQueue(state.queue),
