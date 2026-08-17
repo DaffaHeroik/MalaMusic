@@ -124,6 +124,7 @@ try {
     AU.setAttribute('disableRemotePlayback','');
 } catch(e) {}
 AU.addEventListener('timeupdate',function(){
+    if(!isCurrentAudioSource()) return;
     if(!AU.paused){
         S.pt=AU.currentTime||0;
         S.pd=AU.duration||0;
@@ -133,12 +134,12 @@ AU.addEventListener('timeupdate',function(){
         checkAndPreloadNext();
     }
 });
-AU.addEventListener('play',function(){S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
-AU.addEventListener('waiting',function(){S.il=true;UB();});
-AU.addEventListener('playing',function(){S.il=false;UB();updateMediaSessionPlaybackState();});
-AU.addEventListener('ended',function(){if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
-AU.addEventListener('error',function(){if(AU.src){S.il=false;S.ip=false;UB();}});
+AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
+AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
+AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; S.il=false;UB();updateMediaSessionPlaybackState();});
+AU.addEventListener('ended',function(){if(!isCurrentAudioSource()) return; if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
+AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; if(AU.src){S.il=false;S.ip=false;UB();}});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
 if('mediaSession' in navigator){
@@ -331,7 +332,13 @@ function savePwaCaches() {
 var hasPrefetchedNext = false;
 var isPreloadingNext = false;
 var audioLoadSequence = 0;
+var activeAudioTrack = null;
+var activeAudioSequence = 0;
 var audioUrlFetchPromises = {};
+
+function isCurrentAudioSource(){
+    return !!activeAudioTrack && activeAudioSequence === audioLoadSequence && S.ct === activeAudioTrack;
+}
 var prefetchAudioElements = {};
 
 function getTrackId(track) { return track && (track.videoId || track.id); }
@@ -1000,12 +1007,18 @@ function getRecentTracks(){
 function loadTrack(track,resumeAt){
     if(!track)return;
     var loadSequence = ++audioLoadSequence;
+    activeAudioTrack = null;
+    activeAudioSequence = 0;
     saveRecentTrack(track);
     if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
     isPreloadingNext = false;
     ST();
-    try{AU.pause();}catch(e){}
+    try{
+        AU.pause();
+        AU.removeAttribute('src');
+        AU.load();
+    }catch(e){}
     updateMediaSessionMetadata(track);
     fetchAudioAndPlay(track,resumeAt,loadSequence);
     // Resolusi URL lagu sekitar dilakukan di background agar Next/Previous tidak menunggu dari awal.
@@ -1035,6 +1048,8 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
                 nextSrc = preloaded.src;
                 delete prefetchAudioElements[vid];
             }
+            activeAudioTrack = track;
+            activeAudioSequence = loadSequence;
             if (typeof audioCtx !== 'undefined' && audioCtx) {
                 AU.src = nextSrc;
             } else {
@@ -1042,7 +1057,11 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
                 AU.src = nextSrc;
             }
             if(resumeAt){
-                var onMeta=function(){AU.currentTime=resumeAt;AU.removeEventListener('loadedmetadata',onMeta);};
+                var onMeta=function(){
+                    AU.removeEventListener('loadedmetadata',onMeta);
+                    if(!isCurrentLoad()) return;
+                    AU.currentTime=resumeAt;
+                };
                 AU.addEventListener('loadedmetadata',onMeta);
             }
             var p = AU.play();
@@ -1076,7 +1095,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
 
 function TP(){
     if(!S.ct)return;
-    if(!AU.src){
+    if(!AU.src || !isCurrentAudioSource()){
         loadTrack(S.ct);
         return;
     }
@@ -1102,7 +1121,7 @@ function TP(){
     }
 }
 
-async function fetchAutoNextRecommendations(track) {
+async function fetchAutoNextRecommendations(track, expectedLoadSequence) {
     if (!track) return false;
     try {
         var query = track.artist ? (track.artist + ' songs') : track.title;
@@ -1121,6 +1140,7 @@ async function fetchAutoNextRecommendations(track) {
                 return true;
             });
             if (newSongs.length > 0) {
+                if (expectedLoadSequence !== audioLoadSequence || S.ct !== track) return false;
                 // Append recommendations; never replace a queue assembled by the user.
                 S.pl = (S.pl || []).concat(newSongs);
                 S.ps = 'queue';
@@ -1132,6 +1152,8 @@ async function fetchAutoNextRecommendations(track) {
 }
 
 async function NX(){
+    var expectedLoadSequence = audioLoadSequence;
+    var startingTrack = S.ct;
     if(!S.pl || !S.pl.length){
         if(S.ct){
             S.pl = [S.ct];
@@ -1145,7 +1167,8 @@ async function NX(){
         if(S.ct){
             S.il = true;
             UB();
-            var fetched = await fetchAutoNextRecommendations(S.ct);
+            var fetched = await fetchAutoNextRecommendations(S.ct, expectedLoadSequence);
+            if (expectedLoadSequence !== audioLoadSequence || S.ct !== startingTrack) return;
             S.il = false;
             UB();
             if(!fetched){

@@ -37,3 +37,10 @@ This batch addresses fresh static-scan warnings confirmed in the current reposit
 | Upstream TLS | Removed `rejectUnauthorized: false` from artist, lyrics, and suggestion upstream HTTPS requests so normal certificate validation remains enabled. | Residual TLS-disable scan passed; syntax and local smoke checks passed. |
 
 | Translation | Replaced the translation endpoint’s raw exception text with a static client-safe 502 message and server-side diagnostics. | `node --check api/translate.js`; complete API response audit passed. |
+
+
+## Playback race-condition fix — 2026-08-18
+
+The player now invalidates the previous audio source before resolving a newly selected track and tracks the active source by both object identity and load sequence. Native `timeupdate`, `play`, `pause`, `waiting`, `playing`, `ended`, and `error` events ignore obsolete sources. Delayed loaded-metadata callbacks and auto-next recommendation fetches also verify the original load sequence and track before mutating state. Frontend/service-worker assets were bumped from v81 to v82.
+
+A local browser timing harness replayed five selections at 30 ms intervals with delayed synthetic resolver responses. A stale `ended` event fired while the final resolver was pending did not call `NX`; the current final-track `ended` event called `NX` exactly once. The repeatable static invariant check is `npm run test:playback-race`.
