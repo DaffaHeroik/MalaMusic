@@ -442,8 +442,6 @@ var OfflineView = {
                     playIconHtml = '<div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>';
                 } else if (isPlay) {
                     playIconHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5"><span class="w-[2px] bg-black rounded-full animate-eq-1"></span><span class="w-[2px] bg-black rounded-full animate-eq-2"></span><span class="w-[2px] bg-black rounded-full animate-eq-3"></span></div>';
-                } else if (isCur) {
-                    playIconHtml = '<i data-lucide="pause" class="w-4 h-4 text-black fill-current"></i>';
                 } else {
                     playIconHtml = '<i data-lucide="play" class="w-4 h-4 text-black fill-current ml-0.5"></i>';
                 }

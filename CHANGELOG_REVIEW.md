@@ -49,3 +49,8 @@ A local browser timing harness replayed five selections at 30 ms intervals with 
 ## Resolver/cache reliability fix — 2026-08-18
 
 The playback audit confirmed that `pwa_audio_cache` stores only resolver URL metadata, not audio bytes. The production Offline screen showed no `/offline-audio/{videoId}` binary, so lagging playback still depended on the resolver and external stream/proxy. The player now checks real offline binaries first, reuses a cached URL only as an online fast path, aborts a resolver request after 12 seconds, and arms a generation-safe 12-second startup watchdog after assigning the audio source. A failed non-offline source invalidates its cached URL and receives one fresh resolver retry; a failed offline binary receives a clear re-download message. Assets were bumped from v82 to v83.
+
+
+## Recovery-state UI correction — 2026-08-18
+
+A production v83 replay showed that a failed current track could display `DIJEDA` together with a pause icon even though playback had stopped. The renderers previously treated every current track as paused when `S.ip` was false. The paused-current branches were removed across Search, Home, Album, Artist, Library, Liked, and Offline-related renderers, so loading uses a spinner, active playback uses the equalizer, and stopped/failed playback uses a normal play/retry icon. Assets were bumped from v83 to v84.

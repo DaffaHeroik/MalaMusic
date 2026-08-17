@@ -2,11 +2,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const source = fs.readFileSync('public/player.js', 'utf8');
+const rendererSources = fs.readdirSync('public').filter((name) => name.endsWith('.js')).map((name) => fs.readFileSync(`public/${name}`, 'utf8')).join('\n');
 
 function count(pattern) {
   return (source.match(pattern) || []).length;
 }
 
+assert.doesNotMatch(rendererSources, /else if \(isCur\) \{/g, 'paused current tracks must use the normal play/retry renderer');
 assert.match(source, /var activeAudioTrack = null;/);
 assert.match(source, /var activeAudioSequence = 0;/);
 assert.match(source, /function isCurrentAudioSource\(\)/);

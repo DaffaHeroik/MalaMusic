@@ -128,8 +128,6 @@ var Search = {
                     btnHtml = '<div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-white/10 scale-105"><div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>';
                 } else if (isPlay) {
                     btnHtml = '<div class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shrink-0 shadow-white/30 ring-2 ring-white scale-105 transition-all"><div class="flex items-end justify-center gap-[2.5px] w-4 h-4 pb-0.5"><span class="w-[2.5px] bg-black rounded-full animate-eq-1"></span><span class="w-[2.5px] bg-black rounded-full animate-eq-2"></span><span class="w-[2.5px] bg-black rounded-full animate-eq-3"></span></div></div>';
-                } else if (isCur) {
-                    btnHtml = '<div class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shrink-0 shadow-md transition-all border border-white scale-105"><svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>';
                 } else {
                     btnHtml = '<div class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 text-white transition-all"><svg class="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg></div>';
                 }
@@ -287,8 +285,6 @@ var Search = {
                     btnHtml = '<div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-white/10 scale-105"><div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>';
                 } else if (isPlay) {
                     btnHtml = '<div class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shrink-0 shadow-white/30 ring-2 ring-white scale-105 transition-all"><div class="flex items-end justify-center gap-[2.5px] w-4 h-4 pb-0.5"><span class="w-[2.5px] bg-black rounded-full animate-eq-1"></span><span class="w-[2.5px] bg-black rounded-full animate-eq-2"></span><span class="w-[2.5px] bg-black rounded-full animate-eq-3"></span></div></div>';
-                } else if (isCur) {
-                    btnHtml = '<div class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shrink-0 shadow-md transition-all border border-white scale-105"><i data-lucide="pause" class="w-4 h-4 fill-current"></i></div>';
                 } else {
                     btnHtml = '<div class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 text-white transition-all"><i data-lucide="play" class="w-3.5 h-3.5 fill-current ml-0.5"></i></div>';
                 }

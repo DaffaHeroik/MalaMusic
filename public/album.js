@@ -143,8 +143,6 @@ var Album = {
                         numHtml = '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>';
                     } else if (isPlay) {
                         numHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5 mx-auto"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
-                    } else if (isCur) {
-                        numHtml = '<i data-lucide="pause" class="w-4 h-4 text-white fill-current mx-auto"></i>';
                     } else {
                         numHtml = (i + 1);
                     }
@@ -206,8 +204,6 @@ var Album = {
                 numHtml = '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>';
             } else if (isPlay) {
                 numHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5 mx-auto"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
-            } else if (isCur) {
-                numHtml = '<svg class="w-4 h-4 text-white fill-current mx-auto" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
             } else {
                 numHtml = (i + 1);
             }

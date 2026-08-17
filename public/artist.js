@@ -130,9 +130,6 @@ var Artist={
                         } else if (isPlay) {
                             numHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5 mx-auto"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
                             btnIcon = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
-                        } else if (isCur) {
-                            numHtml = '<i data-lucide="pause" class="w-4 h-4 text-white fill-current mx-auto"></i>';
-                            btnIcon = '<i data-lucide="pause" class="w-5 h-5 text-white fill-current"></i>';
                         } else {
                             numHtml = (i + 1);
                             btnIcon = '<i data-lucide="play" class="w-5 h-5 text-white/70 group-hover:text-white fill-current"></i>';
@@ -321,9 +318,6 @@ var Artist={
             } else if (isPlay) {
                 numHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5 mx-auto"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
                 btnIcon = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
-            } else if (isCur) {
-                numHtml = '<svg class="w-4 h-4 text-white fill-current mx-auto" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-                btnIcon = '<svg class="w-5 h-5 text-white fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
             } else {
                 numHtml = (i + 1);
                 btnIcon = '<svg class="w-5 h-5 text-white/70 group-hover:text-white fill-current ml-0.5" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
