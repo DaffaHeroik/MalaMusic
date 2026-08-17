@@ -54,3 +54,8 @@ The playback audit confirmed that `pwa_audio_cache` stores only resolver URL met
 ## Recovery-state UI correction — 2026-08-18
 
 A production v83 replay showed that a failed current track could display `DIJEDA` together with a pause icon even though playback had stopped. The renderers previously treated every current track as paused when `S.ip` was false. The paused-current branches were removed across Search, Home, Album, Artist, Library, Liked, and Offline-related renderers, so loading uses a spinner, active playback uses the equalizer, and stopped/failed playback uses a normal play/retry icon. Assets were bumped from v83 to v84.
+
+
+## Review-gap prevention record — 2026-08-18
+
+Added [`REVIEW_GAPS_AND_PREVENTION.md`](REVIEW_GAPS_AND_PREVENTION.md), a permanent checklist of missed or under-specified verification areas. It records the slow-network/cache omission as GAP-001 through GAP-005 and also covers offline binary integrity, Service Worker updates, real Gmail E2E, two-user Listen Together, auth-state consistency, Android/PWA, accessibility, poor-network matrices, performance, scheduled WITA rollover, data isolation, rollback, secret rotation, legacy configuration, and browser automation reliability.
