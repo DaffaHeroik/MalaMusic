@@ -3,6 +3,7 @@ const { getDatabase } = require('./firebase-admin.js');
 
 const MAX_QUEUE = 50;
 const ROOM_TTL_MS = 12 * 60 * 60 * 1000;
+const PRESENCE_TTL_MS = 30 * 1000;
 
 function secret() {
     return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
@@ -63,14 +64,30 @@ function cleanQueue(rawQueue) {
 function roomId() { return crypto.randomBytes(4).toString('hex').toUpperCase(); }
 function responseError(res, status, message) { return res.status(status).json({ status: false, message }); }
 function roomPath(id) { return getDatabase().ref(`listenTogether/rooms/${id}`); }
+function presenceSnapshot(room, now) {
+    const source = room && room.membersByUid && typeof room.membersByUid === 'object' ? room.membersByUid : {};
+    const membersByUid = {};
+    const participants = [];
+    Object.keys(source).forEach(uid => {
+        const member = source[uid] || {};
+        const lastSeen = Number(member.lastSeen || 0);
+        const online = uid === room.hostUid || (lastSeen > 0 && now - lastSeen <= PRESENCE_TTL_MS);
+        if (!online && uid !== room.hostUid) return;
+        membersByUid[uid] = { name: cleanText(member.name || 'Peserta', 80), lastSeen };
+        participants.push({ uid, name: cleanText(member.name || 'Peserta', 80), host: uid === room.hostUid, online });
+    });
+    return { membersByUid, participants, members: participants.filter(item => item.online).length };
+}
 function publicRoom(room) {
     if (!room) return null;
+    const presence = presenceSnapshot(room, Date.now());
     return {
         id: room.id,
         host: { name: room.hostName || 'Host', email: room.hostEmail || '' },
         createdAt: room.createdAt,
         updatedAt: room.updatedAt,
-        members: room.membersByUid ? Object.keys(room.membersByUid).length : Math.max(1, Number(room.members || 1)),
+        members: presence.members,
+        participants: presence.participants,
         state: room.state || { queue: [], index: 0, track: null, playing: false, position: 0, changedAt: Date.now(), version: 0 }
     };
 }
@@ -120,22 +137,22 @@ module.exports = async function listenTogether(req, res) {
         const isHost = room.hostUid === (user.uid || '') && room.hostEmail === user.email;
         if (action === 'join' && method === 'POST') {
             const now = Date.now();
-            const membersByUid = room.membersByUid || {};
-            membersByUid[user.uid] = { name: cleanText(user.name || user.email.split('@')[0], 80), lastSeen: now };
-            const members = Math.min(Object.keys(membersByUid).length, 100);
-            await ref.update({ members, membersByUid, updatedAt: now });
-            room.members = members;
-            room.membersByUid = membersByUid;
+            const presence = presenceSnapshot(room, now);
+            presence.membersByUid[user.uid] = { name: cleanText(user.name || user.email.split('@')[0], 80), lastSeen: now };
+            const updatedPresence = presenceSnapshot({ ...room, membersByUid: presence.membersByUid }, now);
+            await ref.update({ members: Math.min(updatedPresence.members, 100), membersByUid: updatedPresence.membersByUid, updatedAt: now });
+            room.members = updatedPresence.members;
+            room.membersByUid = updatedPresence.membersByUid;
             room.updatedAt = now;
             return res.json({ status: true, room: publicRoom(room), role: isHost ? 'host' : 'listener' });
         }
         if (action === 'state' && method === 'GET') {
             const now = Date.now();
-            const membersByUid = room.membersByUid || {};
-            if (membersByUid[user.uid]) membersByUid[user.uid].lastSeen = now;
-            const members = Math.min(Object.keys(membersByUid).length || Number(room.members || 1), 100);
-            await ref.update({ members, membersByUid, updatedAt: now });
-            room.members = members; room.membersByUid = membersByUid; room.updatedAt = now;
+            const presence = presenceSnapshot(room, now);
+            if (presence.membersByUid[user.uid]) presence.membersByUid[user.uid].lastSeen = now;
+            const updatedPresence = presenceSnapshot({ ...room, membersByUid: presence.membersByUid }, now);
+            await ref.update({ members: Math.min(updatedPresence.members, 100), membersByUid: updatedPresence.membersByUid, updatedAt: now });
+            room.members = updatedPresence.members; room.membersByUid = updatedPresence.membersByUid; room.updatedAt = now;
             return res.json({ status: true, room: publicRoom(room), role: isHost ? 'host' : 'listener' });
         }
         if (action === 'leave' && method === 'POST') {
