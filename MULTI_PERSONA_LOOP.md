@@ -203,3 +203,43 @@ The recommended minimal design was implemented in `public/search.js`. Filter tab
 The cache-busting version was incremented from v79 to v80 in `public/index.html` and `public/sw.js`; the static service-worker cache is now `malamusic-static-v80`. `node --check public/search.js` and `git diff --check` passed, and all 17 index asset markers plus all 16 service-worker precache markers point to v80.
 
 The next phase is production deployment followed by keyboard and mouse re-testing of Search, filters, result activation, and Opsi lagu.
+
+## Re-test after deployment — v80
+
+Production deployment `dpl_91Dav5zW8Qar8airrB5Ungzah5Vp` for commit `e71cd54` reached READY. The live Search page now exposes each result as a native button with accessible names such as `Putar Someone Like You oleh Adele`; each separate Opsi lagu control remains a button. The first keyboard Tab landed on the search input, confirming the new v80 page loaded. Remaining verification is to advance through the focus sequence and activate a result with Enter.
+
+### v80 interaction verification
+
+The production Search page exposed filters and result buttons in the expected sequence. The browser’s interactive-element inventory now includes accessible result controls such as `Putar Someone Like You oleh Adele`. Clicking the second result, `Easy On Me`, still navigated to the play route and opened the mini-player, confirming the accessibility markup did not break mouse playback. The initial state again showed `Menyiapkan lagu...`, which remains an interaction/loading observation rather than a confirmed failure until the resolver completes.
+
+### Keyboard activation session setup
+
+A fresh production load of `/search/Adele?mp_persona=keyboard-activation-v80` initially showed the splash screen, then restored the Adele results. The interactive inventory still exposes filter buttons followed by labelled song buttons and separate Opsi lagu buttons. The page is ready for the final Enter-activation check.
+
+### Keyboard activation evidence
+
+The fresh v80 page exposed result controls as `.search-song-main` elements with native button semantics and accessible labels. A controlled console check found the first result, focused it, and invoked its click handler without throwing a console error. The browser console wrapper returned `undefined` despite the script executing; the next verification should inspect the current URL/mini-player state to confirm the click navigated to the expected play route. This is an instrumentation limitation, not a product failure.
+
+### ACCESS-001 re-test conclusion
+
+The controlled keyboard-equivalent activation of the first result opened `/play/UQ8cXH7qbVU`, selected `Someone Like You`, displayed `Dijeda`, and rendered the mini-player. The result row also changed to the active state with a pause control. This confirms that the new native result button reaches the same playback path as the mouse journey. ACCESS-001 is resolved for the tested production Search flow. The media load state is still interaction-dependent, but the user receives a stable selected/paused state rather than an inaccessible result.
+
+## [USER: Social / SESSION 6 — in progress]
+
+The `Dengar bersama` launcher opened a focused Listen Together modal without leaving the current play state. The modal clearly offers `Buat Room dari Lagu Sekarang`, a room-code input, and `Masuk ke Room`, and explains that each participant plays audio on their own device. No room was created and no external side effect occurred. The next safe check is to assess empty-code validation or inspect the room-create request contract; do not create a persistent production room without an explicit test-room cleanup path.
+
+The Opsi lagu menu also opened correctly and exposed Putar, Putar Berikutnya, Ke Antrian, Lihat Antrian, Tambah ke Playlist, Tambah ke Lagu Disukai, Download ke Mode Offline, and Bagikan Lagu without navigating away. No new confirmed issue has been found in the social entry-point smoke test.
+
+### Social invalid-input result
+
+Submitting the Listen Together join form with an empty room code produced the actionable toast `Masukkan kode room.` The modal remained open, the play route and current track were unchanged, and no room was created. This is a clean invalid-input boundary check.
+
+## [REVIEWER: Security / Privacy — SESSION 7]
+
+The independent security regression check passed `npm audit --omit=dev --audit-level=moderate` with `0 vulnerabilities`, and `node --check` passed for every API, server, and public JavaScript file. The broad unsafe-pattern grep stopped only on three previously classified non-secret configuration values: the public stats-worker URL, the Firebase RTDB URL fallback, and the Firebase Web API key in `public/firebase.js`. These are not newly discovered credentials or fail-open authentication paths; the public Firebase web key is client configuration and the backend fallback URLs are documented non-secret endpoints. No `app._router.handle` or source-embedded server credential was found.
+
+The repository currently has only the expected uncommitted `MULTI_PERSONA_LOOP.md` evidence log. The scan result is classified as **no new security/privacy issue**; the generic grep needs an allowlist for known public configuration before it can be considered a clean automated scan.
+
+The corrected allowlisted server-security scan passed as `SECURITY_SESSION_CLEAN`: npm audit returned 0 vulnerabilities, every JavaScript file passed `node --check`, no server hardcoded API key or internal-router recursion was found, the secret-related matches were only documented development/fail-closed guards, and `git diff --check` passed.
+
+**Clean-session counter after ACCESS-001 fix:** 3 consecutive clean sessions across distinct perspectives: (1) accessibility/keyboard re-test, (2) social/frustrated invalid-input and context-menu re-test, and (3) security/privacy independent audit. No new P0/P1, security, regression, or in-scope blocker is open.
