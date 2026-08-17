@@ -32,3 +32,7 @@ Production v67 memuat Home dengan konten baru, navigasi, Quick Picks, playlist, 
 ## v68 playlist-cover verification
 
 Pada production v68, kartu Popular Playlist `Lagu Pop Indonesia Terbaru 2026 - 2025 (Playlist Teman Kerja & Saat Santai)` meneruskan cover playlist secara langsung ke `Album.open()`. Pengukuran DOM setelah detail selesai memuat menunjukkan `cardCover`, cover hero, dan cover square memiliki URL yang sama. Judul detail juga sesuai dengan playlist yang diklik. Perubahan ini mengatasi cover detail yang sebelumnya dapat diganti oleh thumbnail API album atau cover lagu pertama.
+
+## v71 Listen Together launcher verification
+
+Launcher Listen Together tidak lagi dibuat sebagai pill floating di atas konten. Pada desktop, launcher berada di sidebar dalam section `Sosial` sebagai item `Dengar bersama`; pengukuran production menunjukkan `position: static`, ukuran 223x48px, dan tetap membuka modal Listen Together. Pada mobile, label disembunyikan dan tombol menjadi icon-only 44x44px, dengan `position: fixed`, tanpa overflow horizontal. Posisi final berada di `bottom: 150px` agar berada di atas mini-player dan bottom navigation, bukan menutupi kontrol pemutaran. Modal tetap terbuka saat item sosial ditekan.
