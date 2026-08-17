@@ -14,9 +14,9 @@ var Profile = {
                 <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
                 <div class="relative flex items-end gap-5 sm:gap-7 max-w-5xl mx-auto">
                     <div id="profile-avatar-wrap" class="relative w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0 overflow-hidden bg-gradient-to-br from-rose-400 to-purple-700 shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
-                        <img id="profile-avatar" src="/logo-mark.png" class="w-full h-full object-cover" alt="Avatar Profil" onerror="this.style.display='none'" />
-                        <i data-lucide="user" class="w-12 h-12 text-white/80"></i>
-                        <button onclick="Profile.chooseAvatar()" class="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center shadow-xl hover:bg-black transition-colors" title="Ganti avatar"><i data-lucide="camera" class="w-4 h-4"></i></button>
+                        <img id="profile-avatar" src="/logo-mark.png" class="relative z-10 w-full h-full object-cover" alt="Avatar Profil" onerror="this.style.display='none'" />
+                        <i data-lucide="user" class="absolute inset-0 m-auto z-0 w-12 h-12 text-white/80 pointer-events-none"></i>
+                        <button onclick="Profile.chooseAvatar()" class="absolute z-20 bottom-1 right-1 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center shadow-xl hover:bg-black transition-colors" title="Ganti avatar"><i data-lucide="camera" class="w-4 h-4"></i></button>
                     </div>
                     <div class="min-w-0 pb-1">
                         <p class="text-xs font-bold uppercase tracking-[.2em] text-white/60 mb-2">Profil</p>

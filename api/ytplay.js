@@ -5,6 +5,21 @@ const crypto = require('crypto');
 const ytCache = new Map();
 const CACHE_TTL = 90 * 60 * 1000;
 const rateBuckets = new Map();
+function extractYoutubeId(value) {
+  const raw = String(value || '').trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    const allowedHosts = new Set(['youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtu.be']);
+    if (!allowedHosts.has(host)) return null;
+    if (host === 'youtu.be') return (parsed.pathname.split('/').filter(Boolean)[0] || '').match(/^[a-zA-Z0-9_-]{11}$/)?.[0] || null;
+    if (parsed.pathname === '/watch') return (parsed.searchParams.get('v') || '').match(/^[a-zA-Z0-9_-]{11}$/)?.[0] || null;
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    if ((pathParts[0] === 'shorts' || pathParts[0] === 'embed' || pathParts[0] === 'live') && /^[a-zA-Z0-9_-]{11}$/.test(pathParts[1] || '')) return pathParts[1];
+  } catch (_) {}
+  return null;
+}
 function allowRequest(req){
   const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
   const now = Date.now();
@@ -16,10 +31,7 @@ function allowRequest(req){
 }
 
 async function getDownload(url) {
-  const idMatch = [
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/
-  ].find(p => p.test(url))?.exec(url)?.[1] || (url.length === 11 ? url : null);
+  const idMatch = extractYoutubeId(url);
 
   if (!idMatch) {
     console.error("Invalid URL or video ID:", url);
@@ -119,8 +131,7 @@ module.exports = async (req, res) => {
     const url = String(body.query || body.url || '').trim();
     if (!url || url.length > 300) { res.status(400).json({ status: false, message: 'Parameter query tidak valid' }); return; }
     if (!allowRequest(req)) { res.status(429).json({ status: false, message: 'Terlalu banyak permintaan. Coba lagi sebentar.' }); return; }
-    const validYoutube = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}(?:[&#?].*)?$/i.test(url) || /^[a-zA-Z0-9_-]{11}$/.test(url);
-    if (!validYoutube) { res.status(400).json({ status: false, message: 'Hanya URL atau ID YouTube yang didukung.' }); return; }
+    if (!extractYoutubeId(url)) { res.status(400).json({ status: false, message: 'Hanya URL atau ID YouTube yang didukung.' }); return; }
 
     console.log(`[EXTRACT] Starting extraction for: ${url}`);
 
