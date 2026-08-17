@@ -36,3 +36,7 @@ Pada production v68, kartu Popular Playlist `Lagu Pop Indonesia Terbaru 2026 - 2
 ## v71 Listen Together launcher verification
 
 Launcher Listen Together tidak lagi dibuat sebagai pill floating di atas konten. Pada desktop, launcher berada di sidebar dalam section `Sosial` sebagai item `Dengar bersama`; pengukuran production menunjukkan `position: static`, ukuran 223x48px, dan tetap membuka modal Listen Together. Pada mobile, label disembunyikan dan tombol menjadi icon-only 44x44px, dengan `position: fixed`, tanpa overflow horizontal. Posisi final berada di `bottom: 150px` agar berada di atas mini-player dan bottom navigation, bukan menutupi kontrol pemutaran. Modal tetap terbuka saat item sosial ditekan.
+
+## v72 Home cover verification
+
+Kartu Quick Picks Home sebelumnya memakai padding `p-2.5` pada seluruh kartu dan thumbnail 48/56px, sehingga cover terlihat memiliki ruang kosong di sekelilingnya. Pada v72, kartu memakai wrapper cover flush di sisi kiri dengan `overflow-hidden`, thumbnail 64x64px pada mobile dan 72x72px pada desktop, `object-fit: cover`, serta padding wrapper 0px. Pengukuran production menunjukkan gambar dan wrapper memiliki ukuran yang sama, tanpa overflow horizontal pada Android.
