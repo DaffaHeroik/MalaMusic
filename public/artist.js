@@ -37,7 +37,7 @@ var Artist={
         gid('artist-modal').style.display = 'flex';
         gid('artist-name').innerText = name || 'Artist';
         
-        var tImg = thumbnail || FI;
+        var tImg = safeMediaUrl(thumbnail || FI, FI);
         Artist.currentArtistInfo = { artistId: id, name: name || 'Artist', thumbnail: tImg };
         if (typeof updateOGForArtist === 'function') {
             updateOGForArtist(name || 'Artist', tImg);
@@ -45,10 +45,10 @@ var Artist={
         
         gid('artist-content').innerHTML = `
         <div class="relative w-full aspect-square max-h-[40vh] overflow-hidden -mt-16 mb-6">
-            <img src="${tImg}" class="w-full h-full object-cover opacity-50" onerror="this.src='${FI}'" />
+            <img src="${safeMediaUrl(tImg, FI)}" class="w-full h-full object-cover opacity-50" onerror="this.src='${FI}'" />
             <div class="absolute inset-0 bg-gradient-to-t from-[#14151a] to-transparent"></div>
             <div class="absolute bottom-6 left-6 right-6 flex flex-col justify-end items-center text-center">
-                <img src="${tImg}" class="w-24 h-24 rounded-full mb-3 object-cover" onerror="this.src='${FI}'" />
+                <img src="${safeMediaUrl(tImg, FI)}" class="w-24 h-24 rounded-full mb-3 object-cover" onerror="this.src='${FI}'" />
                 <h2 class="text-2xl font-black text-white drop-shadow-md">${es(name || 'Artist')}</h2>
             </div>
         </div>
@@ -62,7 +62,7 @@ var Artist={
             if(d.status && d.result){
                 var a = d.result;
                 if(a.name) gid('artist-name').innerText = a.name;
-                var headerImg = a.thumbnails && a.thumbnails.length > 0 ? a.thumbnails[a.thumbnails.length-1].url : tImg;
+                var headerImg = safeMediaUrl(a.thumbnails && a.thumbnails.length > 0 ? a.thumbnails[a.thumbnails.length-1].url : tImg, FI);
                 Artist.currentArtistInfo = { artistId: id, name: a.name || name || 'Artist', thumbnail: headerImg };
                 if (typeof updateOGForArtist === 'function') {
                     updateOGForArtist(a.name || name || 'Artist', headerImg);
@@ -77,10 +77,10 @@ var Artist={
                 // HEADER
                 var fullHtml = `
                 <div class="relative w-full aspect-square max-h-[50vh] overflow-hidden -mt-20 mb-6">
-                    <img src="${headerImg}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+                    <img src="${safeMediaUrl(headerImg, FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
                     <div class="absolute inset-0 bg-gradient-to-t from-[#14151a] via-[#14151a]/60 to-transparent"></div>
                     <div class="absolute bottom-6 left-6 right-6 flex flex-col justify-end items-center text-center">
-                        <img src="${headerImg}" class="artist-photo mb-4" onerror="this.src='${FI}'" />
+                        <img src="${safeMediaUrl(headerImg, FI)}" class="artist-photo mb-4" onerror="this.src='${FI}'" />
                         <h2 class="text-3xl md:text-5xl font-black text-white drop-shadow-md">${es(a.name)}</h2>
                         <div class="flex items-center justify-center gap-3 mt-4">
                             <button id="artist-like-btn" onclick="Artist.toggleLike()" class="px-6 py-2.5 rounded-full border text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${likeBtnClass}">
@@ -101,7 +101,7 @@ var Artist={
                         var im=FI;
                         if(s.thumbnails && s.thumbnails.length > 0) {
                             var lastT = s.thumbnails[s.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
 
                         var isCur = S.ct && (
@@ -134,7 +134,7 @@ var Artist={
                         html+=`
                         <div onclick="Artist.play('${s.videoId}','${esJs(s.title)}','${esJs(s.artist||a.name)}','${esJs(im)}')" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer active:scale-[0.98] transition-all duration-300 shadow-lg group ${rowBg}">
                             <span class="text-white/70 w-6 text-center text-xs font-bold group-hover:text-white shrink-0">${numHtml}</span>
-                            <img src="${im}" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src='${FI}'" />
+                            <img src="${safeMediaUrl(im, FI)}" class="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 border border-white/10" onerror="this.src='${FI}'" />
                             <div class="flex-1 min-w-0 truncate">
                                 <p class="text-sm truncate transition-colors ${titleClass}">${es(s.title)}</p>
                                 <p class="text-white/60 text-xs truncate mt-0.5">${es(s.artist||a.name)}</p>
@@ -152,12 +152,12 @@ var Artist={
                         var im=FI;
                         if(al.thumbnails && al.thumbnails.length > 0) {
                             var lastT = al.thumbnails[al.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Album.open('${al.browseId}', '${esJs(im)}')" class="flex-shrink-0 w-36 cursor-pointer group p-2 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all">
                             <div class="w-full aspect-square rounded-xl overflow-hidden mb-2 shadow-md">
-                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
                             </div>
                             <p class="font-semibold text-xs truncate text-white px-0.5">${es(al.name)}</p>
                             <p class="text-white/60 text-[10px] truncate px-0.5 mt-0.5">Album • ${es(al.artist||a.name)}</p>
@@ -173,12 +173,12 @@ var Artist={
                         var im=FI;
                         if(sg.thumbnails && sg.thumbnails.length > 0) {
                             var lastT = sg.thumbnails[sg.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Album.open('${sg.browseId}', '${esJs(im)}')" class="flex-shrink-0 w-36 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col">
                             <div class="w-full aspect-square rounded-xl overflow-hidden mb-2 shadow-md">
-                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
                             </div>
                             <p class="font-semibold text-xs truncate text-white px-0.5">${es(sg.name)}</p>
                             <p class="text-white/60 text-[10px] truncate px-0.5 mt-0.5">Single</p>
@@ -194,12 +194,12 @@ var Artist={
                         var im=FI;
                         if(vd.thumbnails && vd.thumbnails.length > 0) {
                             var lastT = vd.thumbnails[vd.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Artist.play('${vd.videoId||''}','${esJs(vd.name)}','${esJs(vd.artist||a.name)}','${esJs(im)}')" class="flex-shrink-0 w-48 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col">
                             <div class="w-full h-28 rounded-xl overflow-hidden mb-2 relative shadow-md">
-                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
                                 <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md rounded-full p-1.5"><i data-lucide="play" class="w-4 h-4 fill-current text-white"></i></div>
                             </div>
                             <p class="font-semibold text-xs truncate text-white px-0.5">${es(vd.name)}</p>
@@ -216,12 +216,12 @@ var Artist={
                         var im=FI;
                         if(pl.thumbnails && pl.thumbnails.length > 0) {
                             var lastT = pl.thumbnails[pl.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Album.open('${pl.browseId}', '${esJs(im)}')" class="flex-shrink-0 w-36 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col">
                             <div class="w-full aspect-square rounded-xl overflow-hidden mb-2 shadow-md">
-                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
                             </div>
                             <p class="font-semibold text-xs truncate text-white px-0.5">${es(pl.name)}</p>
                         </div>`;
@@ -236,12 +236,12 @@ var Artist={
                         var im=FI;
                         if(fo.thumbnails && fo.thumbnails.length > 0) {
                             var lastT = fo.thumbnails[fo.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Album.open('${fo.browseId}', '${esJs(im)}')" class="flex-shrink-0 w-36 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col">
                             <div class="w-full aspect-square rounded-xl overflow-hidden mb-2 shadow-md">
-                                <img src="${im}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='${FI}'" />
                             </div>
                             <p class="font-semibold text-xs truncate text-white px-0.5">${es(fo.name)}</p>
                             <p class="text-white/60 text-[10px] truncate px-0.5 mt-0.5">${es(fo.artist||'')}</p>
@@ -257,12 +257,12 @@ var Artist={
                         var im=FI;
                         if(s.thumbnails && s.thumbnails.length > 0) {
                             var lastT = s.thumbnails[s.thumbnails.length - 1];
-                            im = typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI);
+                            im = safeMediaUrl(typeof lastT === 'string' ? lastT : (lastT.url || lastT.src || FI), FI);
                         }
                         html+=`
                         <div onclick="Artist.open('${s.browseId}','${esJs(s.name)}')" class="flex-shrink-0 w-32 cursor-pointer group p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] transition-all flex flex-col items-center">
                             <div class="w-20 h-20 rounded-full overflow-hidden mb-2 border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300">
-                                <img src="${im}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+                                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
                             </div>
                             <p class="font-semibold text-xs truncate text-white text-center w-full px-0.5">${es(s.name)}</p>
                             <p class="text-white/60 text-[10px] uppercase tracking-wider font-semibold mt-0.5">Artist</p>

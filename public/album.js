@@ -61,8 +61,7 @@ var Album = {
                     im = typeof firstSongThumb === 'string' ? firstSongThumb : (firstSongThumb.url || firstSongThumb.src || null);
                 }
             }
-            if (!im) im = FI;
-            
+            im = safeMediaUrl(im || FI, FI);
             Album.currentAlbumInfo = { id: id, title: a.title, artist: a.artist || '', cover: im };
             if (typeof updateOGForAlbum === 'function') {
                 updateOGForAlbum(a.title, im, a.artist);
@@ -70,11 +69,11 @@ var Album = {
 
             let html = `
             <div class="relative w-full aspect-square md:aspect-video max-h-[50vh] overflow-hidden -mt-20 mb-6">
-                <img src="${im}" class="w-full h-full object-cover" />
+                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
                 <div class="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#050507]/60 to-transparent"></div>
                 
                 <div class="absolute bottom-6 left-6 right-6 flex flex-col justify-end items-center text-center z-10">
-                    <img src="${im}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
+                    <img src="${safeMediaUrl(im, FI)}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
                     <div>
                         <p class="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-1">ALBUM / PLAYLIST</p>
                         <h1 class="text-3xl md:text-5xl font-black text-white mb-2 leading-tight drop-line-clamp-2">${es(a.title)}</h1>
@@ -104,7 +103,7 @@ var Album = {
                     let sim = null;
                     if (!isAlbum && s.thumbnails && s.thumbnails.length) {
                         const sThumb = s.thumbnails[0];
-                        sim = typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null);
+                        sim = safeMediaUrl(typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null), FI);
                     }
                     if (!sim) sim = im;
                     return normalizeTrack({
@@ -117,7 +116,7 @@ var Album = {
                     let sim = null;
                     if (!isAlbum && s.thumbnails && s.thumbnails.length) {
                         const sThumb = s.thumbnails[0];
-                        sim = typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null);
+                        sim = safeMediaUrl(typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null), FI);
                     }
                     if (!sim) sim = im;
 
