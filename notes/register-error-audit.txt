@@ -27,7 +27,7 @@
    105	}
    106	
    107	async function loginWithFirebasePassword(email, password) {
-   108	    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFUvlprIhFX3gccM9A4gfk';
+   108	    const apiKey = process.env.FIREBASE_WEB_API_KEY || '[redacted-public-firebase-web-key]';
    109	    const response = await fetch(`${FIREBASE_SIGN_IN_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
    110	        method: 'POST',
    111	        headers: { 'Content-Type': 'application/json' },

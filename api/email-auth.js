@@ -146,7 +146,8 @@ function createSession(res, user) {
 }
 
 async function loginWithFirebasePassword(email, password) {
-    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk';
+    const apiKey = String(process.env.FIREBASE_WEB_API_KEY || '').trim();
+    if (!apiKey) throw new Error('FIREBASE_WEB_API_KEY belum dikonfigurasi.');
     const response = await fetch(`${FIREBASE_SIGN_IN_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,7 +162,8 @@ async function loginWithFirebasePassword(email, password) {
 }
 
 async function sendFirebaseOobCode(requestType, email, idToken) {
-    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk';
+    const apiKey = String(process.env.FIREBASE_WEB_API_KEY || '').trim();
+    if (!apiKey) throw new Error('FIREBASE_WEB_API_KEY belum dikonfigurasi.');
     const body = { requestType };
     if (email) body.email = email;
     if (idToken) body.idToken = idToken;
@@ -240,10 +242,7 @@ module.exports = async function emailAuth(req, res) {
     }
     const validationError = validateCredentials(email, password);
     if (validationError) return res.status(400).json({ status: false, message: validationError });
-    if (!rate.allowed) {
-        res.setHeader('Retry-After', String(rate.retryAfter));
-        return res.status(429).json({ status: false, message: 'Terlalu banyak percobaan. Coba lagi setelah beberapa menit.' });
-    }
+    // FIXED: duplicate rate-limit check removed; it is enforced before credential validation.
 
     try {
         const auth = getAuth();

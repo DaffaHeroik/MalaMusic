@@ -4,7 +4,17 @@ const crypto = require('crypto');
 // Memory cache for audio stream URLs (valid 1.5 hours)
 const ytCache = new Map();
 const CACHE_TTL = 90 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 500;
 const rateBuckets = new Map();
+function pruneAudioCache(now) {
+  for (const [key, value] of ytCache) {
+    if (!value || value.expireAt <= now) ytCache.delete(key);
+  }
+  if (ytCache.size > MAX_CACHE_ENTRIES) {
+    const oldest = [...ytCache.entries()].sort((a, b) => a[1].expireAt - b[1].expireAt);
+    oldest.slice(0, ytCache.size - MAX_CACHE_ENTRIES).forEach(([key]) => ytCache.delete(key));
+  }
+}
 function extractYoutubeId(value) {
   const raw = String(value || '').trim();
   if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
@@ -26,7 +36,14 @@ function allowRequest(req){
   const bucket = rateBuckets.get(ip) || { start: now, count: 0 };
   if (now - bucket.start > 60000) { bucket.start = now; bucket.count = 0; }
   bucket.count += 1; rateBuckets.set(ip, bucket);
-  if (rateBuckets.size > 1000) rateBuckets.clear();
+  for (const [key, value] of rateBuckets) {
+    if (now - value.start > 60000) rateBuckets.delete(key);
+  }
+  if (rateBuckets.size > 1000) {
+    const oldest = [...rateBuckets.entries()].sort((a, b) => a[1].start - b[1].start);
+    oldest.slice(0, rateBuckets.size - 1000).forEach(([key]) => rateBuckets.delete(key));
+  }
+  // FIXED: selective eviction instead of clearing all buckets.
   return bucket.count <= 30;
 }
 
@@ -34,14 +51,15 @@ async function getDownload(url) {
   const idMatch = extractYoutubeId(url);
 
   if (!idMatch) {
-    console.error("Invalid URL or video ID:", url);
+    console.warn('[ytplay] rejected invalid YouTube input');
     return null;
   }
 
   // Check cache first
+  pruneAudioCache(Date.now());
   const cached = ytCache.get(idMatch);
   if (cached && cached.expireAt > Date.now()) {
-    console.log(`[EXTRACT] Cache hit for video ID: ${idMatch}`);
+    console.info('[ytplay] cache hit');
     return cached.data;
   }
 
@@ -102,7 +120,7 @@ async function getDownload(url) {
   try {
     const result = await Promise.any(cdns.map(cdn =>
       tryCdn(cdn).catch(err => {
-        console.error(`[EXTRACT] ${cdn} failed:`, err.message);
+        console.warn(`[ytplay] upstream ${cdn} failed`);
         throw err;
       })
     ));
@@ -111,11 +129,12 @@ async function getDownload(url) {
     // keep the function/connections alive uselessly.
     controller.abort();
 
-    console.log(`[EXTRACT] Winner: ${result.cdn}`);
+    console.info(`[ytplay] upstream winner: ${result.cdn}`);
     ytCache.set(idMatch, { data: result, expireAt: Date.now() + CACHE_TTL });
+    pruneAudioCache(Date.now());
     return result;
   } catch (aggregateErr) {
-    console.error("[EXTRACT] All CDNs failed:", aggregateErr?.errors?.map(e => e.message).join(" | "));
+    console.warn('[ytplay] all upstreams failed');
     return null;
   }
 }
@@ -133,13 +152,13 @@ module.exports = async (req, res) => {
     if (!allowRequest(req)) { res.status(429).json({ status: false, message: 'Terlalu banyak permintaan. Coba lagi sebentar.' }); return; }
     if (!extractYoutubeId(url)) { res.status(400).json({ status: false, message: 'Hanya URL atau ID YouTube yang didukung.' }); return; }
 
-    console.log(`[EXTRACT] Starting extraction for: ${url}`);
+    console.info('[ytplay] extraction started');
 
     try {
         let audioData = await getDownload(url);
 
         if (audioData && audioData.audio) {
-            console.log("[EXTRACT] Success");
+            console.info('[ytplay] extraction succeeded');
             return res.status(200).json({
                 status: true,
                 result: {
@@ -149,10 +168,10 @@ module.exports = async (req, res) => {
             });
         }
 
-        console.error("[EXTRACT] All methods failed");
+        console.warn('[ytplay] extraction returned no media');
         res.status(503).json({ status: false, error: "Media extraction services are currently overloaded. Please try another track." });
     } catch (err) {
-        console.error("[EXTRACT] Fatal error:", err.message);
+        console.error('[ytplay] extraction failed');
         res.status(500).json({ status: false, error: "Internal server error during extraction" });
     }
 };

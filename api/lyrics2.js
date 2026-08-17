@@ -44,7 +44,8 @@ const handler = async (req, res) => {
         const result = await getLyrics2(videoId);
         res.status(200).json({ status: true, source: 'transcribe', result });
     } catch(e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('[lyrics2] request failed', e && e.stack ? e.stack : e);
+        res.status(502).json({ status: false, message: 'Lirik sementara belum tersedia.' });
     }
 };
 

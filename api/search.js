@@ -251,6 +251,7 @@ module.exports = async (req, res) => {
         });
 
     } catch (err) {
-        return res.status(500).json({ status: false, creator: 'MalaMusic', message: err.message });
+        console.error('[search] request failed', err && err.stack ? err.stack : err);
+        return res.status(502).json({ status: false, creator: 'MalaMusic', message: 'Pencarian sementara belum tersedia.' });
     }
 };

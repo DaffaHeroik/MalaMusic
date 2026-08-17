@@ -256,7 +256,8 @@ const handler = async (req, res) => {
             result
         });
     } catch (err) {
-        return res.status(500).json({ creator: 'MalaMusic', status: false, message: err.message });
+        console.error('[transcribe] request failed', err && err.stack ? err.stack : err);
+        return res.status(502).json({ creator: 'MalaMusic', status: false, message: 'Transkripsi sementara belum tersedia.' });
     }
 };
 

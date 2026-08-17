@@ -1,10 +1,26 @@
 const express = require('express');
 const path = require('path');
 const https = require('https');
-const http = require('http');
 const fs = require('fs');
 
 const app = express();
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+}
+function safeShareText(value, maxLength) {
+    return escapeHtml(String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, maxLength || 300));
+}
+function safeShareImage(value, fallback) {
+    try {
+        const parsed = new URL(String(value || ''));
+        if (parsed.protocol === 'https:') return escapeHtml(parsed.href);
+    } catch (_) {}
+    return escapeHtml(fallback);
+}
+function requestShareUrl(req) {
+    return escapeHtml(`${req.protocol}://${req.get('host')}${req.originalUrl}`.slice(0, 2000));
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -87,41 +103,34 @@ app.all('/api/streak', require('./api/streak.js'));
 app.all('/api/stats', require('./api/stats.js'));
 app.all('/api/listen-together', require('./api/listen-together.js'));
 
-// Proxy audio needs to stream in node, bypassing edge function
-app.get('/api/proxy-audio', (req, res) => {
-    const targetUrl = req.query.url;
-    if (!targetUrl) return res.status(400).send('Missing url parameter');
-    
-    let parsed;
+// Proxy audio needs to stream in node, bypassing edge function.
+const AUDIO_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36';
+const AUDIO_REDIRECT_LIMIT = 1;
+function isAllowedAudioUrl(value, baseUrl) {
     try {
-        parsed = new URL(targetUrl);
-    } catch (e) {
-        return res.status(400).send('Invalid url parameter');
+        const parsed = new URL(String(value || ''), baseUrl);
+        const hostName = String(parsed.hostname || '').toLowerCase();
+        const allowedMediaHost = hostName === 'googlevideo.com' || hostName.endsWith('.googlevideo.com') || hostName === 'youtube.com' || hostName.endsWith('.youtube.com') || hostName === 'youtu.be' || hostName.endsWith('.youtu.be');
+        return parsed.protocol === 'https:' && allowedMediaHost ? parsed : null;
+    } catch (_) {
+        return null;
     }
-    const hostName = String(parsed.hostname || '').toLowerCase();
-    const allowedMediaHost = hostName === 'googlevideo.com' || hostName.endsWith('.googlevideo.com') || hostName === 'youtube.com' || hostName.endsWith('.youtube.com') || hostName === 'youtu.be' || hostName.endsWith('.youtu.be');
-    if (parsed.protocol !== 'https:' || !allowedMediaHost) {
-        return res.status(400).send('Audio source tidak diizinkan');
-    }
-
-    const options = {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36'
-        }
-    };
-    if (req.headers.range) {
-        options.headers['Range'] = req.headers.range;
-    }
-
-    const client = parsed.protocol === 'https:' ? https : http;
-    const proxyReq = client.get(targetUrl, options, (proxyRes) => {
-        // Handle potential redirects
+}
+function proxyAudioStream(req, res, targetUrl, redirectsRemaining) {
+    const parsed = isAllowedAudioUrl(targetUrl);
+    if (!parsed) return res.status(400).send('Audio source tidak diizinkan');
+    const options = { headers: { 'User-Agent': AUDIO_USER_AGENT } };
+    if (req.headers.range) options.headers.Range = req.headers.range;
+    const proxyReq = https.get(parsed, options, (proxyRes) => {
         if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-            req.query.url = proxyRes.headers.location;
-            return app._router.handle(req, res); // naive redirect following
+            proxyRes.resume();
+            if (redirectsRemaining <= 0) return res.status(502).send('Audio source terlalu banyak redirect.');
+            const redirected = isAllowedAudioUrl(proxyRes.headers.location, parsed);
+            if (!redirected) return res.status(502).send('Audio redirect tidak diizinkan.');
+            // FIXED: bounded, validated redirect follow replaces internal-router recursion.
+            return proxyAudioStream(req, res, redirected.href, redirectsRemaining - 1);
         }
-
-        res.status(proxyRes.statusCode);
+        res.status(proxyRes.statusCode || 502);
         const allowedOrigin = getAllowedOrigin(req);
         if (allowedOrigin) {
             res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
@@ -130,21 +139,22 @@ app.get('/api/proxy-audio', (req, res) => {
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         res.setHeader('Access-Control-Expose-Headers', '*');
-        const passthrough = ['content-type', 'content-length', 'accept-ranges', 'content-range'];
-        passthrough.forEach(h => {
+        ['content-type', 'content-length', 'accept-ranges', 'content-range'].forEach(h => {
             if (proxyRes.headers[h]) res.setHeader(h, proxyRes.headers[h]);
         });
         if (!res.getHeader('accept-ranges')) res.setHeader('Accept-Ranges', 'bytes');
-        
+        proxyRes.on('error', (error) => { if (!res.headersSent) res.status(502).send('Audio source error.'); else res.destroy(error); });
         proxyRes.pipe(res);
     });
     proxyReq.setTimeout(15000, () => proxyReq.destroy(new Error('Audio source timeout')));
-    
-    proxyReq.on('error', (err) => {
-        if (!res.headersSent) {
-            res.status(500).send('Proxy error: ' + err.message);
-        }
+    proxyReq.on('error', (error) => {
+        if (!res.headersSent) res.status(502).send('Audio proxy unavailable.');
     });
+}
+app.get('/api/proxy-audio', (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('Missing url parameter');
+    return proxyAudioStream(req, res, targetUrl, AUDIO_REDIRECT_LIMIT);
 });
 
 // Static files (from public)
@@ -163,9 +173,13 @@ app.use((req, res) => {
             const qArtist = reqUrl.searchParams.get('artist');
             const qCover = reqUrl.searchParams.get('cover') || reqUrl.searchParams.get('thumb');
 
-            const coverUrl = qCover || `https://i.ytimg.com/vi/${cleanVideoId}/hqdefault.jpg`;
-            const playTitle = qTitle ? (qArtist ? `${qTitle} - ${qArtist}` : qTitle) : `Dengarkan Musik - MalaMusic`;
-            const playDesc = `Dengarkan ${qTitle || 'lagu favoritmu'} di MalaMusic Web Music Player`;
+            const cleanId = cleanVideoId.match(/^[a-zA-Z0-9_-]{1,32}$/)?.[0] || '';
+            if (!cleanId) return res.sendFile(filePath);
+            const fallbackCover = `https://i.ytimg.com/vi/${cleanId}/hqdefault.jpg`;
+            const coverUrl = safeShareImage(qCover, fallbackCover);
+            const playTitle = safeShareText(qTitle ? (qArtist ? `${qTitle} - ${qArtist}` : qTitle) : `Dengarkan Musik - MalaMusic`, 180);
+            const playDesc = safeShareText(`Dengarkan ${qTitle || 'lagu favoritmu'} di MalaMusic Web Music Player`, 300);
+            const shareUrl = requestShareUrl(req);
 
             return fs.readFile(filePath, 'utf8', (err, html) => {
                 if (err) return res.sendFile(filePath);
@@ -176,7 +190,7 @@ app.use((req, res) => {
                     .replace(/<meta property="og:description" content=".*?"\s*\/?>/gi, `<meta property="og:description" content="${playDesc}">`)
                     .replace(/<meta property="og:image" content=".*?"\s*\/?>/gi, `<meta property="og:image" content="${coverUrl}">`)
                     .replace(/<meta property="og:image:secure_url" content=".*?"\s*\/?>/gi, `<meta property="og:image:secure_url" content="${coverUrl}">`)
-                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${req.protocol}://${req.get('host')}${req.originalUrl}">`)
+                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${shareUrl}">`)
                     .replace(/<meta name="twitter:title" content=".*?"\s*\/?>/gi, `<meta name="twitter:title" content="${playTitle}">`)
                     .replace(/<meta name="twitter:description" content=".*?"\s*\/?>/gi, `<meta name="twitter:description" content="${playDesc}">`)
                     .replace(/<meta name="twitter:image" content=".*?"\s*\/?>/gi, `<meta name="twitter:image" content="${coverUrl}">`)
@@ -197,9 +211,10 @@ app.use((req, res) => {
             const qName = reqUrl.searchParams.get('name') || reqUrl.searchParams.get('title');
             const qCover = reqUrl.searchParams.get('cover') || reqUrl.searchParams.get('thumb');
 
-            const pageTitle = qName ? `${qName} (Artist) - MalaMusic` : `Artist - MalaMusic`;
-            const pageDesc = qName ? `Dengarkan lagu & album terbaik dari ${qName} di MalaMusic` : `Dengarkan lagu & album dari artist favoritmu di MalaMusic`;
-            const coverUrl = qCover || `https://www.gobox.my.id/file/R0ym4wqfznmp.png`;
+            const pageTitle = safeShareText(qName ? `${qName} (Artist) - MalaMusic` : `Artist - MalaMusic`, 180);
+            const pageDesc = safeShareText(qName ? `Dengarkan lagu & album terbaik dari ${qName} di MalaMusic` : `Dengarkan lagu & album dari artist favoritmu di MalaMusic`, 300);
+            const coverUrl = safeShareImage(qCover, 'https://www.gobox.my.id/file/R0ym4wqfznmp.png');
+            const shareUrl = requestShareUrl(req);
 
             return fs.readFile(filePath, 'utf8', (err, html) => {
                 if (err) return res.sendFile(filePath);
@@ -210,7 +225,7 @@ app.use((req, res) => {
                     .replace(/<meta property="og:description" content=".*?"\s*\/?>/gi, `<meta property="og:description" content="${pageDesc}">`)
                     .replace(/<meta property="og:image" content=".*?"\s*\/?>/gi, `<meta property="og:image" content="${coverUrl}">`)
                     .replace(/<meta property="og:image:secure_url" content=".*?"\s*\/?>/gi, `<meta property="og:image:secure_url" content="${coverUrl}">`)
-                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${req.protocol}://${req.get('host')}${req.originalUrl}">`)
+                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${shareUrl}">`)
                     .replace(/<meta name="twitter:title" content=".*?"\s*\/?>/gi, `<meta name="twitter:title" content="${pageTitle}">`)
                     .replace(/<meta name="twitter:description" content=".*?"\s*\/?>/gi, `<meta name="twitter:description" content="${pageDesc}">`)
                     .replace(/<meta name="twitter:image" content=".*?"\s*\/?>/gi, `<meta name="twitter:image" content="${coverUrl}">`)
@@ -232,9 +247,10 @@ app.use((req, res) => {
             const qArtist = reqUrl.searchParams.get('artist');
             const qCover = reqUrl.searchParams.get('cover') || reqUrl.searchParams.get('thumb');
 
-            const pageTitle = qTitle ? (qArtist ? `${qTitle} - ${qArtist} (Album) - MalaMusic` : `${qTitle} (Album) - MalaMusic`) : `Album - MalaMusic`;
-            const pageDesc = qTitle ? `Dengarkan album ${qTitle} di MalaMusic` : `Dengarkan album favoritmu di MalaMusic`;
-            const coverUrl = qCover || `https://www.gobox.my.id/file/R0ym4wqfznmp.png`;
+            const pageTitle = safeShareText(qTitle ? (qArtist ? `${qTitle} - ${qArtist} (Album) - MalaMusic` : `${qTitle} (Album) - MalaMusic`) : `Album - MalaMusic`, 180);
+            const pageDesc = safeShareText(qTitle ? `Dengarkan album ${qTitle} di MalaMusic` : `Dengarkan album favoritmu di MalaMusic`, 300);
+            const coverUrl = safeShareImage(qCover, 'https://www.gobox.my.id/file/R0ym4wqfznmp.png');
+            const shareUrl = requestShareUrl(req);
 
             return fs.readFile(filePath, 'utf8', (err, html) => {
                 if (err) return res.sendFile(filePath);
@@ -245,7 +261,7 @@ app.use((req, res) => {
                     .replace(/<meta property="og:description" content=".*?"\s*\/?>/gi, `<meta property="og:description" content="${pageDesc}">`)
                     .replace(/<meta property="og:image" content=".*?"\s*\/?>/gi, `<meta property="og:image" content="${coverUrl}">`)
                     .replace(/<meta property="og:image:secure_url" content=".*?"\s*\/?>/gi, `<meta property="og:image:secure_url" content="${coverUrl}">`)
-                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${req.protocol}://${req.get('host')}${req.originalUrl}">`)
+                    .replace(/<meta property="og:url" content=".*?"\s*\/?>/gi, `<meta property="og:url" content="${shareUrl}">`)
                     .replace(/<meta name="twitter:title" content=".*?"\s*\/?>/gi, `<meta name="twitter:title" content="${pageTitle}">`)
                     .replace(/<meta name="twitter:description" content=".*?"\s*\/?>/gi, `<meta name="twitter:description" content="${pageDesc}">`)
                     .replace(/<meta name="twitter:image" content=".*?"\s*\/?>/gi, `<meta name="twitter:image" content="${coverUrl}">`)

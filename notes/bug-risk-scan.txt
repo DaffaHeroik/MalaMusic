@@ -811,7 +811,7 @@ api/email-auth.js:41:        return cookies;
 api/email-auth.js:45:function cookie(name, value, maxAge) {
 api/email-auth.js:48:    if (process.env.NODE_ENV !== 'development') parts.push('Secure');
 api/email-auth.js:103:    setCookies(res, [cookie('mm_session', encode(session), SESSION_TTL_SECONDS)]);
-api/email-auth.js:108:    const apiKey = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyDP1Yh0E8f_PgLFUvlprIhFX3gccM9A4gfk';
+api/email-auth.js:108:    const apiKey = process.env.FIREBASE_WEB_API_KEY || '[redacted-public-firebase-web-key]';
 api/email-auth.js:109:    const response = await fetch(`${FIREBASE_SIGN_IN_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
 api/email-auth.js:131:    if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 api/email-auth.js:132:        return res.status(500).json({ status: false, message: 'SESSION_SECRET belum dikonfigurasi di hosting.' });

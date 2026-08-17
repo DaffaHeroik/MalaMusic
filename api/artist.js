@@ -1,5 +1,5 @@
 const https = require('https');
-const API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+const API_KEY = String(process.env.YOUTUBE_MUSIC_API_KEY || '').trim();
 
 function getRunsText(r) { return Array.isArray(r) ? r.map(x=>x.text||'').join('') : ''; }
 function removeKeysRecursive(o, k) { if(!o||typeof o!=='object')return; if(Array.isArray(o)){o.forEach(i=>removeKeysRecursive(i,k));return;} for(const key of Object.keys(o)){if(k.includes(key))delete o[key];else if(typeof o[key]==='object')removeKeysRecursive(o[key],k);} }
@@ -43,6 +43,8 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') { res.status(405).json({ status: false, message: 'Method not allowed' }); return; }
     const artistId = (req.query.id || '').trim();
     if (!artistId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
+    if (!API_KEY) { return res.status(503).json({ status: false, message: 'Layanan artis belum dikonfigurasi.' }); }
+    // FIXED: YouTube Music API key is loaded from environment, not repository source.
 
     try {
         const data = await makeRequest({

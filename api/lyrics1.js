@@ -2,7 +2,7 @@ const https = require('https');
 const http = require('http');
 const { translateLines } = require('./translate.js');
 
-const API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+const API_KEY = String(process.env.YOUTUBE_MUSIC_API_KEY || '').trim();
 
 function getRunsText(runs) { return Array.isArray(runs) ? runs.map(r => r.text || '').join('') : ''; }
 
@@ -80,7 +80,8 @@ async function getLyrics1(videoId, queryTitle = '', queryArtist = '') {
     }
 
     // 2. Try YT Music Watch Next API if still empty
-    if (!title || !artist) {
+    if ((!title || !artist) && API_KEY) {
+        // FIXED: YouTube Music API key is loaded from environment; LRCLIB remains available without it.
         try {
             const ytData = await makeRequest({
                 hostname: 'music.youtube.com',
@@ -172,7 +173,8 @@ const handler = async (req, res) => {
         const result = await getLyrics1(videoId, title, artist);
         res.status(200).json({ status: true, source: 'lrclib', result });
     } catch(e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('[lyrics1] request failed', e && e.stack ? e.stack : e);
+        res.status(502).json({ status: false, message: 'Lirik sementara belum tersedia.' });
     }
 };
 

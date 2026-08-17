@@ -1,5 +1,5 @@
 const https = require('https');
-const API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+const API_KEY = String(process.env.YOUTUBE_MUSIC_API_KEY || '').trim();
 
 function getRunsText(r) { return Array.isArray(r) ? r.map(x=>x.text||'').join('') : ''; }
 
@@ -55,6 +55,8 @@ module.exports = async (req, res) => {
     
     const id = (req.query.id || '').trim();
     if (!id) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
+    if (!API_KEY) { return res.status(503).json({ status: false, message: 'Layanan album belum dikonfigurasi.' }); }
+    // FIXED: YouTube Music API key is loaded from environment, not repository source.
     
     try {
         let browseId = id;
