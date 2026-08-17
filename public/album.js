@@ -31,7 +31,15 @@ var Album = {
     },
     currentAlbumId: null,
     currentAlbumInfo: null,
+    requestSeq: 0,
+    requestController: null,
     open(id, passedCoverUrl) {
+        var requestId = ++Album.requestSeq;
+        if (Album.requestController) {
+            try { Album.requestController.abort(); } catch (e) {}
+        }
+        var requestController = new AbortController();
+        Album.requestController = requestController;
         Album.currentAlbumId = id;
         var url=location.origin+'/album/'+id;
         history.pushState({},'',url);
@@ -41,9 +49,10 @@ var Album = {
             <div class="w-10 h-10 border-3 border-[#cfd3d8] border-t-transparent rounded-full animate-spin"></div>
         </div>`;
         
-        fetch('/api/album?id=' + id)
+        fetch('/api/album?id=' + encodeURIComponent(id), { signal: requestController.signal })
         .then(res => res.json())
         .then(data => {
+            if (requestId !== Album.requestSeq || Album.currentAlbumId !== id) return;
             if(!data.status || !data.result) {
                 gid('album-content').innerHTML = '<div class="p-6 text-center text-white/70 mt-20">Gagal memuat album</div>';
                 return;
@@ -164,7 +173,8 @@ var Album = {
             lucide.createIcons();
         })
         .catch(e => {
-            gid('album-content').innerHTML = '<div class="p-6 text-center text-white/70 mt-20">Gagal: '+e.message+'</div>';
+            if (requestId !== Album.requestSeq || (e && e.name === 'AbortError')) return;
+            gid('album-content').innerHTML = '<div class="p-6 text-center text-white/70 mt-20">Gagal memuat album</div>';
         });
     },
     currentAlbumId: null,
@@ -242,6 +252,11 @@ var Album = {
         }
     },
     close() {
+        Album.requestSeq++;
+        if (Album.requestController) {
+            try { Album.requestController.abort(); } catch (e) {}
+            Album.requestController = null;
+        }
         if(window.location.pathname.startsWith('/album/')) history.pushState({},'', '/');
         gid('album-modal').style.display = 'none';
         gid('album-content').innerHTML = '';

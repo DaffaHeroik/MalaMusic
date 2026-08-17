@@ -30,7 +30,15 @@ var Artist={
     },
     currentArtistId: null,
     currentArtistInfo: null,
+    requestSeq: 0,
+    requestController: null,
     open(id, name, thumbnail) {
+        var requestId = ++Artist.requestSeq;
+        if (Artist.requestController) {
+            try { Artist.requestController.abort(); } catch (e) {}
+        }
+        var requestController = new AbortController();
+        Artist.requestController = requestController;
         Artist.currentArtistId = id;
         var url = location.origin + '/artist/' + id;
         history.pushState({}, '', url);
@@ -58,7 +66,8 @@ var Artist={
             </div>
         </div>`;
 
-        fetch(API.artist + '?id=' + id).then(function(r){return r.json();}).then(function(d){
+        fetch(API.artist + '?id=' + encodeURIComponent(id), { signal: requestController.signal }).then(function(r){return r.json();}).then(function(d){
+            if (requestId !== Artist.requestSeq || Artist.currentArtistId !== id) return;
             if(d.status && d.result){
                 var a = d.result;
                 if(a.name) gid('artist-name').innerText = a.name;
@@ -274,6 +283,10 @@ var Artist={
                 gid('artist-content').innerHTML = fullHtml + html;
                 lucide.createIcons();
             }
+        }).catch(function(e){
+            if (requestId !== Artist.requestSeq || (e && e.name === 'AbortError')) return;
+            var content = gid('artist-content');
+            if (content) content.innerHTML = '<div class="text-center text-[#a0a5b0] mt-20">Gagal memuat artist</div>';
         });
     },
     currentArtistData: null,
@@ -377,6 +390,11 @@ var Artist={
         }
     },
     close(){
+        Artist.requestSeq++;
+        if (Artist.requestController) {
+            try { Artist.requestController.abort(); } catch (e) {}
+            Artist.requestController = null;
+        }
         if(window.location.pathname.startsWith('/artist/')) history.pushState({},'', '/');
         gid('artist-modal').style.display='none';
         Artist.currentArtistData = null;

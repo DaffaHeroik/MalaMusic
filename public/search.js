@@ -1,4 +1,10 @@
-var Search={
+var Search = {
+    querySeq: 0,
+    queryController: null,
+    recSeq: 0,
+    recController: null,
+    suggestSeq: 0,
+    suggestController: null,
     render(){
         gid('view-search').innerHTML=`
         <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
@@ -36,6 +42,12 @@ var Search={
     ],
     renderRecs(){
         var rc=gid('search-recs');if(!rc)return;
+        var recRequestId = ++Search.recSeq;
+        if (Search.recController) {
+            try { Search.recController.abort(); } catch (e) {}
+        }
+        var recController = new AbortController();
+        Search.recController = recController;
         var recent=[];
         try { recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]'); } catch(e) {}
         var recentHtml=recent.length ? '<div><h2 class="text-base font-bold mb-3 flex items-center gap-2 text-white"><i data-lucide="history" class="w-4 h-4 text-rose-400"></i><span>Pencarian Terakhir</span></h2><div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">'+recent.slice(0,6).map(function(q){return '<button onclick="Search.query(\''+esJs(q)+'\')" class="shrink-0 px-3.5 py-2 rounded-full bg-white/[.06] border border-white/10 text-xs text-white/80 hover:bg-white/10 flex items-center gap-1.5"><i data-lucide="search" class="w-3.5 h-3.5"></i>'+es(q)+'</button>';}).join('')+'</div></div>' : '';
@@ -46,10 +58,15 @@ var Search={
             '</div></div>';
         }).join('');
         Promise.all(Search.REC_ROWS.map(function(row){
-            return fetch(API.search+'?query='+encodeURIComponent(row.q)+'&type=songs').then(function(r){return r.json();}).then(function(d){
+                return fetch(API.search+'?query='+encodeURIComponent(row.q)+'&type=songs', { signal: recController.signal }).then(function(r){return r.json();}).then(function(d){
                 S[row.key]=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
             }).catch(function(){S[row.key]=[];});
-        })).then(function(){Search.showRecs();});
+        })).then(function(){
+            if (recRequestId === Search.recSeq) Search.showRecs();
+        }).catch(function(e){
+            if (recRequestId !== Search.recSeq || (e && e.name === 'AbortError')) return;
+            Search.showRecs();
+        });
     },
     showRecs(){
         var rc=gid('search-recs');if(!rc)return;
@@ -179,15 +196,25 @@ var Search={
     events(){
         var sf=gid('search-form'),si=gid('search-input');if(!sf||!si)return;
         sf.addEventListener('submit',async function(e){
-            e.preventDefault();S.sq=si.value.trim();gid('suggestions').classList.add('hidden');
+            e.preventDefault();
+            var requestId = ++Search.querySeq;
+            if (Search.queryController) {
+                try { Search.queryController.abort(); } catch (err) {}
+            }
+            var queryController = new AbortController();
+            Search.queryController = queryController;
+            S.sq=si.value.trim();
+            var submittedQuery = S.sq;
+            gid('suggestions').classList.add('hidden');
             if(!S.sq){S.ar=[];S.pr=[];S.sr=[];Search.show();return;}
             try { var recent=JSON.parse(localStorage.getItem('mala_recent_searches')||'[]').filter(function(item){return item!==S.sq;}); recent.unshift(S.sq); localStorage.setItem('mala_recent_searches',JSON.stringify(recent.slice(0,8))); } catch(e) {}
             var url=location.origin+'/search/'+encodeURIComponent(S.sq);
             history.pushState({},'',url);
             Search.show(true);
             try{
-                var r=await fetch(API.search+'?query='+encodeURIComponent(S.sq)+'&type=all');
+                var r=await fetch(API.search+'?query='+encodeURIComponent(submittedQuery)+'&type=all', { signal: queryController.signal });
                 var d=await r.json();
+                if (requestId !== Search.querySeq || S.sq !== submittedQuery) return;
                 S.ar=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
                 
                 var pl = d.status&&d.result.playlists?d.result.playlists:[];
@@ -199,12 +226,21 @@ var Search={
                 S.filter = 'songs';
                 Search.updateFilterUI();
                 Search.apply();
-            }catch(e){S.ar=[];S.pr=[];S.sr=[];c=gid('search-results');if(c)c.innerHTML='<div class="text-center mt-10 p-6 rounded-2xl bg-red-500/10 border border-red-400/20"><i data-lucide="wifi-off" class="w-8 h-8 text-red-300 mx-auto mb-3"></i><h3 class="text-white font-bold mb-1">Pencarian gagal</h3><p class="text-white/60 text-xs mb-4">Periksa koneksi lalu coba lagi.</p><button onclick="Search.query(\''+esJs(S.sq)+'\')" class="px-4 py-2 rounded-full bg-white text-black text-xs font-bold">Coba Lagi</button></div>';lucide.createIcons();}
+            }catch(e){
+                if (requestId !== Search.querySeq || (e && e.name === 'AbortError')) return;
+                S.ar=[];S.pr=[];S.sr=[];c=gid('search-results');if(c)c.innerHTML='<div class="text-center mt-10 p-6 rounded-2xl bg-red-500/10 border border-red-400/20"><i data-lucide="wifi-off" class="w-8 h-8 text-red-300 mx-auto mb-3"></i><h3 class="text-white font-bold mb-1">Pencarian gagal</h3><p class="text-white/60 text-xs mb-4">Periksa koneksi lalu coba lagi.</p><button onclick="Search.query(\''+esJs(submittedQuery)+'\')" class="px-4 py-2 rounded-full bg-white text-black text-xs font-bold">Coba Lagi</button></div>';lucide.createIcons();}
         });
         si.addEventListener('input',function(){
             var q=this.value.trim();
+            var suggestRequestId = ++Search.suggestSeq;
+            if (Search.suggestController) {
+                try { Search.suggestController.abort(); } catch (e) {}
+            }
             if(!q){gid('suggestions').classList.add('hidden');return;}
-            fetch(API.suggest+'?q='+encodeURIComponent(q)).then(function(r){return r.json();}).then(function(s){
+            var suggestController = new AbortController();
+            Search.suggestController = suggestController;
+            fetch(API.suggest+'?q='+encodeURIComponent(q), { signal: suggestController.signal }).then(function(r){return r.json();}).then(function(s){
+                if (suggestRequestId !== Search.suggestSeq || si.value.trim() !== q) return;
                 if(Array.isArray(s)&&s.length>0){
                     gid('suggestions').innerHTML=s.map(function(sg, i){
                         return'<div onclick="selectSuggestion(\''+es(sg).replace(/'/g,"\\'")+'\')" class="px-4 py-3 hover:bg-white/10 cursor-pointer text-sm animate-card-left flex items-center gap-3 transition-colors" style="animation-delay:'+Math.min(i*25, 250)+'ms"><i data-lucide="search" class="w-3.5 h-3.5 text-white/70"></i><span>'+es(sg)+'</span></div>';
@@ -212,6 +248,9 @@ var Search={
                     gid('suggestions').classList.remove('hidden');
                     lucide.createIcons();
                 }else{gid('suggestions').classList.add('hidden');}
+            }).catch(function(e){
+                if (suggestRequestId !== Search.suggestSeq || (e && e.name === 'AbortError')) return;
+                gid('suggestions').classList.add('hidden');
             });
         });
         document.addEventListener('click',function(e){if(!e.target.closest('#search-form')&&!e.target.closest('#suggestions'))gid('suggestions').classList.add('hidden');});

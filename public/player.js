@@ -1210,6 +1210,8 @@ function shareTrack(){
 
 var lyricsCache = {};
 var fetchingLyricsVid = null;
+var lyricsRequestSeq = 0;
+var lyricsController = null;
 
 function resetLyricsUI(vid){
     S.ld={vid:vid, type:'none',lines:[]};S.cli=-1;S.lyricOffset=0;
@@ -1353,6 +1355,14 @@ function renderLyricsDOM(ld) {
 
 async function FL(vid){
     if (!vid) return;
+    if (fetchingLyricsVid === vid) return;
+
+    var requestId = ++lyricsRequestSeq;
+    if (lyricsController) {
+        try { lyricsController.abort(); } catch (e) {}
+    }
+    var requestController = new AbortController();
+    lyricsController = requestController;
 
     if (!lyricsCache[vid]) {
         var offlineList = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
@@ -1366,10 +1376,6 @@ async function FL(vid){
     if (lyricsCache[vid] && lyricsCache[vid].lines && lyricsCache[vid].lines.length > 0) {
         S.ld = lyricsCache[vid];
         renderLyricsDOM(S.ld);
-        return;
-    }
-
-    if (fetchingLyricsVid === vid) {
         return;
     }
 
@@ -1390,6 +1396,7 @@ async function FL(vid){
 
     try{
         if (!navigator.onLine) {
+            if (requestId !== lyricsRequestSeq) return;
             if (fetchingLyricsVid === vid) fetchingLyricsVid = null;
             var activeVid = S.ct ? (S.ct.videoId || S.ct.id) : null;
             var cachedOffline = lyricsCache[vid];
@@ -1402,11 +1409,11 @@ async function FL(vid){
                 }
             }
             if (cachedOffline) {
-                if (activeVid === vid) {
+                if (requestId === lyricsRequestSeq && activeVid === vid) {
                     S.ld = cachedOffline;
                     renderLyricsDOM(S.ld);
                 }
-            } else if (activeVid === vid) {
+            } else if (requestId === lyricsRequestSeq && activeVid === vid) {
                 if(l)l.classList.add('hidden');if(e)e.classList.remove('hidden');
                 if(il)il.classList.add('hidden');if(ie)ie.classList.remove('hidden');
             }
@@ -1415,8 +1422,9 @@ async function FL(vid){
 
         var curTitle = (S.ct && S.ct.title) ? '&title=' + encodeURIComponent(S.ct.title) : '';
         var curArtist = (S.ct && S.ct.artist) ? '&artist=' + encodeURIComponent(S.ct.artist) : '';
-        var r = await fetch(API.lyrics + '?id=' + vid + curTitle + curArtist);
+        var r = await fetch(API.lyrics + '?id=' + encodeURIComponent(vid) + curTitle + curArtist, { signal: requestController.signal });
         var d=await r.json();
+        if (requestId !== lyricsRequestSeq) return;
 
         if (fetchingLyricsVid === vid) {
             fetchingLyricsVid = null;
@@ -1432,7 +1440,7 @@ async function FL(vid){
             };
             lyricsCache[vid] = resLyrics;
             savePwaCaches();
-            if (activeVid === vid) {
+            if (requestId === lyricsRequestSeq && activeVid === vid) {
                 S.ld = resLyrics;
                 renderLyricsDOM(S.ld);
             }
@@ -1440,7 +1448,7 @@ async function FL(vid){
             var emptyLyrics = { vid: vid, type: 'none', lines: [] };
             lyricsCache[vid] = emptyLyrics;
             savePwaCaches();
-            if (activeVid === vid) {
+            if (requestId === lyricsRequestSeq && activeVid === vid) {
                 S.ld = emptyLyrics;
                 renderLyricsDOM(S.ld);
             }
@@ -1449,6 +1457,7 @@ async function FL(vid){
         if (fetchingLyricsVid === vid) {
             fetchingLyricsVid = null;
         }
+        if (requestId !== lyricsRequestSeq || (er && er.name === 'AbortError')) return;
         var activeVid = S.ct ? (S.ct.videoId || S.ct.id) : null;
         if (activeVid === vid) {
             if(l)l.classList.add('hidden');if(e)e.classList.remove('hidden');

@@ -1,6 +1,10 @@
 var Home = {
     activeCategory: null,
     loadingCategory: false,
+    requestSeq: 0,
+    requestController: null,
+    categoryRequestSeq: 0,
+    categoryController: null,
     categories: [
         { name: 'Semua' },
         { name: 'Chill', icon: 'coffee' },
@@ -117,6 +121,11 @@ var Home = {
         }
 
         if (!catName || catName === 'Semua') {
+            Home.categoryRequestSeq++;
+            if (Home.categoryController) {
+                try { Home.categoryController.abort(); } catch (e) {}
+                Home.categoryController = null;
+            }
             Home.activeCategory = null;
             var bar = gid('home-category-bar');
             if (bar) {
@@ -153,6 +162,13 @@ var Home = {
     },
 
     async fetchCategoryData(catName) {
+        var requestId = ++Home.categoryRequestSeq;
+        if (Home.categoryController) {
+            try { Home.categoryController.abort(); } catch (e) {}
+        }
+        var controller = new AbortController();
+        Home.categoryController = controller;
+        var signal = controller.signal;
         var defView = gid('home-default-view'), catView = gid('home-category-view');
         if (defView) defView.style.display = 'none';
         if (catView) {
@@ -176,8 +192,9 @@ var Home = {
 
         if (catName === 'Developer Profile') {
             try {
-                var r = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION') + '&type=all');
+                var r = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION') + '&type=all', { signal: signal });
                 var d = await r.json();
+                if (requestId !== Home.categoryRequestSeq || Home.activeCategory !== catName) return;
                 if (d.status && d.result) {
                     S.hc = d.result.songs ? d.result.songs.map(function(s) {
                         return {
@@ -207,8 +224,9 @@ var Home = {
             ];
 
             try {
-                var ra = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION Juice WRLD 2Pac Lil Peep Lil Loaded NLE Choppa Ice Cube Eazy-E Eminem') + '&type=artists');
+                var ra = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION Juice WRLD 2Pac Lil Peep Lil Loaded NLE Choppa Ice Cube Eazy-E Eminem') + '&type=artists', { signal: signal });
                 var da = await ra.json();
+                if (requestId !== Home.categoryRequestSeq || Home.activeCategory !== catName) return;
                 if (da.status && da.result && da.result.artists && da.result.artists.length > 0) {
                     da.result.artists.forEach(function(art) {
                         var artName = art.title || art.name || '';
@@ -221,6 +239,7 @@ var Home = {
                 }
             } catch(ea){}
 
+            if (requestId !== Home.categoryRequestSeq || Home.activeCategory !== catName) return;
             Home.renderDeveloperProfileView();
             return;
         }
@@ -242,8 +261,9 @@ var Home = {
         else if (catName === 'Nostalgia') query = '2000s Hits Nostalgia Songs';
 
         try {
-            var r = await fetch(API.search + '?query=' + encodeURIComponent(query) + '&type=all');
+            var r = await fetch(API.search + '?query=' + encodeURIComponent(query) + '&type=all', { signal: signal });
             var d = await r.json();
+            if (requestId !== Home.categoryRequestSeq || Home.activeCategory !== catName) return;
             if (d.status) {
                 S.hc = d.result.songs ? d.result.songs.map(function(s) {
                     return {
@@ -259,8 +279,12 @@ var Home = {
                 S.hcp = [].concat(d.result.playlists || []).concat(d.result.albums || []);
                 S.hca = d.result.artists || [];
             }
-        } catch(e) { S.hc = []; S.hcp = []; S.hca = []; }
+        } catch(e) {
+            if (requestId !== Home.categoryRequestSeq || (e && e.name === 'AbortError')) return;
+            S.hc = []; S.hcp = []; S.hca = [];
+        }
 
+        if (requestId !== Home.categoryRequestSeq || Home.activeCategory !== catName) return;
         Home.displayCategoryView();
     },
 
@@ -497,6 +521,13 @@ var Home = {
     },
 
     async fetch(forceRefresh) {
+        var requestId = ++Home.requestSeq;
+        if (Home.requestController) {
+            try { Home.requestController.abort(); } catch (e) {}
+        }
+        var controller = new AbortController();
+        Home.requestController = controller;
+        var signal = controller.signal;
         Home.showSkeleton();
         if (!navigator.onLine) {
             var offlineSongs = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
@@ -513,8 +544,9 @@ var Home = {
             var availableQueries = queryPool.filter(function(item){ return item !== previousQuery; });
             var q = availableQueries[Math.floor(Math.random() * availableQueries.length)] || queryPool[0];
             try { localStorage.setItem('mala_home_query', q); } catch(e) {}
-            var r = await fetch(API.search + '?query=' + encodeURIComponent(q) + '&type=songs');
+            var r = await fetch(API.search + '?query=' + encodeURIComponent(q) + '&type=songs', { signal: signal });
             var d = await r.json();
+            if (requestId !== Home.requestSeq) return;
             if (d.status) {
                 if (d.result.songs && d.result.songs.length > 0) {
                     S.ht = d.result.songs.map(function(s) {
@@ -535,7 +567,7 @@ var Home = {
                     var q2 = playlistQueries[Math.floor(Math.random() * playlistQueries.length)];
                     if (q2 !== q) {
                         try {
-                            var r2 = await fetch(API.search + '?query=' + encodeURIComponent(q2) + '&type=playlists');
+                            var r2 = await fetch(API.search + '?query=' + encodeURIComponent(q2) + '&type=playlists', { signal: signal });
                             var d2 = await r2.json();
                             if (d2.status) {
                                 plist = plist.concat(d2.result.playlists || []).concat(d2.result.albums || []);
@@ -547,8 +579,11 @@ var Home = {
                     S.hp = plist.sort(function() { return 0.5 - Math.random(); });
                 }
             }
-        } catch(e){}
+        } catch(e) {
+            if (requestId !== Home.requestSeq || (e && e.name === 'AbortError')) return;
+        }
 
+        if (requestId !== Home.requestSeq) return;
         var topArtistsList = [
             { name: 'XXXTENTACION', id: 'UCnAcxgRZ065f_eXK1o85c1w', cover: 'https://yt3.googleusercontent.com/No3I8pA9ows2dy6NElEr9mCXLzYxgjVvsQr7h69C03palsH1u8Q8iw-sAAUxav599Wmi64up8lbDGbI=w800-h800-l90-rj' },
             { name: 'Lil Peep', id: 'UCxcyWcW0kZFGRyetDHr3UuA', cover: 'https://yt3.googleusercontent.com/TbvXoTXJz8a2xfkJxZsI0riSyrUSibnVHBFxhHTeJefWY-2-60x0VhUPkO89uF3CGOPLalsTTM-OlEeI=w800-h800-l90-rj' },
@@ -559,8 +594,9 @@ var Home = {
         S.ha = topArtistsList;
 
         try {
-            var ra = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION Lil Peep Juice WRLD Lil Loaded Hindia') + '&type=artists');
+            var ra = await fetch(API.search + '?query=' + encodeURIComponent('XXXTENTACION Lil Peep Juice WRLD Lil Loaded Hindia') + '&type=artists', { signal: signal });
             var da = await ra.json();
+            if (requestId !== Home.requestSeq) return;
             if (da.status && da.result && da.result.artists && da.result.artists.length > 0) {
                 da.result.artists.forEach(function(art) {
                     var artName = (art.title || art.name || '').toLowerCase();
@@ -571,8 +607,11 @@ var Home = {
                     }
                 });
             }
-        } catch(e) {}
+        } catch(e) {
+            if (requestId !== Home.requestSeq || (e && e.name === 'AbortError')) return;
+        }
 
+        if (requestId !== Home.requestSeq) return;
         Home.show();
     },
 
