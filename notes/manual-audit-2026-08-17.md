@@ -28,3 +28,7 @@ The Lirik tab loaded complete lyrics for `Ya Sudahlah` and kept playback control
 ## v67 regression verification
 
 Production v67 memuat Home dengan konten baru, navigasi, Quick Picks, playlist, Top Artists, dan launcher social. Uji lifecycle modal menghasilkan `before: artist=flex, album=none` lalu setelah membuka album `after: artist=none, album=flex`; hanya `album-modal` dan launcher Listen Together yang tersisa sebagai fixed element yang terlihat. Ini mengonfirmasi stale Artist overlay sudah tertutup. Console tidak menunjukkan error runtime baru selama uji.
+
+## v68 playlist-cover verification
+
+Pada production v68, kartu Popular Playlist `Lagu Pop Indonesia Terbaru 2026 - 2025 (Playlist Teman Kerja & Saat Santai)` meneruskan cover playlist secara langsung ke `Album.open()`. Pengukuran DOM setelah detail selesai memuat menunjukkan `cardCover`, cover hero, dan cover square memiliki URL yang sama. Judul detail juga sesuai dengan playlist yang diklik. Perubahan ini mengatasi cover detail yang sebelumnya dapat diganti oleh thumbnail API album atau cover lagu pertama.
