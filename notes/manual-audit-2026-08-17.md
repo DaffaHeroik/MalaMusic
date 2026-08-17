@@ -24,3 +24,7 @@ The Lirik tab loaded complete lyrics for `Ya Sudahlah` and kept playback control
 - Console setelah navigasi v66 tidak menunjukkan error runtime atau warning icon Google yang sebelumnya muncul.
 - Ditemukan bug nyata: setelah Artist.open lalu Album.open, `#artist-modal` dan `#album-modal` sama-sama tetap ada di DOM sebagai elemen fixed. Album berada di atas, tetapi overlay Artist stale dapat menyimpan state/request lama dan berisiko mengganggu navigasi, back, dan aksesibilitas. Perbaikan ditambahkan pada `Artist.open` dan `Album.open` untuk menutup modal detail lawan sebelum membuka detail baru; akan dideploy sebagai v67.
 - Tidak ditemukan page overflow horizontal pada viewport Android dari audit sebelumnya; bottom navigation dan launcher social tidak saling menutup.
+
+## v67 regression verification
+
+Production v67 memuat Home dengan konten baru, navigasi, Quick Picks, playlist, Top Artists, dan launcher social. Uji lifecycle modal menghasilkan `before: artist=flex, album=none` lalu setelah membuka album `after: artist=none, album=flex`; hanya `album-modal` dan launcher Listen Together yang tersisa sebagai fixed element yang terlihat. Ini mengonfirmasi stale Artist overlay sudah tertutup. Console tidak menunjukkan error runtime baru selama uji.
