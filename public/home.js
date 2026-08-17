@@ -669,13 +669,14 @@ var Home = {
                 var cardBg = isPlay ? 'bg-[#343a4e] border border-white/40 shadow-xl' : (isCur ? 'bg-[#2e3344] border border-white/30' : 'bg-[#20222c] border border-white/10 hover:bg-[#282b38]');
                 var textStyle = isCur ? 'text-white font-bold' : '';
 
-                return '<div onclick="PK(\'home1\','+i+')" class="home-grid-card '+cardBg+' rounded-2xl p-2.5 min-w-0 flex items-center gap-2 sm:gap-3 cursor-pointer active:scale-[0.98] transition-all duration-300 group shadow-lg shadow-black/25">'+
-                    '<img src="'+t.cover+'" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
-                    '<div class="min-w-0 flex-1">'+
+                var coverUrl = safeMediaUrl(t.cover || FI, FI);
+                return '<div onclick="PK(\'home1\','+i+')" class="home-grid-card '+cardBg+' rounded-2xl p-0 min-w-0 overflow-hidden flex items-center gap-2 sm:gap-3 cursor-pointer active:scale-[0.98] transition-all duration-300 group shadow-lg shadow-black/25">'+
+                    '<div class="w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0 self-stretch overflow-hidden rounded-l-2xl bg-black/20"><img src="'+coverUrl+'" class="w-full h-full object-cover block" onerror="this.src=\''+FI+'\'" /></div>'+
+                    '<div class="min-w-0 flex-1 py-2.5">'+
                         '<h3 class="home-grid-title font-semibold text-sm text-white truncate '+textStyle+'">'+es(t.title)+'</h3>'+
                         '<p class="text-xs text-white/60 truncate mt-0.5">'+es(t.artist)+'</p>'+
                     '</div>'+
-                    '<div class="home-grid-icon shrink-0">'+playIconHtml+'</div>'+trackMenuButton(t)+
+                    '<div class="home-grid-icon shrink-0 mr-2.5">'+playIconHtml+'</div>'+trackMenuButton(t)+
                 '</div>';
             }).join('');
             }
