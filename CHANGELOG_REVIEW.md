@@ -59,3 +59,8 @@ A production v83 replay showed that a failed current track could display `DIJEDA
 ## Review-gap prevention record — 2026-08-18
 
 Added [`REVIEW_GAPS_AND_PREVENTION.md`](REVIEW_GAPS_AND_PREVENTION.md), a permanent checklist of missed or under-specified verification areas. It records the slow-network/cache omission as GAP-001 through GAP-005 and also covers offline binary integrity, Service Worker updates, real Gmail E2E, two-user Listen Together, auth-state consistency, Android/PWA, accessibility, poor-network matrices, performance, scheduled WITA rollover, data isolation, rollback, secret rotation, legacy configuration, and browser automation reliability.
+
+
+## Frontend Police audit — 2026-08-18
+
+Mode A audit on production prioritized PC and a 390x844 Android viewport. The first direct mobile console audit found a real Lucide warning: `data-lucide="chrome"` was not present in the loaded icon set, affecting the Google Sign-In button. The icon was replaced with stable `globe-2`, and assets were bumped from v84 to v85. The audit also identified a medium UX candidate for the Search route: after explicit query submission, the long autocomplete suggestion panel remains open and pushes result rows below the first mobile viewport. This candidate is documented for retest before any further change.
