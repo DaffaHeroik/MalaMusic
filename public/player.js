@@ -338,6 +338,7 @@ var activeAudioIsOffline = false;
 var audioStartTimer = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
+var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
 var audioUrlFetchPromises = {};
 
 function isCurrentAudioSource(){
@@ -374,16 +375,37 @@ function resolveAudioUrl(track) {
         if (!navigator.onLine) throw new Error('Offline dan audio belum tersimpan');
         var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
         var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        var timeoutId = setTimeout(function(){ if(controller) controller.abort(); }, 12000);
+        var timeoutId = setTimeout(function(){ if(controller) controller.abort(); }, AUDIO_RESOLVE_TIMEOUT_MS);
         var requestOptions = {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({query: ytUrl})
         };
         if (controller) requestOptions.signal = controller.signal;
-        return fetch(API.ytplay, requestOptions).then(function(r){ return r.json(); }).then(function(d){
-            var url = d && d.status && d.result && d.result.download && d.result.download.audio;
-            if (!url) throw new Error('URL audio tidak tersedia');
+        function requestResolver(attempt){
+            return fetch(API.ytplay, requestOptions).then(function(r){
+                if (!r.ok) {
+                    var httpError = new Error('Audio resolver HTTP ' + r.status);
+                    httpError.status = r.status;
+                    throw httpError;
+                }
+                return r.json();
+            }).then(function(d){
+                if (!(d && d.status && d.result && d.result.download && d.result.download.audio)) {
+                    throw new Error('URL audio tidak tersedia');
+                }
+                return d;
+            }).catch(function(err){
+                var status = err && err.status;
+                var retryable = !status || status >= 500;
+                if (attempt < 1 && retryable && !(controller && controller.signal.aborted)) {
+                    return new Promise(function(resolve){ setTimeout(resolve, 450); }).then(function(){ return requestResolver(attempt + 1); });
+                }
+                throw err;
+            });
+        }
+        return requestResolver(0).then(function(d){
+            var url = d.result.download.audio;
             audioUrlCache[vid] = url;
             savePwaCaches();
             return url;
