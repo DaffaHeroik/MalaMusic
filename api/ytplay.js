@@ -1,6 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const { CircuitBreaker } = require('./savetube-circuit-breaker');
+const { resolveSiputzxAudio } = require('./siputzx-audio');
 
 // Memory cache for audio stream URLs (valid 1.5 hours)
 const ytCache = new Map();
@@ -79,10 +80,6 @@ async function getDownload(url) {
 
   const fullUrl = "https://www.youtube.com/watch?v=" + idMatch;
   const cdns = SAVE_TUBE_CDNS.filter(cdn => getSaveTubeBreaker(cdn).canRequest());
-  if (cdns.length === 0) {
-    console.warn('[ytplay] all SaveTube circuits are open');
-    return null;
-  }
 
   // Race all CDNs in parallel instead of looping sequentially.
   // Sequential (3 cdn x 2 attempts x 25s) could take up to 150s, way past
@@ -145,26 +142,38 @@ async function getDownload(url) {
   }
 
   try {
-    const result = await Promise.any(cdns.map(cdn =>
+    if (cdns.length === 0) {
+      console.warn('[ytplay] all SaveTube circuits are open; trying Siputzx audio fallback');
+    } else {
+      const result = await Promise.any(cdns.map(cdn =>
       tryCdn(cdn).catch(err => {
         const snapshot = getSaveTubeBreaker(cdn).snapshot();
         console.warn(`[ytplay] upstream ${cdn} failed breaker=${snapshot.state} failures=${snapshot.failures}`);
         throw err;
       })
-    ));
+      ));
 
-    // Winner found, stop the losing in-flight requests so they don't
+      // Winner found, stop the losing in-flight requests so they don't
     // keep the function/connections alive uselessly.
-    controller.abort();
+      controller.abort();
 
-    console.info(`[ytplay] upstream winner: ${result.cdn}`);
-    ytCache.set(idMatch, { data: result, expireAt: Date.now() + CACHE_TTL });
-    pruneAudioCache(Date.now());
-    return result;
+      console.info(`[ytplay] upstream winner: ${result.cdn}`);
+      ytCache.set(idMatch, { data: result, expireAt: Date.now() + CACHE_TTL });
+      pruneAudioCache(Date.now());
+      return result;
+    }
   } catch (aggregateErr) {
-    console.warn('[ytplay] all upstreams failed');
-    return null;
+    console.warn('[ytplay] SaveTube race failed');
   }
+
+  const siputzxResult = await resolveSiputzxAudio(fullUrl);
+  if (siputzxResult?.audio) {
+    ytCache.set(idMatch, { data: siputzxResult, expireAt: Date.now() + CACHE_TTL });
+    pruneAudioCache(Date.now());
+    return siputzxResult;
+  }
+  console.warn('[ytplay] all audio providers failed');
+  return null;
 }
 
 module.exports = async (req, res) => {

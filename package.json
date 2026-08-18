@@ -10,6 +10,7 @@
     "test:playback-race": "node tests/playback-race-check.js",
     "test:api-contract": "node tests/api-contract-check.js",
     "test:savetube-breaker": "node tests/savetube-circuit-breaker-check.js",
+    "test:siputzx-contract": "node tests/siputzx-contract-check.js",
     "start": "node server.js"
   },
   "dependencies": {

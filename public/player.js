@@ -1048,28 +1048,6 @@ function getRecentTracks(){
     try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
 }
 
-function hideYoutubeRecovery(){
-    var view = gid('youtube-recovery-view');
-    var frame = gid('youtube-recovery-frame');
-    var cover = gid('full-cover');
-    if (frame) frame.src = 'about:blank';
-    if (view) view.classList.add('hidden');
-    if (cover) cover.style.opacity = '';
-}
-function showYoutubeRecovery(track, loadSequence){
-    if (!track || loadSequence !== audioLoadSequence || S.ct !== track) return;
-    var vid = String(track.videoId || track.id || '');
-    if (!/^[a-zA-Z0-9_-]{11}$/.test(vid)) return;
-    var view = gid('youtube-recovery-view');
-    var frame = gid('youtube-recovery-frame');
-    var cover = gid('full-cover');
-    if (!view || !frame) return;
-    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(vid) + '?enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '&playsinline=1&rel=0';
-    view.classList.remove('hidden');
-    if (cover) cover.style.opacity = '0';
-    if (typeof showToast === 'function') showToast('Resolver audio sedang bermasalah. Tekan Play pada player YouTube.');
-}
-
 function loadTrack(track,resumeAt,isRecoveryRetry){
     if(!track)return;
     var recoveryKey = trackId(track);
@@ -1078,7 +1056,6 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
         audioRecoveryAttempts = 0;
     }
     var loadSequence = ++audioLoadSequence;
-    hideYoutubeRecovery();
     clearAudioStartTimer();
     activeAudioTrack = null;
     activeAudioSequence = 0;
@@ -1156,7 +1133,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
             if(!isCurrentLoad()) return;
             S.il=false;S.ip=false;UB();
             if (navigator.onLine) {
-                showYoutubeRecovery(track, loadSequence);
+                if(typeof showToast === 'function') showToast('Audio belum tersedia. Coba lagi sebentar.');
             } else if(typeof showToast === 'function') {
                 showToast('Mode Offline: Lagu ini belum tersimpan di cache PWA');
             }
@@ -1165,7 +1142,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
         if(isCurrentLoad()){
             S.il=false;S.ip=false;UB();
             if (navigator.onLine) {
-                showYoutubeRecovery(track, loadSequence);
+                if(typeof showToast === 'function') showToast('Audio belum tersedia. Coba lagi sebentar.');
             } else if(typeof showToast === 'function') {
                 showToast('Mode Offline: Lagu ini belum tersimpan di cache PWA');
             }

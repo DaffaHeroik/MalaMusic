@@ -114,3 +114,10 @@ A second real production probe found `/api/proxy-image` was not implemented on t
 ## Real-time ytplay provider outage — UQ8cXH7qbVU — 2026-08-18
 
 A live production browser fetch for `https://music.youtube.com/watch?v=UQ8cXH7qbVU` returned HTTP 503 after about 10 seconds with no audio field; the audio element remained at `readyState: 0`. The same browser session tested two other valid IDs and all three returned the identical 503, ruling out a track-specific or URL-format problem. Direct probes of `cdn405.savetube.vip`, `cdn403.savetube.vip`, and `cdn401.savetube.vip` then timed out or became unstable; a direct reproduction of the `/v2/info` plus decrypt plus `/download` sequence failed with `ECONNABORTED`. This is recorded as an upstream SaveTube availability incident. No blind retry increase was released because it would only lengthen user wait time; a durable fix requires a maintained fallback provider or authorized media source. Evidence: `/tmp/malamusic-ytplay-realtime-UQ8cXH7qbVU-2026-08-18.md`.
+
+
+## Audio-only fallback resolver — 2026-08-18
+
+SaveTube sedang mengembalikan 503/timeout sehingga resolver audio utama tidak selalu menghasilkan media. Ditambahkan adapter audio-only `api/siputzx-audio.js` dengan PoW, cookie session per request, polling bounded 30 detik, validasi hostname, circuit breaker terpisah, dan tanpa pencetakan signed URL. `/api/ytplay` sekarang mencoba Siputzx setelah race SaveTube gagal; response frontend tetap mempertahankan kontrak `result.download.audio`. `/api/proxy-audio` mengizinkan host `youtubedl.siputzx.my.id`. Fallback iframe YouTube dihapus agar MalaMusic tidak memutar video.
+
+Probe provider berhasil: challenge HTTP 200, verifikasi HTTP 200, job audio selesai, dan request Range mengembalikan HTTP 206 dengan MIME `audio/mpeg` serta 65536 byte. Runtime Vercel dikonfigurasi 60 detik untuk memberi ruang pada job asynchronous. Residual risk: provider tidak memiliki SLA yang diverifikasi, PoW/job dapat berubah, dan URL file bersifat sementara.
