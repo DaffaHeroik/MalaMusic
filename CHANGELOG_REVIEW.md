@@ -88,3 +88,8 @@ The v87 production replay exposed a second independent issue: the resolver retur
 ## Direct CDN playback fallback fix — 2026-08-18
 
 A v88 browser replay showed the resolver eventually returned a valid SaveTube URL, but the native audio element remained at `readyState: 0`, `networkState: 2`, and `currentTime: 0` while loading the direct CDN URL. The same media URL returned a healthy `206 audio/mpeg` byte-range response through `/api/proxy-audio`. The player therefore now routes every online external audio URL through the allowlisted range-capable proxy; only verified `/offline-audio/` binaries bypass it. This closes the remaining browser-specific direct-CDN stall path. The change is prepared for the next cache-busted deployment.
+
+
+## Mobile transient resolver retry extension — 2026-08-18
+
+The Android-sized Frontend Police replay (`390x844`) reproduced two consecutive HTTP 503 responses from `/api/ytplay` for `5QMsYmJYUlQ`, leaving the audio element without a source. Independent terminal probes for the same ID succeeded on all three subsequent attempts, confirming a transient upstream failure rather than a viewport-only defect. The bounded resolver retry budget is increased from one retry to two retries; retry remains limited to network/5xx/media-shape failures and is cancelled when the active load is superseded. Assets and Service Worker cache are bumped from v89 to v90.

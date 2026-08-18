@@ -339,6 +339,7 @@ var audioStartTimer = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
+var AUDIO_RESOLVE_MAX_RETRIES = 2;
 var audioUrlFetchPromises = {};
 
 function isCurrentAudioSource(){
@@ -398,7 +399,7 @@ function resolveAudioUrl(track) {
             }).catch(function(err){
                 var status = err && err.status;
                 var retryable = !status || status >= 500;
-                if (attempt < 1 && retryable && !(controller && controller.signal.aborted)) {
+                if (attempt < AUDIO_RESOLVE_MAX_RETRIES && retryable && !(controller && controller.signal.aborted)) {
                     return new Promise(function(resolve){ setTimeout(resolve, 450); }).then(function(){ return requestResolver(attempt + 1); });
                 }
                 throw err;
