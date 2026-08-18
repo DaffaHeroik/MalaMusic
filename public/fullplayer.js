@@ -50,6 +50,10 @@ var FullPlayer={
                     <!-- 1. Cover View Container -->
                     <div id="full-cover-view" class="w-full h-full relative flex items-center justify-center">
                         <img id="full-cover" src="" class="w-full h-full object-cover rounded-2xl transition-transform duration-300 border border-white/10 shadow-2xl" />
+                        <div id="youtube-recovery-view" class="hidden absolute inset-0 rounded-2xl overflow-hidden bg-black z-30">
+                            <iframe id="youtube-recovery-frame" class="w-full h-full border-0" title="YouTube recovery player" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" playsinline></iframe>
+                            <button id="youtube-recovery-close" type="button" class="absolute top-2 right-2 rounded-full bg-black/70 px-3 py-1.5 text-[10px] font-bold text-white border border-white/20" onclick="hideYoutubeRecovery()">Tutup</button>
+                        </div>
                         
                         <!-- Next Cover Overlay for Smooth Transition -->
                         <div id="full-cover-next-overlay" class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none opacity-0 z-10">
