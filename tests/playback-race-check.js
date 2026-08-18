@@ -27,6 +27,8 @@ assert.match(source, /setTimeout\(function\(\)\{ if\(controller\) controller\.ab
 assert.match(source, /function requestResolver\(attempt\)/);
 assert.match(source, /if \(!r\.ok\)/);
 assert.match(source, /attempt < 1/);
+assert.match(source, /var nextSrc = isOfflineBinary \? audioUrl : \('\/api\/proxy-audio\?url=' \+ encodeURIComponent\(audioUrl\)\)/);
+assert.match(source, /var source = '\/api\/proxy-audio\?url=' \+ encodeURIComponent\(rawUrl\)/);
 assert.match(source, /audioRecoveryAttempts >= 1/);
 assert.match(source, /delete audioUrlCache\[vid\]/);
 assert.match(source, /loadTrack\(failedTrack, undefined, true\)/);

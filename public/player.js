@@ -419,7 +419,7 @@ function prefetchTrackAudio(track) {
     if (!vid || prefetchAudioElements[vid]) return;
     resolveAudioUrl(track).then(function(rawUrl){
         if (prefetchAudioElements[vid]) return;
-        var source = (typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(rawUrl)) : rawUrl;
+        var source = '/api/proxy-audio?url=' + encodeURIComponent(rawUrl);
         var audio = new Audio();
         audio.preload = 'auto';
         audio.src = source;
@@ -1085,7 +1085,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
             var isOfflineBinary = String(audioUrl).indexOf('/offline-audio/') === 0;
-            var nextSrc = isOfflineBinary ? audioUrl : ((typeof audioCtx !== 'undefined' && audioCtx) ? ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl)) : audioUrl);
+            var nextSrc = isOfflineBinary ? audioUrl : ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl));
             if (preloaded && preloaded.src) {
                 nextSrc = preloaded.src;
                 delete prefetchAudioElements[vid];

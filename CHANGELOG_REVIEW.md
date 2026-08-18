@@ -83,3 +83,8 @@ The player now uses `AUDIO_RESOLVE_TIMEOUT_MS = 25000`, validates non-2xx resolv
 ## Audio proxy allowlist mismatch — 2026-08-18
 
 The v87 production replay exposed a second independent issue: the resolver returned valid `cdn401/403/405.savetube.vip` media URLs, but `server.js` allowed only YouTube/Googlevideo hosts for `/api/proxy-audio`. When the Web Audio Context was active, the player wrapped the resolver URL through that proxy and the proxy rejected the legitimate resolver host. The allowlist now accepts only HTTPS hosts matching the narrow `cdn<digits>.savetube.vip` pattern, preserving the existing host restriction and one-hop redirect limit. Frontend and Service Worker assets were bumped from v87 to v88.
+
+
+## Direct CDN playback fallback fix — 2026-08-18
+
+A v88 browser replay showed the resolver eventually returned a valid SaveTube URL, but the native audio element remained at `readyState: 0`, `networkState: 2`, and `currentTime: 0` while loading the direct CDN URL. The same media URL returned a healthy `206 audio/mpeg` byte-range response through `/api/proxy-audio`. The player therefore now routes every online external audio URL through the allowlisted range-capable proxy; only verified `/offline-audio/` binaries bypass it. This closes the remaining browser-specific direct-CDN stall path. The change is prepared for the next cache-busted deployment.
