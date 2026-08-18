@@ -110,7 +110,7 @@ function isAllowedAudioUrl(value, baseUrl) {
     try {
         const parsed = new URL(String(value || ''), baseUrl);
         const hostName = String(parsed.hostname || '').toLowerCase();
-        const allowedMediaHost = hostName === 'googlevideo.com' || hostName.endsWith('.googlevideo.com') || hostName === 'youtube.com' || hostName.endsWith('.youtube.com') || hostName === 'youtu.be' || hostName.endsWith('.youtu.be');
+        const allowedMediaHost = hostName === 'googlevideo.com' || hostName.endsWith('.googlevideo.com') || hostName === 'youtube.com' || hostName.endsWith('.youtube.com') || hostName === 'youtu.be' || hostName.endsWith('.youtu.be') || /^cdn\d+\.savetube\.vip$/.test(hostName);
         return parsed.protocol === 'https:' && allowedMediaHost ? parsed : null;
     } catch (_) {
         return null;
