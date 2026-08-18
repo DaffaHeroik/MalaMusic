@@ -93,3 +93,8 @@ A v88 browser replay showed the resolver eventually returned a valid SaveTube UR
 ## Mobile transient resolver retry extension — 2026-08-18
 
 The Android-sized Frontend Police replay (`390x844`) reproduced two consecutive HTTP 503 responses from `/api/ytplay` for `5QMsYmJYUlQ`, leaving the audio element without a source. Independent terminal probes for the same ID succeeded on all three subsequent attempts, confirming a transient upstream failure rather than a viewport-only defect. The bounded resolver retry budget is increased from one retry to two retries; retry remains limited to network/5xx/media-shape failures and is cancelled when the active load is superseded. Assets and Service Worker cache are bumped from v89 to v90.
+
+
+## Service Worker audio-stream interception — 2026-08-18
+
+The v90 Android replay produced HTTP 200 from `/api/ytplay` and HTTP 206 from `/api/proxy-audio`, but the audio element still ended with an empty source. Browser console evidence identified the real remaining defect: `sw.js?v=90` intercepted the ranged media response through the generic API handler and reported `A ServiceWorker intercepted the request and encountered an unexpected error`. The Service Worker now bypasses all cache/fallback handling for `/api/proxy-audio` and forwards the request directly, preserving the `206 audio/mpeg` stream for the native player. Assets and static cache are bumped to v91.

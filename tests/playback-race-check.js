@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
+const root = process.cwd();
 
 const source = fs.readFileSync('public/player.js', 'utf8');
 const rendererSources = fs.readdirSync('public').filter((name) => name.endsWith('.js')).map((name) => fs.readFileSync(`public/${name}`, 'utf8')).join('\n');
@@ -30,6 +32,9 @@ assert.match(source, /var AUDIO_RESOLVE_MAX_RETRIES = 2;/);
 assert.match(source, /attempt < AUDIO_RESOLVE_MAX_RETRIES/);
 assert.match(source, /var nextSrc = isOfflineBinary \? audioUrl : \('\/api\/proxy-audio\?url=' \+ encodeURIComponent\(audioUrl\)\)/);
 assert.match(source, /var source = '\/api\/proxy-audio\?url=' \+ encodeURIComponent\(rawUrl\)/);
+const sw = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
+assert.match(sw, /url\.pathname === '\/api\/proxy-audio'/);
+assert.match(sw, /event\.respondWith\(fetch\(request\)\);/);
 assert.match(source, /audioRecoveryAttempts >= 1/);
 assert.match(source, /delete audioUrlCache\[vid\]/);
 assert.match(source, /loadTrack\(failedTrack, undefined, true\)/);

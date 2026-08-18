@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v90';
+const CACHE_STATIC_NAME = 'malamusic-static-v91';
 const CACHE_DATA_NAME = 'malamusic-api-v43';
 
 const STATIC_ASSETS = [
@@ -87,6 +87,13 @@ self.addEventListener('fetch', (event) => {
   // Offline binary audio is explicitly cached and must never fall back to network.
   if (url.pathname.startsWith('/offline-audio/')) {
     event.respondWith(caches.match(request).then((cached) => cached || new Response('Offline audio tidak tersedia', { status: 404 })));
+    return;
+  }
+
+  // Audio proxy responses are ranged media streams, not JSON APIs. Pass them through
+  // untouched so a partial-content response is consumed by the native audio element.
+  if (url.pathname === '/api/proxy-audio') {
+    event.respondWith(fetch(request));
     return;
   }
 
