@@ -1,11 +1,25 @@
 const axios = require('axios');
 const crypto = require('crypto');
+const { CircuitBreaker } = require('./savetube-circuit-breaker');
 
 // Memory cache for audio stream URLs (valid 1.5 hours)
 const ytCache = new Map();
 const CACHE_TTL = 90 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 500;
 const rateBuckets = new Map();
+const SAVE_TUBE_FAILURE_THRESHOLD = 3;
+const SAVE_TUBE_COOLDOWN_MS = 60_000;
+const SAVE_TUBE_CDNS = ['cdn405.savetube.vip', 'cdn403.savetube.vip', 'cdn401.savetube.vip'];
+const saveTubeBreakers = new Map(SAVE_TUBE_CDNS.map(cdn => [
+  cdn,
+  new CircuitBreaker({
+    failureThreshold: SAVE_TUBE_FAILURE_THRESHOLD,
+    cooldownMs: SAVE_TUBE_COOLDOWN_MS
+  })
+]));
+function getSaveTubeBreaker(cdn) {
+  return saveTubeBreakers.get(cdn);
+}
 function pruneAudioCache(now) {
   for (const [key, value] of ytCache) {
     if (!value || value.expireAt <= now) ytCache.delete(key);
@@ -64,7 +78,11 @@ async function getDownload(url) {
   }
 
   const fullUrl = "https://www.youtube.com/watch?v=" + idMatch;
-  const cdns = ["cdn405.savetube.vip", "cdn403.savetube.vip", "cdn401.savetube.vip"];
+  const cdns = SAVE_TUBE_CDNS.filter(cdn => getSaveTubeBreaker(cdn).canRequest());
+  if (cdns.length === 0) {
+    console.warn('[ytplay] all SaveTube circuits are open');
+    return null;
+  }
 
   // Race all CDNs in parallel instead of looping sequentially.
   // Sequential (3 cdn x 2 attempts x 25s) could take up to 150s, way past
@@ -74,53 +92,63 @@ async function getDownload(url) {
   const controller = new AbortController();
 
   async function tryCdn(cdn) {
-    const api = axios.create({
-      headers: {
-        "content-type": "application/json",
-        "origin": "https://yt.savetube.me",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-      },
-      timeout: PER_CDN_TIMEOUT,
-      signal: controller.signal
-    });
+    const breaker = getSaveTubeBreaker(cdn);
+    try {
+      const api = axios.create({
+        headers: {
+          "content-type": "application/json",
+          "origin": "https://yt.savetube.me",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        },
+        timeout: PER_CDN_TIMEOUT,
+        signal: controller.signal
+      });
 
-    const infoResponse = await api.post(`https://${cdn}/v2/info`, { url: fullUrl });
-    const encryptedData = infoResponse?.data?.data;
-    if (!encryptedData) throw new Error(`No data from ${cdn}`);
+      const infoResponse = await api.post(`https://${cdn}/v2/info`, { url: fullUrl });
+      const encryptedData = infoResponse?.data?.data;
+      if (!encryptedData) throw new Error(`No data from ${cdn}`);
 
-    const encrypted = Buffer.from(encryptedData, "base64");
-    const decipher = crypto.createDecipheriv("aes-128-cbc",
-      Buffer.from("C5D58EF67A7584E4A29F6C35BBC4EB12", "hex"),
-      encrypted.slice(0, 16)
-    );
+      const encrypted = Buffer.from(encryptedData, "base64");
+      const decipher = crypto.createDecipheriv("aes-128-cbc",
+        Buffer.from("C5D58EF67A7584E4A29F6C35BBC4EB12", "hex"),
+        encrypted.slice(0, 16)
+      );
 
-    const decryptedBuffer = Buffer.concat([
-      decipher.update(encrypted.slice(16)),
-      decipher.final()
-    ]);
+      const decryptedBuffer = Buffer.concat([
+        decipher.update(encrypted.slice(16)),
+        decipher.final()
+      ]);
 
-    const decrypted = JSON.parse(decryptedBuffer.toString());
-    const downloadRes = await api.post(`https://${cdn}/download`, {
-      id: idMatch,
-      downloadType: "audio",
-      quality: "128",
-      key: decrypted.key
-    });
+      const decrypted = JSON.parse(decryptedBuffer.toString());
+      const downloadRes = await api.post(`https://${cdn}/download`, {
+        id: idMatch,
+        downloadType: "audio",
+        quality: "128",
+        key: decrypted.key
+      });
 
-    const audioUrl = downloadRes.data?.data?.downloadUrl || downloadRes.data?.downloadUrl;
-    if (!audioUrl) throw new Error(`No audio URL from ${cdn}`);
+      const audioUrl = downloadRes.data?.data?.downloadUrl || downloadRes.data?.downloadUrl;
+      if (!audioUrl) throw new Error(`No audio URL from ${cdn}`);
 
-    return {
-      duration: `${Math.floor(decrypted.duration / 60)}:${(decrypted.duration % 60).toString().padStart(2, "0")}`,
-      audio: audioUrl,
-      cdn
-    };
+      const result = {
+        duration: `${Math.floor(decrypted.duration / 60)}:${(decrypted.duration % 60).toString().padStart(2, "0")}`,
+        audio: audioUrl,
+        cdn
+      };
+      breaker.recordSuccess();
+      return result;
+    } catch (error) {
+      // A winning CDN aborts the other races; that is not an upstream failure.
+      if (!controller.signal.aborted) breaker.recordFailure();
+      throw error;
+    }
   }
 
   try {
     const result = await Promise.any(cdns.map(cdn =>
       tryCdn(cdn).catch(err => {
-        console.warn(`[ytplay] upstream ${cdn} failed`);
+        const snapshot = getSaveTubeBreaker(cdn).snapshot();
+        console.warn(`[ytplay] upstream ${cdn} failed breaker=${snapshot.state} failures=${snapshot.failures}`);
         throw err;
       })
     ));
@@ -169,7 +197,14 @@ module.exports = async (req, res) => {
         }
 
         console.warn('[ytplay] extraction returned no media');
-        res.status(503).json({ status: false, error: "Media extraction services are currently overloaded. Please try another track." });
+        const circuitsOpen = SAVE_TUBE_CDNS.every(cdn => getSaveTubeBreaker(cdn).snapshot().state === 'OPEN');
+        res.status(503).json({
+            status: false,
+            code: circuitsOpen ? 'UPSTREAM_CIRCUIT_OPEN' : 'UPSTREAM_UNAVAILABLE',
+            error: circuitsOpen
+              ? 'Layanan audio sedang dipulihkan. Coba lagi beberapa saat lagi atau gunakan lagu offline.'
+              : 'Media extraction services are currently overloaded. Please try another track.'
+        });
     } catch (err) {
         console.error('[ytplay] extraction failed');
         res.status(500).json({ status: false, error: "Internal server error during extraction" });
