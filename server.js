@@ -211,6 +211,9 @@ app.get('/api/proxy-audio', (req, res) => {
     return proxyAudioStream(req, res, targetUrl, AUDIO_REDIRECT_LIMIT);
 });
 
+// Unknown API routes must remain JSON 404s; never fall through to the SPA HTML shell.
+app.use('/api', (req, res) => res.status(404).json({ status: false, message: 'Endpoint API tidak ditemukan.' }));
+
 // Static files (from public)
 app.use(express.static(path.join(__dirname, 'public')));
 

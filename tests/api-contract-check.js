@@ -17,5 +17,6 @@ assert.match(lyrics2, /Endpoint internal/);
 assert.match(server, /app\.all\('\/api\/proxy-image'/);
 assert.match(server, /isAllowedImageUrl/);
 assert.match(server, /IMAGE_MAX_BYTES/);
+assert.match(server, /Endpoint API tidak ditemukan/);
 
 console.log('API_CONTRACT_STATIC_GUARD_PASS');
