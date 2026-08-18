@@ -28,3 +28,7 @@ Layak diuji sebagai resolver fallback audio-only, bukan langsung menggantikan Sa
 ## Residual risk
 
 Tidak ada SLA terverifikasi dari provider pada probe ini. Endpoint dapat berubah, PoW dapat menjadi lebih berat, job dapat timeout, dan URL hasil dapat kedaluwarsa. Karena itu fallback harus dilindungi timeout, circuit breaker terpisah, rate limit, dan observability redacted.
+
+## Vercel preview verification
+
+Deployment preview `https://malamusic-git-main-daffaheroiks-projects.vercel.app` dari commit `face67e` berstatus READY. Asset response memuat `sw.js?v=95`. POST `/api/ytplay` pada URL YouTube Music `pS5d77DQHOI` mengembalikan HTTP 200 dan `result.download.audio` dengan host yang disensor pada log. Ini memverifikasi adapter berjalan di runtime Vercel preview, bukan hanya sandbox. Production custom domain masih menunjuk deployment lama sampai alias production diperbarui.
