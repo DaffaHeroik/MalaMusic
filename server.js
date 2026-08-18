@@ -103,6 +103,60 @@ app.all('/api/streak', require('./api/streak.js'));
 app.all('/api/stats', require('./api/stats.js'));
 app.all('/api/listen-together', require('./api/listen-together.js'));
 
+// Same-origin image proxy for artwork color extraction and cover rendering.
+const IMAGE_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36';
+const IMAGE_REDIRECT_LIMIT = 1;
+const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+function isAllowedImageUrl(value, baseUrl) {
+    try {
+        const parsed = new URL(String(value || ''), baseUrl);
+        const hostName = String(parsed.hostname || '').toLowerCase();
+        const allowedImageHost = hostName === 'i.ytimg.com' || hostName === 'img.youtube.com' || hostName === 'yt3.googleusercontent.com' || hostName === 'lh3.googleusercontent.com' || hostName.endsWith('.googleusercontent.com');
+        return parsed.protocol === 'https:' && allowedImageHost ? parsed : null;
+    } catch (_) {
+        return null;
+    }
+}
+function proxyImageStream(req, res, targetUrl, redirectsRemaining) {
+    const parsed = isAllowedImageUrl(targetUrl);
+    if (!parsed) return res.status(400).send('Image source tidak diizinkan');
+    const proxyReq = https.get(parsed, { headers: { 'User-Agent': IMAGE_USER_AGENT } }, (proxyRes) => {
+        if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+            proxyRes.resume();
+            if (redirectsRemaining <= 0) return res.status(502).send('Image source terlalu banyak redirect.');
+            const redirected = isAllowedImageUrl(proxyRes.headers.location, parsed);
+            if (!redirected) return res.status(502).send('Image redirect tidak diizinkan.');
+            return proxyImageStream(req, res, redirected.href, redirectsRemaining - 1);
+        }
+        const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase().split(';')[0];
+        const contentLength = Number(proxyRes.headers['content-length'] || 0);
+        if ((proxyRes.statusCode || 502) < 200 || (proxyRes.statusCode || 502) >= 300 || !contentType.startsWith('image/')) {
+            proxyRes.resume();
+            return res.status(proxyRes.statusCode === 404 ? 404 : 502).send('Image source tidak tersedia.');
+        }
+        if (contentLength > IMAGE_MAX_BYTES) {
+            proxyRes.resume();
+            return res.status(413).send('Image terlalu besar.');
+        }
+        const allowedOrigin = getAllowedOrigin(req);
+        res.status(200).set({ 'Content-Type': contentType, 'Cache-Control': 'public, max-age=86400' });
+        if (allowedOrigin) { res.setHeader('Access-Control-Allow-Origin', allowedOrigin); res.setHeader('Vary', 'Origin'); }
+        let received = 0;
+        proxyRes.on('data', chunk => { received += chunk.length; if (received > IMAGE_MAX_BYTES) proxyRes.destroy(); });
+        proxyRes.on('error', () => { if (!res.headersSent) res.status(502).end('Image proxy gagal.'); });
+        proxyRes.pipe(res);
+    });
+    proxyReq.setTimeout(15000, () => proxyReq.destroy(new Error('image timeout')));
+    proxyReq.on('error', () => { if (!res.headersSent) res.status(502).send('Image proxy gagal.'); });
+}
+app.all('/api/proxy-image', (req, res) => {
+    if (req.method === 'OPTIONS') return res.status(200).send('OK');
+    if (req.method !== 'GET') return res.status(405).send('Method tidak didukung.');
+    const targetUrl = String(req.query.url || '').trim();
+    if (!targetUrl || targetUrl.length > 2048) return res.status(400).send('Parameter url tidak valid');
+    return proxyImageStream(req, res, targetUrl, IMAGE_REDIRECT_LIMIT);
+});
+
 // Proxy audio needs to stream in node, bypassing edge function.
 const AUDIO_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36';
 const AUDIO_REDIRECT_LIMIT = 1;

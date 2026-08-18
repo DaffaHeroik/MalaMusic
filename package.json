@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "build": "echo 'No build required'",
     "test:playback-race": "node tests/playback-race-check.js",
+    "test:api-contract": "node tests/api-contract-check.js",
     "start": "node server.js"
   },
   "dependencies": {

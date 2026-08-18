@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const ASSEMBLYAI_KEY = 'b6d6101e7ded44a6921bc5a8146765a1';
+const ASSEMBLYAI_KEY = String(process.env.ASSEMBLYAI_API_KEY || '').trim();
+const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 const ytCache = new Map();
 const CACHE_TTL = 90 * 60 * 1000;
 
@@ -156,8 +157,10 @@ function formatAssemblyAIWords(words) {
 }
 
 async function getTranscribe(urlOrVideoId) {
-    const videoId = urlOrVideoId.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/)?.[1] || (urlOrVideoId.length === 11 ? urlOrVideoId : null);
-    if (!videoId) throw new Error('URL YouTube tidak valid');
+    if (!ASSEMBLYAI_KEY) throw new Error('AssemblyAI belum dikonfigurasi');
+    const raw = String(urlOrVideoId || '').trim();
+    const videoId = raw.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/)?.[1] || (raw.length === 11 ? raw : null);
+    if (!videoId || !YOUTUBE_ID_RE.test(videoId)) throw new Error('URL YouTube tidak valid');
 
     let title = '';
     try {
@@ -244,21 +247,7 @@ async function getTranscribe(urlOrVideoId) {
 
 const handler = async (req, res) => {
     if (req.method === 'OPTIONS') { return res.status(200).end(); }
-
-    let url = String(req.query?.url || req.query?.id || req.body?.url || req.body?.id || '').trim();
-    if (!url) return res.status(400).json({ creator: 'MalaMusic', status: false, message: 'Parameter url atau id diperlukan' });
-
-    try {
-        const result = await getTranscribe(url);
-        return res.json({
-            creator: 'MalaMusic',
-            status: true,
-            result
-        });
-    } catch (err) {
-        console.error('[transcribe] request failed', err && err.stack ? err.stack : err);
-        return res.status(502).json({ creator: 'MalaMusic', status: false, message: 'Transkripsi sementara belum tersedia.' });
-    }
+    return res.status(404).json({ creator: 'MalaMusic', status: false, message: 'Endpoint internal.' });
 };
 
 handler.run = handler;

@@ -58,6 +58,8 @@ module.exports = async (req, res) => {
         return;
     }
 
+    if (req.method !== 'GET') return res.status(405).json({ status: false, creator: 'MalaMusic', message: 'Method tidak didukung.' });
+
     const query = String(req.query.query || '').trim();
     const type = String(req.query.type || 'all').trim(); // all, songs, playlists
 

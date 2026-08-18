@@ -98,3 +98,10 @@ The Android-sized Frontend Police replay (`390x844`) reproduced two consecutive 
 ## Service Worker audio-stream interception — 2026-08-18
 
 The v90 Android replay produced HTTP 200 from `/api/ytplay` and HTTP 206 from `/api/proxy-audio`, but the audio element still ended with an empty source. Browser console evidence identified the real remaining defect: `sw.js?v=90` intercepted the ranged media response through the generic API handler and reported `A ServiceWorker intercepted the request and encountered an unexpected error`. The Service Worker now bypasses all cache/fallback handling for `/api/proxy-audio` and forwards the request directly, preserving the `206 audio/mpeg` stream for the native player. Assets and static cache are bumped to v91.
+
+
+## Endpoint production audit — 2026-08-18
+
+A real production probe covered every JavaScript file under `api/` plus inline proxy routes. Confirmed healthy contracts included Search GET, Suggest GET, YouTube playback POST, Translate POST, anonymous auth/session response, and expected 401 boundaries for profile, library, streak, statistics writes, and Listen Together. Confirmed gaps included `/api/google-auth` returning 503 because the legacy OAuth environment is not configured, `/api/album` and `/api/artist` returning 503 because metadata API configuration is absent, and `/api/lyrics2` timing out at 30 seconds on a valid ID because it invokes the expensive transcription fallback directly.
+
+A critical repository security finding was confirmed at `api/transcribe.js:7`: an AssemblyAI credential was hardcoded in source. It is replaced with `ASSEMBLYAI_API_KEY`, fail-closed 503 behavior when unset, strict YouTube ID validation, and explicit GET/POST method handling. `.env.example` now documents the variable. The exposed AssemblyAI credential must be revoked/rotated outside the repository. Search now explicitly rejects non-GET methods with 405 after a production POST probe unexpectedly returned 200.

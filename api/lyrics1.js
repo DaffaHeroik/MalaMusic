@@ -163,19 +163,7 @@ async function getLyrics1(videoId, queryTitle = '', queryArtist = '') {
 
 const handler = async (req, res) => {
     if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-    const videoId = (req.query.id || req.body?.id || '').trim();
-    const title = (req.query.title || req.body?.title || '').trim();
-    const artist = (req.query.artist || req.body?.artist || '').trim();
-
-    if (!videoId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
-
-    try {
-        const result = await getLyrics1(videoId, title, artist);
-        res.status(200).json({ status: true, source: 'lrclib', result });
-    } catch(e) {
-        console.error('[lyrics1] request failed', e && e.stack ? e.stack : e);
-        res.status(502).json({ status: false, message: 'Lirik sementara belum tersedia.' });
-    }
+    return res.status(404).json({ status: false, message: 'Endpoint internal.' });
 };
 
 handler.getLyrics1 = getLyrics1;
