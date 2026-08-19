@@ -89,6 +89,17 @@ function providerError(data, fallback) {
   return String(data?.error || fallback || 'Siputzx audio resolver failed').slice(0, 160);
 }
 
+function youtubeVideoId(value) {
+  try {
+    const parsed = new URL(String(value || ''));
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (host === 'youtu.be') return parsed.pathname.split('/').filter(Boolean)[0] || null;
+    return parsed.searchParams.get('v') || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function resolveSiputzxAudio(sourceUrl) {
   if (!breaker.canRequest()) return null;
   const deadline = Date.now() + JOB_TIMEOUT_MS;
@@ -113,7 +124,14 @@ async function resolveSiputzxAudio(sourceUrl) {
       const result = await requestJson(`/download?url=${encodeURIComponent(sourceUrl)}&type=audio&apikey=`, { method: 'GET' }, session, deadline);
       if (result.data?.status === 'failed') throw new Error(providerError(result.data, 'Audio job failed'));
       if (result.data?.status === 'completed') {
-        const providerUrl = result.data.fileUrl || result.data.file_url || result.data.filePath || result.data.file_path || result.data.url;
+        const requestedId = youtubeVideoId(sourceUrl);
+        const returnedSource = result.data.url || result.data.source_url || result.data.sourceUrl;
+        const returnedId = youtubeVideoId(returnedSource);
+        if (requestedId && returnedSource && returnedId && returnedId !== requestedId) {
+          await sleep(Math.min(POLL_INTERVAL_MS, Math.max(0, deadline - Date.now())));
+          continue;
+        }
+        const providerUrl = result.data.fileUrl || result.data.file_url || result.data.filePath || result.data.file_path;
         const audioUrl = validateAudioUrl(providerUrl);
         if (!audioUrl) throw new Error('Provider returned invalid audio URL');
         breaker.recordSuccess();
