@@ -407,6 +407,12 @@ function resolveAudioUrl(track) {
         }
         return requestResolver(0).then(function(d){
             var url = d.result.download.audio;
+            var reusedBy = Object.keys(audioUrlCache).find(function(ownerId){ return ownerId !== vid && audioUrlCache[ownerId] === url; });
+            if (reusedBy) {
+                var staleError = new Error('Resolver mengembalikan stream track lain');
+                staleError.code = 'STALE_AUDIO_URL';
+                throw staleError;
+            }
             audioUrlCache[vid] = url;
             savePwaCaches();
             return url;
