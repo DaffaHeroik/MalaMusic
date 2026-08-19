@@ -89,6 +89,30 @@ function providerError(data, fallback) {
   return String(data?.error || fallback || 'Siputzx audio resolver failed').slice(0, 160);
 }
 
+async function probeAudioUrl(audioUrl, deadline) {
+  const remaining = Math.max(500, deadline - Date.now());
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.min(7000, remaining));
+  try {
+    const response = await fetch(audioUrl, {
+      method: 'GET',
+      headers: { range: 'bytes=0-1' },
+      signal: controller.signal
+    });
+    const type = String(response.headers.get('content-type') || '').toLowerCase();
+    if (!response.ok || (!type.startsWith('audio/') && !type.includes('mpeg') && !type.includes('octet-stream'))) {
+      try { await response.body?.cancel(); } catch (_) {}
+      return false;
+    }
+    try { await response.body?.cancel(); } catch (_) {}
+    return true;
+  } catch (_) {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function youtubeVideoId(value) {
   try {
     const parsed = new URL(String(value || ''));
@@ -134,6 +158,9 @@ async function resolveSiputzxAudio(sourceUrl) {
         const providerUrl = result.data.fileUrl || result.data.file_url || result.data.filePath || result.data.file_path;
         const audioUrl = validateAudioUrl(providerUrl);
         if (!audioUrl) throw new Error('Provider returned invalid audio URL');
+        if (!(await probeAudioUrl(audioUrl, deadline))) {
+          throw new Error('Provider returned unavailable audio URL');
+        }
         breaker.recordSuccess();
         return { audio: audioUrl, provider: 'siputzx' };
       }
