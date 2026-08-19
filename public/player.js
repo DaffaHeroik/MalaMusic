@@ -280,7 +280,7 @@ function updateVolumeUI() {
     }
 }
 
-var PWA_CACHE_SCHEMA_VERSION = 2;
+var PWA_CACHE_SCHEMA_VERSION = 3;
 function isStorageMap(value) {
     return value && typeof value === 'object' && !Array.isArray(value);
 }

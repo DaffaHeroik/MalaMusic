@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v96';
+const CACHE_STATIC_NAME = 'malamusic-static-v97';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 const STATIC_ASSETS = [
