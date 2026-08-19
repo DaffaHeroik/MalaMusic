@@ -54,12 +54,22 @@ async function requestJson(path, options, session, deadline) {
   const cookie = session.header();
   if (cookie) headers.set('cookie', cookie);
   try {
-    const response = await fetch(`${BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
-    session.absorb(response);
-    const text = await response.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (_) {}
-    return { response, data };
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await fetch(`${BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
+        session.absorb(response);
+        const text = await response.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (_) {}
+        return { response, data };
+      } catch (error) {
+        lastError = error;
+        if (controller.signal.aborted || Date.now() >= deadline || attempt === 2) throw error;
+        await sleep(Math.min(350 * (attempt + 1), Math.max(0, deadline - Date.now())));
+      }
+    }
+    throw lastError || new Error('Provider request failed');
   } finally {
     clearTimeout(timer);
   }
@@ -103,7 +113,8 @@ async function resolveSiputzxAudio(sourceUrl) {
       const result = await requestJson(`/download?url=${encodeURIComponent(sourceUrl)}&type=audio&apikey=`, { method: 'GET' }, session, deadline);
       if (result.data?.status === 'failed') throw new Error(providerError(result.data, 'Audio job failed'));
       if (result.data?.status === 'completed') {
-        const audioUrl = validateAudioUrl(result.data.fileUrl);
+        const providerUrl = result.data.fileUrl || result.data.file_url || result.data.filePath || result.data.file_path || result.data.url;
+        const audioUrl = validateAudioUrl(providerUrl);
         if (!audioUrl) throw new Error('Provider returned invalid audio URL');
         breaker.recordSuccess();
         return { audio: audioUrl, provider: 'siputzx' };

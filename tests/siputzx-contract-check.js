@@ -8,6 +8,8 @@ const required = [
   /apikey=/,
   /getSetCookie/,
   /validateAudioUrl/,
+  /file_path/,
+  /file_url/,
   /new CircuitBreaker/
 ];
 if (!required.every(pattern => pattern.test(source))) throw new Error('Siputzx audio contract invariant missing');

@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v95';
+const CACHE_STATIC_NAME = 'malamusic-static-v96';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 const STATIC_ASSETS = [
@@ -8,22 +8,22 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=94',
-  '/app.js?v=94',
-  '/player.js?v=94',
-  '/listen-together.js?v=94',
-  '/fullplayer.js?v=94',
-  '/miniplayer.js?v=94',
-  '/home.js?v=94',
-  '/library.js?v=94',
-  '/liked.js?v=94',
-  '/search.js?v=94',
-  '/album.js?v=94',
-  '/artist.js?v=94',
-  '/profile.js?v=94',
-  '/streak.js?v=94',
-  '/leaderboard.js?v=94',
-  '/stats.js?v=94',
+  '/firebase.js?v=96',
+  '/app.js?v=96',
+  '/player.js?v=96',
+  '/listen-together.js?v=96',
+  '/fullplayer.js?v=96',
+  '/miniplayer.js?v=96',
+  '/home.js?v=96',
+  '/library.js?v=96',
+  '/liked.js?v=96',
+  '/search.js?v=96',
+  '/album.js?v=96',
+  '/artist.js?v=96',
+  '/profile.js?v=96',
+  '/streak.js?v=96',
+  '/leaderboard.js?v=96',
+  '/stats.js?v=96',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
