@@ -158,8 +158,9 @@ module.exports = async function stats(req, res) {
         if (action === 'me') return res.status(200).json(await withLocalFallback(() => workerCall('/me', { method: 'POST', body: JSON.stringify({ email: currentUser.email }) }), () => localMe(currentUser)));
         if (action === 'listen') {
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method tidak didukung.' });
-            const seconds = Math.max(1, Math.min(120, Math.round(Number(body(req).seconds || 0))));
-            if (!seconds) return res.status(400).json({ status: false, message: 'Durasi tidak valid.' });
+            const requestedSeconds = Math.round(Number(body(req).seconds));
+            if (!Number.isFinite(requestedSeconds) || requestedSeconds <= 0) return res.status(400).json({ status: false, message: 'Durasi tidak valid.' });
+            const seconds = Math.min(120, requestedSeconds);
             return res.status(200).json(await withLocalFallback(() => workerCall('/listen', { method: 'POST', body: JSON.stringify({ email: currentUser.email, name: currentUser.name, seconds }) }), () => localListen(currentUser, seconds)));
         }
         if (action === 'publish-playlist') {
