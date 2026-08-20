@@ -137,6 +137,7 @@ var Library={
         lucide.createIcons();
     },
     playAllLiked(){
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         var songs = typeof getLikedSongs === 'function' ? getLikedSongs() : [];
         if(!songs.length) return;
         S.pl = songs;
@@ -146,8 +147,10 @@ var Library={
         UU(); MP.show(); S.il = true; UB();
         resetLyricsUI(S.ct.videoId);
         loadTrack(S.ct);
+        if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
     },
     playLikedIndex(index){
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         var songs = typeof getLikedSongs === 'function' ? getLikedSongs() : [];
         if(!songs[index]) return;
         var s = songs[index];
@@ -162,6 +165,7 @@ var Library={
         UU(); MP.show(); S.il = true; UB();
         resetLyricsUI(S.ct.videoId);
         loadTrack(S.ct);
+        if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
     },
     createNew(){
         var popup=document.createElement('div');popup.className='fixed inset-0 z-[300] flex items-end justify-center bg-black/60';
@@ -402,6 +406,7 @@ var Library={
         showToast('Urutan playlist diacak');
     },
     playSong(plId,index){
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===plId;});if(!pl||!pl.songs[index])return;
         var s = pl.songs[index];
         if (S.ct && (S.ct.id === s.id || S.ct.videoId === s.videoId || (S.ct.title === s.title && S.ct.artist === s.artist)) && AU.src) {
@@ -409,5 +414,6 @@ var Library={
             return;
         }
         S.pl=pl.songs;S.pi=index;S.ps='playlist';S.ct=S.pl[S.pi];UU();MP.show();S.il=true;UB();resetLyricsUI(S.ct.videoId);loadTrack(S.ct);
+        if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
     }
 };

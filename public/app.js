@@ -661,8 +661,9 @@ var App={
             document.body.appendChild(modal); window.__publicPlaylistSongs=songs; lucide.createIcons();
         }).catch(function(){showToast('Playlist publik tidak ditemukan.');});
     },
-    playPublicPlaylist(index){ var songs=(window.__publicPlaylistSongs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }); if(!songs[index]) return; window.__publicPlaylistSongs=songs; S.pl=songs; S.pi=index; S.ps='queue'; S.ct=normalizeTrack(songs[index]); var playUrl=location.origin+'/play/'+trackId(S.ct); history.pushState({},'',playUrl); UU(); MP.show(); S.il=true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); },
+    playPublicPlaylist(index){ if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return; var songs=(window.__publicPlaylistSongs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }); if(!songs[index]) return; window.__publicPlaylistSongs=songs; S.pl=songs; S.pi=index; S.ps='queue'; S.ct=normalizeTrack(songs[index]); var playUrl=location.origin+'/play/'+trackId(S.ct); history.pushState({},'',playUrl); UU(); MP.show(); S.il=true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction(); },
     autoPlayTrack(videoId){
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         var requestId = (App._playRequestId || 0) + 1; App._playRequestId = requestId;
         fetch(API.search+'?query=https://youtube.com/watch?v='+encodeURIComponent(videoId)).then(function(r){return r.json();}).then(function(d){
             if (requestId !== App._playRequestId) return;
@@ -670,12 +671,12 @@ var App={
             if(d.status&&d.result.songs&&d.result.songs.length>0){var song=d.result.songs[0];title=cn(song.title);artist=cn(song.artist);cover=toHDCover(song.thumbnail, videoId);artistId=song.artistId||'';}
             S.ct=normalizeTrack({id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:artistId,ytUrl:'https://youtube.com/watch?v='+videoId});
             S.ps='queue';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
-            FullPlayer.open();loadTrack(S.ct);
+            FullPlayer.open();loadTrack(S.ct); if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
         }).catch(function(){
             if (requestId !== App._playRequestId) return;
             S.ct=normalizeTrack({id:videoId,videoId:videoId,title:'Lagu',artist:'MalaMusic',cover:toHDCover('', videoId),artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId});
             S.ps='queue';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);
-            FullPlayer.open();loadTrack(S.ct);
+            FullPlayer.open();loadTrack(S.ct); if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
         });
     },
     showSharePopup(videoId){
@@ -693,7 +694,7 @@ var App={
         popup.onclick=function(e){if(e.target===popup)popup.remove();};
         popup.innerHTML='<div class="glass-strong w-full max-w-md rounded-t-3xl p-6 border-t border-white/10" style="animation:slideUp 0.4s ease-out forwards;"><div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div><div class="flex items-center gap-4 mb-4"><img src="'+safeMediaUrl(cover,FI)+'" class="w-16 h-16 rounded-xl object-cover " onerror="this.src=\''+FI+'\'" /><div class="flex-1 truncate"><h3 class="font-bold text-white truncate">'+es(title)+'</h3><p class="text-[#b3b3b3] text-sm truncate">'+es(artist)+'</p></div></div><p class="text-white/70 text-xs mb-4 text-center">Seseorang membagikan lagu ini kepadamu</p><div class="flex gap-3"><button id="popup-play" class="flex-1 btn-chrome font-bold py-3 rounded-full active:scale-95 flex items-center justify-center gap-2"><i data-lucide="play" class="w-4 h-4 fill-current"></i> Putar Sekarang</button><button id="popup-later" class="px-6 py-3 glass glass-hover text-white rounded-full active:scale-95">Nanti</button></div></div>';
         document.body.appendChild(popup);
-        popup.querySelector('#popup-play').onclick=function(){popup.remove();S.ct=normalizeTrack({id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId});S.ps='queue';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);FullPlayer.open();loadTrack(S.ct);};
+        popup.querySelector('#popup-play').onclick=function(){if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) { popup.remove(); return; } popup.remove();S.ct=normalizeTrack({id:videoId,videoId:videoId,title:title,artist:artist,cover:cover,artistId:'',ytUrl:'https://youtube.com/watch?v='+videoId});S.ps='queue';S.pl=[S.ct];S.pi=0;UU();MP.show();resetLyricsUI(videoId);FullPlayer.open();loadTrack(S.ct); if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();};
         popup.querySelector('#popup-later').onclick=function(){popup.remove();};
     },
     switch(t){

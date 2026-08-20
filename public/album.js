@@ -266,6 +266,7 @@ var Album = {
         }
     },
     playSong(id, index) {
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         if(!S['album_'+id] || !S['album_'+id][index]) return;
         var s = S['album_'+id][index];
         if (S.ct && (S.ct.id === s.id || S.ct.videoId === s.videoId || (S.ct.title === s.title && S.ct.artist === s.artist)) && AU.src) {
@@ -282,6 +283,7 @@ var Album = {
         UB();
         resetLyricsUI(S.ct.videoId);
         loadTrack(S.ct);
+        if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
     },
     playAll(id) {
         if(!S['album_'+id] || S['album_'+id].length === 0) return;
@@ -310,6 +312,7 @@ var Album = {
         }
     },
     shuffleAll(id) {
+        if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
         if(!S['album_'+id] || S['album_'+id].length === 0) return;
         let arr = [...S['album_'+id]];
         for (let i = arr.length - 1; i > 0; i--) {
@@ -326,5 +329,6 @@ var Album = {
         UB();
         resetLyricsUI(S.ct.videoId);
         loadTrack(S.ct);
+        if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
     }
 };

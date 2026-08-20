@@ -165,26 +165,35 @@ module.exports = async function listenTogether(req, res) {
         }
         if (action === 'command' && method === 'POST') {
             if (!isHost) return responseError(res, 403, 'Hanya host yang dapat mengontrol pemutaran.');
-            const state = room.state || {};
             const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
-            if (expectedVersion !== null && Number.isFinite(expectedVersion) && expectedVersion !== Number(state.version || 0)) {
-                return res.status(409).json({ status: false, conflict: true, message: 'State room sudah berubah. Sinkronkan ulang sebelum mengirim command.' });
-            }
-            const queue = body.queue ? cleanQueue(body.queue) : cleanQueue(state.queue);
-            const nextState = {
-                queue: queue.length ? queue : cleanQueue(state.queue),
-                index: Math.min(Math.max(Number(body.index ?? state.index) || 0, 0), Math.max(0, queue.length - 1)),
-                track: track(body.track || (queue.length ? queue[Number(body.index ?? state.index) || 0] : state.track)),
-                playing: Boolean(body.playing ?? state.playing),
-                position: Math.max(0, Math.min(Number(body.position ?? state.position) || 0, 86400)),
-                changedAt: Date.now(),
-                version: Number(state.version || 0) + 1
-            };
-            if (!nextState.track && nextState.queue.length) nextState.track = nextState.queue[nextState.index];
-            await ref.update({ state: nextState, updatedAt: Date.now() });
-            room.state = nextState;
-            room.updatedAt = Date.now();
-            return res.json({ status: true, room: publicRoom(room) });
+            let conflict = false;
+            const result = await ref.transaction(function (current) {
+                if (!current || typeof current !== 'object') return current;
+                const currentState = current.state && typeof current.state === 'object' ? current.state : {};
+                const currentVersion = Number(currentState.version || 0);
+                if (expectedVersion !== null && Number.isFinite(expectedVersion) && expectedVersion !== currentVersion) {
+                    conflict = true;
+                    return current;
+                }
+                const requestedQueue = body.queue == null ? cleanQueue(currentState.queue) : cleanQueue(body.queue);
+                const queue = requestedQueue.length ? requestedQueue : cleanQueue(currentState.queue);
+                const requestedIndex = Number(body.index ?? currentState.index);
+                const index = Math.min(Math.max(Number.isFinite(requestedIndex) ? Math.round(requestedIndex) : 0, 0), Math.max(0, queue.length - 1));
+                const nextState = {
+                    queue,
+                    index,
+                    track: track(body.track || queue[index] || currentState.track),
+                    playing: Boolean(body.playing ?? currentState.playing),
+                    position: Math.max(0, Math.min(Number(body.position ?? currentState.position) || 0, 86400)),
+                    changedAt: Date.now(),
+                    version: currentVersion + 1
+                };
+                if (!nextState.track && queue.length) nextState.track = queue[index];
+                return { ...current, state: nextState, updatedAt: Date.now() };
+            });
+            if (conflict || !result.committed) return res.status(409).json({ status: false, conflict: true, message: 'State room sudah berubah. Sinkronkan ulang sebelum mengirim command.' });
+            const updatedRoom = result.snapshot.val();
+            return res.json({ status: true, room: publicRoom(updatedRoom) });
         }
         return responseError(res, 400, 'Action Listen Together tidak dikenal.');
     } catch (error) {

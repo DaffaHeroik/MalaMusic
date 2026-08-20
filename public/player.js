@@ -2113,8 +2113,10 @@ function openTrackContextMenu(id) {
 }
 
 function playTrackFromContext(id) {
+    if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return;
     var track = trackContextRegistry[id]; closeTrackContextMenu(); if (!track) return;
     S.pl = [normalizeTrack(track)]; S.pi = 0; S.ps = 'queue'; S.ct = S.pl[0]; UU(); MP.show(); S.il = true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct);
+    if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction();
 }
 
 function addTrackToQueueFromContext(id, playNext) {

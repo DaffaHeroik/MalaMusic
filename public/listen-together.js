@@ -43,6 +43,15 @@
         state.blockedNoticeAt = now;
         showToastSafe('Host mengontrol pemutaran room ini.');
     }
+    function blockFollowerAction() {
+        if (!state.roomId || isHost()) return false;
+        showFollowerNotice();
+        enforceRemotePlayback();
+        return true;
+    }
+    function syncAfterLocalAction() {
+        if (state.roomId && isHost()) schedulePublish();
+    }
     function remotePosition(remote) {
         var position = Number(remote && remote.position || 0);
         if (remote && remote.playing && remote.changedAt) position += Math.max(0, Date.now() - Number(remote.changedAt)) / 1000;
@@ -249,7 +258,7 @@
             if (typeof window[name] !== 'function') return;
             var original = window[name];
             window[name] = function () {
-                if (state.roomId && !isHost() && !isRemoteApplying()) { showFollowerNotice(); enforceRemotePlayback(); return; }
+                if (state.roomId && !isHost() && !isRemoteApplying()) { blockFollowerAction(); return; }
                 var result = original.apply(this, arguments);
                 schedulePublish();
                 return result;
@@ -262,6 +271,6 @@
         var match = location.pathname.match(/^\/room\/([A-Za-z0-9_-]+)/);
         if (match) setTimeout(function () { joinRoom(match[1]); }, 700);
     }
-    window.ListenTogether = { open: openLobby, leave: leaveRoom, syncNow: schedulePublish, getState: function () { return Object.assign({}, state); } };
+        window.ListenTogether = { open: openLobby, leave: leaveRoom, syncNow: schedulePublish, blockFollowerAction: blockFollowerAction, syncAfterLocalAction: syncAfterLocalAction, getState: function () { return Object.assign({}, state); } };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
