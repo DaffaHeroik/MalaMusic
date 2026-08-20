@@ -80,3 +80,13 @@ Smoke test produksi tanpa cookie terhadap POST /api/listen-together?action=creat
 Join BADROOM pada browser kembali dari "Menghubungkan..." ke tombol normal, sehingga tidak ada pending lock yang teramati. Pesan toast error bersifat transient dan tidak tertangkap oleh ekstraksi halaman; kualitas copy error masih perlu verifikasi visual khusus.
 
 SECURITY-001 diturunkan dari P1/UNVERIFIED menjadi P2/VERIFIED-PARTIAL untuk boundary tanpa sesi; otorisasi host command masih belum diuji dengan dua akun authenticated berbeda.
+
+## Temuan backend dari QA
+
+12. BUG-001 / P1 / confidence tinggi / FIXED: api/stats.js sebelumnya menghitung payload seconds kosong atau nol sebagai 1 detik karena Math.max(1, ...), sehingga endpoint listen dapat menerima input invalid dan menambah total waktu. Root cause berada pada urutan clamp sebelum validasi. Fix mengganti menjadi requestedSeconds yang diverifikasi finite dan >0, lalu clamp maksimum 120 detik. Regression guard ditambahkan ke tests/api-contract-check.js.
+
+Evidence fix: node --check api/stats.js; node --check tests/api-contract-check.js; test:api-contract; test:playback-race; test:savetube-breaker; test:siputzx-contract; dan git diff --check semuanya PASS. Commit: 2d035b4.
+
+## Auth input boundary production
+
+POST /api/email-auth?action=login dengan test@example.com dan not-an-email mengembalikan HTTP 400 serta pesan Gmail valid. synthetic.invalid@gmail.com dengan password short mengembalikan HTTP 400 serta pesan password minimal 8 karakter. Tidak ada akun atau data yang dibuat.
