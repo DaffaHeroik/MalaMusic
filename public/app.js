@@ -534,7 +534,7 @@ var App={
                 <div class="spotify-section-label">Koleksi kamu</div>
                 <button onclick="App.switch('library')" id="nav-library" class="spotify-nav-item" aria-label="Koleksi"><i data-lucide="library"></i><span>Koleksi</span></button>
                 <button onclick="App.switch('liked')" id="nav-liked" class="spotify-nav-item mobile-secondary-nav" aria-label="Lagu disukai"><i data-lucide="heart"></i><span>Disukai</span></button>
-                <button onclick="App.switch('offline')" id="nav-offline" class="spotify-nav-item mobile-secondary-nav" aria-label="Mode offline"><i data-lucide="download"></i><span>Offline</span></button>
+                <button onclick="App.switch('offline')" id="nav-offline" class="spotify-nav-item mobile-secondary-nav" aria-label="Mode offline — simpan lagu di perangkat" title="Mode offline: simpan playlist atau lagu di perangkat"><i data-lucide="download"></i><span>Offline</span></button>
                 <button onclick="App.switch('dev')" id="nav-dev-mobile" class="spotify-nav-item mobile-only-nav" aria-label="Profil"><i data-lucide="user-circle-2"></i><span>Profil</span></button>
             </div>
             <div class="spotify-user">

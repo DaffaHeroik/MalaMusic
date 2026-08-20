@@ -89,7 +89,7 @@
             return;
         }
         var section = el('div', { className: 'spotify-nav-section listen-together-section' });
-        section.innerHTML = '<div class="spotify-section-label">Sosial</div><button id="listen-together-launcher" class="spotify-nav-item listen-together-nav-item" aria-label="Dengarkan bersama teman" title="Dengarkan bersama teman"><i data-lucide="headphones"></i><span>Dengar bersama</span></button>';
+        section.innerHTML = '<div class="spotify-section-label">Sosial</div><button id="listen-together-launcher" class="spotify-nav-item listen-together-nav-item" aria-label="Dengarkan bersama teman — buat atau gabung room" title="Dengarkan bersama teman: buat atau gabung room"><i data-lucide="headphones"></i><span>Dengar bersama</span></button>';
         var button = section.querySelector('#listen-together-launcher');
         button.onclick = openLobby;
         var user = sidebar.querySelector('.spotify-user');
@@ -102,7 +102,7 @@
         var modal = el('div', { className: 'fixed inset-0 z-[500] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4' });
         modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 p-5 shadow-2xl">' +
             '<div class="flex items-center justify-between mb-5"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 font-black">Listen Together</p><h2 class="text-xl font-black text-white mt-1">Dengarkan bersama teman</h2></div><button id="lt-close" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div>' +
-            '<p class="text-sm text-white/60 mb-4">Buat room dari lagu yang sedang diputar, atau masuk menggunakan kode room teman.</p>' +
+            '<p class="text-sm text-white/60 mb-4">Buat room dari lagu yang sedang diputar, atau masuk menggunakan kode room teman. Login diperlukan untuk menyimpan dan mengontrol room.</p>' +
             '<button id="lt-create" class="w-full rounded-2xl bg-emerald-400 text-black py-3.5 font-black mb-3">Buat Room dari Lagu Sekarang</button>' +
             '<div class="flex items-center gap-3 my-4"><div class="h-px bg-white/10 flex-1"></div><span class="text-xs text-white/40">atau</span><div class="h-px bg-white/10 flex-1"></div></div>' +
             '<input id="lt-room-input" class="w-full rounded-2xl bg-white/10 border border-white/10 text-white px-4 py-3 outline-none uppercase tracking-widest" placeholder="KODE ROOM" maxlength="16" />' +
