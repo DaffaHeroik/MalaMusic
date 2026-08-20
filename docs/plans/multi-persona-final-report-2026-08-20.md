@@ -12,15 +12,15 @@
 
 **Baseline commands:** `npm run lint`, `npm run build`, `npm run test:playback-race`, `npm run test:api-contract`, `npm run test:savetube-breaker`, `npm run test:siputzx-contract` — semuanya PASS. `git diff --check` juga PASS.
 
-**Unavailable checks:** Authenticated cross-account Listen Together host/non-host command test, playback audio end-to-end pada perangkat Android nyata, deployment commit terbaru ke Vercel production, dan visual verification production setelah deployment. Empat commit lokal masih `ahead 4` dari `origin/main`; tidak dipush atau dideploy karena perubahan production memerlukan otorisasi eksplisit.
+**Unavailable checks:** Authenticated cross-account Listen Together host/non-host command test dan playback audio end-to-end pada perangkat Android nyata. Deployment commit terbaru serta visual verification production sudah dilakukan setelah push ke `origin/main`; repository kini sinkron dengan remote.
 
 **Persona:** Pengguna baru, pengguna normal, pengguna frustrasi/adversarial, QA/contract tester, reviewer UX/accessibility, dan security/privacy reviewer.
 
-**Stop condition:** Tiga clean sessions lokal dan automated checks relevan tercapai untuk scope yang dapat diuji. Production sign-off tetap **blocked** sampai commit diverifikasi di production dan authenticated flow lintas akun diuji.
+**Stop condition:** Tiga clean sessions lokal, automated checks relevan, dan deployment parity production tercapai untuk scope yang dapat diuji. Sign-off penuh masih menunggu authenticated flow lintas akun dan playback Android nyata.
 
 ## Executive summary
 
-Multi-persona loop menemukan dan memperbaiki satu bug backend P1 pada pencatatan waktu dengar, yaitu payload `seconds` kosong atau nol yang sebelumnya dihitung sebagai satu detik. Regression guard baru memastikan input tersebut ditolak, sementara batas maksimum 120 detik tetap berlaku. Pada frontend, patch incremental memperbaiki ruang judul Quick Picks agar tidak tertekan oleh tombol play dan menu tiga titik, menyatukan copy CTA profil anonim, serta memperjelas tooltip Offline dan Listen Together. Sesi lokal pada Home, Profile, Search, dan input adversarial berhasil tanpa clipping, loading lock, atau eksekusi script yang terlihat. Smoke test produksi untuk endpoint authenticated tanpa cookie mengembalikan HTTP 401 dengan schema yang benar, sedangkan halaman Home dan leaderboard publik mengembalikan HTTP 200. Hasil akhir adalah **BLOCKED untuk production sign-off**, bukan karena regression test gagal, tetapi karena commit belum dideploy dan authenticated cross-account serta playback audio nyata belum dapat diverifikasi dalam sesi ini.
+Multi-persona loop menemukan dan memperbaiki satu bug backend P1 pada pencatatan waktu dengar, yaitu payload `seconds` kosong atau nol yang sebelumnya dihitung sebagai satu detik. Regression guard baru memastikan input tersebut ditolak, sementara batas maksimum 120 detik tetap berlaku. Pada frontend, patch incremental memperbaiki ruang judul Quick Picks agar tidak tertekan oleh tombol play dan menu tiga titik, menyatukan copy CTA profil anonim, serta memperjelas tooltip Offline dan Listen Together. Sesi lokal pada Home, Profile, Search, dan input adversarial berhasil tanpa clipping, loading lock, atau eksekusi script yang terlihat. Smoke test produksi untuk endpoint authenticated tanpa cookie mengembalikan HTTP 401 dengan schema yang benar, sedangkan halaman Home dan leaderboard publik mengembalikan HTTP 200. Visual production verification setelah push juga menunjukkan Quick Picks, tooltip Offline, dan tooltip Listen Together sudah tersaji. Hasil akhir adalah **CONDITIONAL PASS**: patch sudah aktif di production dan seluruh pemeriksaan yang dapat dijalankan tanpa akun/device khusus lulus, tetapi authenticated cross-account serta playback audio nyata belum dapat diverifikasi dalam sesi ini.
 
 ## Journey and persona coverage
 
@@ -49,7 +49,7 @@ Multi-persona loop menemukan dan memperbaiki satu bug backend P1 pada pencatatan
 
 **Deduplicated items:** QUICK-001 dan gejala judul tertutup oleh tiga titik diperlakukan sebagai satu akar masalah layout metadata. QUICK-002 dan UX-006 digabung sebagai anonymous feature explanation, tetapi status dilacak terpisah karena satu berada di navigasi dan satu di modal.
 
-**New regression risk:** Perubahan Quick Picks diikuti oleh `renderActive()` dan diuji dengan syntax check, diff check, serta visual build lokal. Risiko residual terbesar adalah production cache/deployment parity karena perubahan belum dipush.
+**New regression risk:** Perubahan Quick Picks diikuti oleh `renderActive()` dan diuji dengan syntax check, diff check, serta visual build lokal dan production. Risiko residual terbesar adalah authenticated social E2E dan playback device parity.
 
 ## [DEV: SESSION 1]
 
@@ -114,15 +114,15 @@ Multi-persona loop menemukan dan memperbaiki satu bug backend P1 pada pencatatan
 
 ## Residual risks and deferred work
 
-Pertama, empat commit lokal belum dideploy ke `music.malawalipayment.web.id`, sehingga patch UI dan fix `stats` belum boleh dianggap aktif di production. Kedua, authenticated E2E dengan dua akun berbeda untuk memastikan hanya host yang dapat mengontrol room belum dapat dijalankan. Ketiga, playback audio-only belum diverifikasi ulang di perangkat Android nyata setelah commit terbaru. Keempat, keyboard focus penuh, responsive breakpoint tambahan, dan screen-reader semantics masih berstatus partial/unverified. Kelima, dokumen riset resolver lama masih untracked dan sengaja tidak dimasukkan ke commit audit karena tidak terkait langsung dengan patch sesi ini.
+Pertama, authenticated E2E dengan dua akun berbeda untuk memastikan hanya host yang dapat mengontrol room belum dapat dijalankan. Kedua, playback audio-only belum diverifikasi ulang di perangkat Android nyata setelah commit terbaru. Ketiga, keyboard focus penuh, responsive breakpoint tambahan, dan screen-reader semantics masih berstatus partial/unverified. Keempat, dokumen riset resolver lama masih untracked dan sengaja tidak dimasukkan ke commit audit karena tidak terkait langsung dengan patch sesi ini.
 
 ## [FINAL SIGN-OFF]
 
-**Status: BLOCKED.**
+**Status: CONDITIONAL PASS.**
 
-Reason: Automated checks, three clean local/public-boundary verification sessions, input boundary, and source-level fixes pass. Namun production gate belum lengkap karena perubahan berada `ahead 4` dari `origin/main`, belum di-deploy ke Vercel production, serta authenticated cross-account Listen Together dan Android audio playback belum diverifikasi. Tidak ada klaim bahwa MalaMusic sudah 100% production-ready dibuat dari bukti yang belum tersedia.
+Reason: Automated checks, three clean local/public-boundary verification sessions, input boundary, source-level fixes, production Home/leaderboard HTTP checks, production auth boundary, repository synchronization, dan visual production parity semuanya pass. Patch sudah tersaji pada domain production. Sisa gate yang belum terbukti adalah authenticated cross-account Listen Together dan playback audio-only pada Android nyata.
 
-Untuk membuka blocker, tindakan berikut diperlukan dalam urutan aman: lakukan review/otorisasi push empat commit ke branch deployment; deploy dengan cache-busting/version bump sesuai prosedur v97/v3; ulangi browser verification pada domain production; jalankan authenticated smoke test dengan dua akun uji yang dapat dihapus; lalu replay playback audio-only dan Listen Together pada PC serta Android. Setelah semua PASS, counter clean sessions dapat dilanjutkan tanpa membangun fitur baru.
+Untuk mengubah CONDITIONAL PASS menjadi PASS penuh, jalankan authenticated smoke test dengan dua akun uji yang dapat dihapus, verifikasi host/non-host command Listen Together, lalu replay playback audio-only dan Listen Together pada PC serta Android. Tidak perlu membangun fitur baru sebelum residual verification ini selesai.
 
 ## [BRAINSTORM]
 
