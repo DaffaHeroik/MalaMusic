@@ -90,3 +90,23 @@ Evidence fix: node --check api/stats.js; node --check tests/api-contract-check.j
 ## Auth input boundary production
 
 POST /api/email-auth?action=login dengan test@example.com dan not-an-email mengembalikan HTTP 400 serta pesan Gmail valid. synthetic.invalid@gmail.com dengan password short mengembalikan HTTP 400 serta pesan password minimal 8 karakter. Tidak ada akun atau data yang dibuat.
+
+## Verifikasi visual lokal setelah patch
+
+Build lokal pada http://127.0.0.1:3000 berhasil memuat Home dan Quick Picks. Enam kartu tampil dalam grid desktop dengan judul/artis tetap terlihat di samping tombol play dan opsi lagu; tidak ada judul yang tertutup titik tiga pada screenshot viewport 899x768. Navigasi Offline dan Listen Together memiliki hint baru: "Mode offline — simpan lagu di perangkat" dan "Dengarkan bersama teman — buat atau gabung room".
+
+Production belum memuat patch lokal karena tiga commit masih ahead dari origin/main; verifikasi produksi atas perubahan UI/backend menunggu otorisasi push/deployment.
+
+## Verifikasi visual Profil lokal
+
+Profil lokal menampilkan CTA anonymous baru "Masuk untuk menyimpan" pada kartu koleksi dan "Mulai dengan akun Gmail" pada panel sekunder. Tombol Masuk, Buat akun, Google, dan Lupa password tetap tersedia; layout desktop tidak tertimpa pada viewport 899x768.
+
+## Clean-session kandidat 2 — User Normal lokal
+
+Dari Profil menuju Cari, halaman pencarian lokal memuat input query, tiga kelompok rekomendasi, dan hasil kartu lagu tanpa error. Pada viewport 899x768, kartu hasil menampilkan cover, judul ringkas, artis, dan tombol play dengan layout horizontal yang konsisten. Navigasi utama tetap tersedia. Sesi dianggap clean untuk cakupan Cari anonymous-state, tetapi belum mencakup playback audio real dan autentikasi authenticated.
+
+## Clean-session kandidat 3 — User Frustrasi/Adversarial lokal
+
+Query sintetis berisi unicode dan `<script>alert(1)</script>` berhasil diproses. URL memakai encoding, hasil menampilkan judul sebagai teks, tidak ada alert atau eksekusi script yang terlihat, dan layout daftar hasil tetap stabil. Ini PASS untuk cakupan escaping UI/search pada sesi lokal.
+
+Batasan: hasil berasal dari resolver/search eksternal dan tidak menjadi bukti bahwa seluruh metadata pihak ketiga selalu aman di semua endpoint; perlu mempertahankan escaping pada renderer lain.
