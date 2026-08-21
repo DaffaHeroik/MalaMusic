@@ -55,9 +55,8 @@ module.exports = async (req, res) => {
     
     const id = (req.query.id || '').trim();
     if (!id) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
-    if (!API_KEY) { return res.status(503).json({ status: false, message: 'Layanan album belum dikonfigurasi.' }); }
-    // FIXED: YouTube Music API key is loaded from environment, not repository source.
-    
+    // YouTube Music browse dapat dipanggil melalui endpoint publik tanpa API key.
+    // Jika key tersedia, tetap digunakan untuk kompatibilitas deployment lama.
     try {
         let browseId = id;
         if (!browseId.startsWith('VL') && browseId.startsWith('PL')) {
@@ -70,7 +69,7 @@ module.exports = async (req, res) => {
 
         const data = await makeRequest({
             hostname: hostname, 
-            path: '/youtubei/v1/browse?key='+API_KEY, 
+            path: '/youtubei/v1/browse?prettyPrint=false' + (API_KEY ? '&key=' + encodeURIComponent(API_KEY) : ''),
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/131.0.0.0', 'Origin': 'https://music.youtube.com' }
         }, { context: { client: { clientName: clientName, clientVersion: isPlaylist ? '2.20240726.00.00' : '1.20240101.00.00', hl: 'en', gl: 'ID' } }, browseId });

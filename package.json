@@ -13,6 +13,7 @@
     "test:siputzx-contract": "node tests/siputzx-contract-check.js",
     "test:listen-together-sync": "node tests/listen-together-sync-check.js",
     "test:playback-source-policy": "node tests/playback-source-policy-check.js",
+    "test:album-playlist-contract": "node tests/album-playlist-contract-check.js",
     "start": "node server.js"
   },
   "dependencies": {
