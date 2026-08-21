@@ -132,13 +132,18 @@ AU.addEventListener('timeupdate',function(){
         if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
         if(typeof StatsTracker !== 'undefined' && S.ct) StatsTracker.tick(S.ct, AU.currentTime);
         checkAndPreloadNext();
+        // Some mobile/background media pipelines can advance to duration without dispatching `ended`.
+        // Use a guarded near-end watchdog so auto-next remains reliable outside the visible tab.
+        if (AU.duration && isFinite(AU.duration) && AU.duration > 0.5 && AU.currentTime >= Math.max(0.25, AU.duration - 0.35) && !AU.ended) {
+            queueAutoNextAfterEnd('duration-watchdog');
+        }
     }
 });
 AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
 AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
 AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
-AU.addEventListener('ended',function(){
+function queueAutoNextAfterEnd(reason){
     if(!isCurrentAudioSource()) return;
     var endedSequence = audioLoadSequence;
     if (endedHandledSequence === endedSequence || endedTransitionBusy) return;
@@ -159,7 +164,8 @@ AU.addEventListener('ended',function(){
         S.ip=false; UB();
         if(typeof showToast === 'function') showToast('Auto-next sedang dimatikan.');
     }
-});
+}
+AU.addEventListener('ended',function(){ queueAutoNextAfterEnd('ended'); });
 AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; handleAudioSourceError();});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
