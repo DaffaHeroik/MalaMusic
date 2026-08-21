@@ -2059,6 +2059,9 @@ function getUserPlaylists(){
         if (!Array.isArray(pls)) pls=[];
         var changed=false;
         pls.forEach(function(p){ if(!p || typeof p !== 'object') return;
+            if(!Array.isArray(p.songs)){ p.songs=[]; changed=true; }
+            if(!p.id){ p.id='pl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); changed=true; }
+            if(!p.name){ p.name='Playlist'; changed=true; }
             if(p.image && (p.image.includes('uZKDQkZ3c5VK.png') || p.image.includes('R0ym4wqfznmp.png') || p.image.includes('logo.png'))){
                 p.image='';
                 changed=true;
