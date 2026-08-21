@@ -1,5 +1,9 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v109';
+const CACHE_STATIC_NAME = 'malamusic-static-v110';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 const STATIC_ASSETS = [
   '/',

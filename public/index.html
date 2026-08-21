@@ -3,9 +3,18 @@
 <head>
     <script>
         if ('serviceWorker' in navigator) {
+            var MALA_SW_VERSION = 'v110';
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+                if (!navigator.serviceWorker.controller) return;
+                var reloadKey = 'malamusic-sw-reloaded-' + MALA_SW_VERSION;
+                if (sessionStorage.getItem(reloadKey)) return;
+                sessionStorage.setItem(reloadKey, '1');
+                window.location.reload();
+            });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=109').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=110').then(function(reg) {
                     reg.update();
+                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
                     console.error('PWA SW Register failed:', err);
