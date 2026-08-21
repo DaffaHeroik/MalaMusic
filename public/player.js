@@ -890,38 +890,49 @@ function setMetaTag(name, content, isProperty) {
 
 function updateCoverWithTransition(imgEl, newSrc, origCover, useScale) {
     if (!imgEl) return;
-    var target = newSrc || origCover || 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
-    if (origCover) imgEl.setAttribute('data-original-src', origCover);
+    var fallback = 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
+    var target = safeMediaUrl(newSrc || origCover, fallback);
+    var previousSrc = imgEl.currentSrc || imgEl.getAttribute('src') || origCover || fallback;
+    var transitionToken = String(Date.now()) + ':' + Math.random().toString(36).slice(2);
+    if (origCover) imgEl.setAttribute('data-original-src', safeMediaUrl(origCover, fallback));
     imgEl.removeAttribute('data-img-retry');
 
     var currentActive = imgEl.getAttribute('data-active-hd-src');
-    if (currentActive === target && imgEl.src && imgEl.src.indexOf(target) !== -1) return;
+    if (currentActive === target && imgEl.src && imgEl.src.indexOf(target) !== -1) {
+        imgEl.style.opacity = '1';
+        if (useScale) imgEl.style.transform = 'scale(1)';
+        return;
+    }
 
     imgEl.setAttribute('data-active-hd-src', target);
-
-    // Apply smooth feather transition style
+    imgEl.setAttribute('data-cover-transition', transitionToken);
     imgEl.style.transition = useScale ? 'opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1), transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)' : 'opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
-    imgEl.style.opacity = '0.35';
-    if (useScale) imgEl.style.transform = 'scale(0.96)';
+    // Keep artwork visible while the next CDN image is verified; never flash an empty cover.
+    imgEl.style.opacity = '1';
+    if (useScale) imgEl.style.transform = 'scale(0.985)';
 
-    // Immediately set src so image changes right away and doesn't get stuck showing previous track cover
+    function isCurrentTransition() {
+        return imgEl.getAttribute('data-cover-transition') === transitionToken;
+    }
+    function restoreCover() {
+        if (!isCurrentTransition()) return;
+        var original = safeMediaUrl(origCover, '');
+        var keep = previousSrc && previousSrc !== target ? previousSrc : (original || fallback);
+        imgEl.src = safeMediaUrl(keep, fallback);
+        imgEl.style.opacity = '1';
+        if (useScale) imgEl.style.transform = 'scale(1)';
+    }
+    imgEl.onerror = restoreCover;
     imgEl.src = target;
 
     var tempImg = new Image();
     tempImg.onload = function() {
+        if (!isCurrentTransition()) return;
         imgEl.src = target;
         imgEl.style.opacity = '1';
         if (useScale) imgEl.style.transform = 'scale(1)';
     };
-    tempImg.onerror = function() {
-        if (origCover && origCover !== target) {
-            imgEl.src = origCover;
-        } else {
-            handleImgError(imgEl);
-        }
-        imgEl.style.opacity = '1';
-        if (useScale) imgEl.style.transform = 'scale(1)';
-    };
+    tempImg.onerror = restoreCover;
     tempImg.src = target;
 }
 
