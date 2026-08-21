@@ -724,7 +724,12 @@ var App={
             }
         });
 
-        if(t==='library'){Library.render();}
+        if(t==='library'){
+            Library.render();
+            if (typeof loadLibraryRemote === 'function') {
+                loadLibraryRemote().then(function(){ if (S.at === 'library' && typeof Library !== 'undefined') Library.render(); }).catch(function(){});
+            }
+        }
         if(t==='dev'){Profile.render();}
         if(t==='offline'){
             OfflineView.render();

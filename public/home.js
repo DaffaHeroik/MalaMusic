@@ -666,8 +666,8 @@ var Home = {
                 var textStyle = isCur ? 'text-white font-bold' : '';
 
                 var coverUrl = safeMediaUrl(t.cover || FI, FI);
-                return '<div onclick="PK(\'home1\','+i+')" class="home-grid-card '+cardBg+' rounded-2xl p-0 min-w-0 overflow-hidden flex items-center gap-1.5 sm:gap-2 cursor-pointer active:scale-[0.98] transition-all duration-300 group shadow-lg shadow-black/25">'+
-                    '<div class="w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0 self-stretch overflow-hidden rounded-l-2xl bg-black/20"><img src="'+coverUrl+'" class="w-full h-full object-cover block" onerror="this.src=\''+FI+'\'" /></div>'+
+                return '<div onclick="PK(\'home1\','+i+')" class="home-grid-card '+cardBg+' rounded-2xl p-0 min-w-0 overflow-hidden flex items-center gap-1 sm:gap-2 cursor-pointer active:scale-[0.98] transition-all duration-300 group shadow-lg shadow-black/25">'+
+                    '<div class="w-14 h-14 sm:w-[72px] sm:h-[72px] shrink-0 self-stretch overflow-hidden rounded-l-2xl bg-black/20"><img src="'+coverUrl+'" class="w-full h-full object-cover block" onerror="this.src=\''+FI+'\'" /></div>'+
                     '<div class="min-w-0 flex-1 py-2.5">'+
                         '<h3 class="home-grid-title font-semibold text-sm text-white truncate min-w-0 '+textStyle+'">'+es(t.title)+'</h3>'+
                         '<p class="text-xs text-white/60 truncate mt-0.5">'+es(t.artist)+'</p>'+
