@@ -106,29 +106,27 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(fetch(request).catch(() => new Response(JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline' }), { headers: { 'Content-Type': 'application/json' } })));
       return;
     }
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_DATA_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            return new Response(
-              JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline (PWA Offline Mode)' }),
-              { headers: { 'Content-Type': 'application/json' } }
-            );
-          });
-        })
-    );
+    event.respondWith((async () => {
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.status === 200) {
+          try {
+            const cache = await caches.open(CACHE_DATA_NAME);
+            await cache.put(request, networkResponse.clone());
+          } catch (_) {}
+        }
+        return networkResponse;
+      } catch (_) {
+        try {
+          const cachedResponse = await caches.match(request, { ignoreSearch: true });
+          if (cachedResponse) return cachedResponse;
+        } catch (_) {}
+        return new Response(
+          JSON.stringify({ status: false, offline: true, message: 'Anda sedang offline (PWA Offline Mode)' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    })());
     return;
   }
 
