@@ -362,7 +362,7 @@ var audioStartTimer = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
-var AUDIO_RESOLVE_MAX_RETRIES = 2;
+var AUDIO_RESOLVE_MAX_RETRIES = 4;
 var audioUrlFetchPromises = {};
 
 function isCurrentAudioSource(){
@@ -425,7 +425,8 @@ function resolveAudioUrl(track) {
                 var status = err && err.status;
                 var retryable = !status || status >= 500;
                 if (attempt < AUDIO_RESOLVE_MAX_RETRIES && retryable && !(controller && controller.signal.aborted)) {
-                    return new Promise(function(resolve){ setTimeout(resolve, 450); }).then(function(){ return requestResolver(attempt + 1); });
+                    var retryDelay = Math.min(700 * Math.pow(2, attempt), 4000);
+                    return new Promise(function(resolve){ setTimeout(resolve, retryDelay); }).then(function(){ return requestResolver(attempt + 1); });
                 }
                 throw err;
             });
@@ -1198,7 +1199,7 @@ function handleAudioSourceError(){
         if(typeof showToast === 'function') showToast('File offline tidak dapat diputar. Download ulang saat online.');
         return;
     }
-    if (audioRecoveryAttempts >= 1) {
+    if (audioRecoveryAttempts >= 2) {
         activeAudioTrack = null;
         activeAudioSequence = 0;
         S.il = false; S.ip = false; UB();

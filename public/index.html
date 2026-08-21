@@ -4,7 +4,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=99').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=100').then(function(reg) {
                     reg.update();
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
