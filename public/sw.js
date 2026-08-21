@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v102';
+const CACHE_STATIC_NAME = 'malamusic-static-v103';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 const STATIC_ASSETS = [
@@ -17,8 +17,8 @@ const STATIC_ASSETS = [
   '/home.js?v=102',
   '/library.js?v=102',
   '/liked.js?v=102',
-  '/search.js?v=102',
-  '/album.js?v=102',
+  '/search.js?v=103',
+  '/album.js?v=103',
   '/artist.js?v=102',
   '/profile.js?v=102',
   '/streak.js?v=102',

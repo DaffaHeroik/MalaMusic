@@ -41,6 +41,13 @@ function findAllKeys(obj, keyToFind, results) {
     }
 }
 
+function extractPlaylistCreator(data) {
+    const owners = [];
+    findAllKeys(data, 'videoOwnerRenderer', owners);
+    const owner = owners.find(x => getRunsText(x?.title?.runs) || x?.title?.simpleText);
+    return getRunsText(owner?.title?.runs) || owner?.title?.simpleText || '';
+}
+
 function makeRequest(o, p) {
     return new Promise((resolve, reject) => {
         const r = https.request(o, res => { let d=''; res.on('data', c=>d+=c); res.on('end', ()=>{ try{resolve(JSON.parse(d));}catch(e){resolve(d);} }); });
@@ -77,6 +84,7 @@ module.exports = async (req, res) => {
         let title = 'Unknown';
         let description = '';
         let thumbnails = [];
+        let creator = '';
         const songs = [];
 
         if (isPlaylist) {
@@ -84,6 +92,7 @@ module.exports = async (req, res) => {
             findAllKeys(data, 'playlistSidebarPrimaryInfoRenderer', sidebars);
             if (sidebars.length > 0) {
                 title = sidebars[0].title?.runs?.[0]?.text || sidebars[0].title?.simpleText || 'Unknown';
+                creator = extractPlaylistCreator(data);
                 description = getRunsText(sidebars[0].description?.runs || []);
                 const thumbs = sidebars[0].thumbnailRenderer?.playlistVideoThumbnailRenderer?.thumbnail?.thumbnails || sidebars[0].thumbnailRenderer?.playlistCustomThumbnailRenderer?.thumbnail?.thumbnails || data?.microformat?.microformatDataRenderer?.thumbnail?.thumbnails || [];
                 if (thumbs.length > 0) {
@@ -205,6 +214,8 @@ module.exports = async (req, res) => {
                 id,
                 title,
                 description,
+                creator,
+                artist: creator,
                 thumbnails,
                 songs
             }

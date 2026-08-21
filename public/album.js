@@ -72,7 +72,8 @@ var Album = {
                 }
             }
             im = safeMediaUrl(im || FI, FI);
-            Album.currentAlbumInfo = { id: id, title: a.title, artist: a.artist || '', cover: im };
+            const albumCreator = a.creator || (id.startsWith('VL') ? a.artist : '') || '';
+            Album.currentAlbumInfo = { id: id, title: a.title, artist: a.artist || albumCreator, creator: albumCreator, cover: im };
             if (typeof updateOGForAlbum === 'function') {
                 updateOGForAlbum(a.title, im, a.artist);
             }
@@ -87,6 +88,7 @@ var Album = {
                     <div>
                         <p class="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-1">ALBUM / PLAYLIST</p>
                         <h1 class="text-3xl md:text-5xl font-black text-white mb-2 leading-tight drop-line-clamp-2">${es(a.title)}</h1>
+                        ${albumCreator ? `<p class="text-white/80 text-xs md:text-sm font-semibold mb-1">${es(albumCreator)}</p>` : ''}
                         ${a.description ? `<p class="text-white text-xs md:text-sm line-clamp-2">${es(a.description)}</p>` : ''}
                     </div>
                 </div>

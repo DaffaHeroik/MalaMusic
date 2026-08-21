@@ -26,6 +26,13 @@ function toHDThumbnail(url, videoId) {
     return hd;
 }
 
+function extractItemCreator(item) {
+    const owners = [];
+    findAllKeys(item, 'videoOwnerRenderer', owners);
+    const owner = owners.find(x => (x?.title?.runs || []).length || x?.title?.simpleText);
+    return (owner?.title?.runs || []).map(r => r.text || '').join('') || owner?.title?.simpleText || '';
+}
+
 async function fetchYoutube(query, type) {
     const payload = {
         context: {
@@ -155,7 +162,8 @@ module.exports = async (req, res) => {
                     if (m) {
                         albums.push({ id: browseId, title, artist: m[2].trim(), albumType: m[1], year: m[3], cover: thumb });
                     } else if (subtitle.toLowerCase().includes('playlist')) {
-                        playlists.push({ id: browseId, title, artist: subtitle, cover: thumb });
+                        const creator = extractItemCreator(item);
+                        playlists.push({ id: browseId, title, artist: subtitle, creator, cover: thumb });
                     }
                 }
             } else if (resObj.type === 'artists') {
