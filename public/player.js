@@ -138,7 +138,28 @@ AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=t
 AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
 AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
-AU.addEventListener('ended',function(){if(!isCurrentAudioSource()) return; if(typeof StatsTracker !== 'undefined') StatsTracker.flush();ST();if(typeof handleTrackEnded==='function'&&handleTrackEnded())return;if(S.rm==='one'){AU.currentTime=0;AU.play().catch(function(){});}else if(S.autoNext){NX();}else{S.ip=false;UB();}});
+AU.addEventListener('ended',function(){
+    if(!isCurrentAudioSource()) return;
+    var endedSequence = audioLoadSequence;
+    if (endedHandledSequence === endedSequence || endedTransitionBusy) return;
+    endedHandledSequence = endedSequence;
+    if(typeof StatsTracker !== 'undefined') StatsTracker.flush();
+    ST();
+    if(typeof handleTrackEnded==='function'&&handleTrackEnded()) return;
+    if(S.rm==='one'){
+        AU.currentTime=0;
+        AU.play().catch(function(){ S.ip=false; UB(); });
+    }else if(S.autoNext){
+        endedTransitionBusy = true;
+        Promise.resolve(NX()).catch(function(){
+            S.il = false; S.ip = false; UB();
+            if(typeof showToast === 'function') showToast('Lagu berikutnya belum siap. Coba lagi saat jaringan stabil.');
+        }).finally(function(){ endedTransitionBusy = false; });
+    }else{
+        S.ip=false; UB();
+        if(typeof showToast === 'function') showToast('Auto-next sedang dimatikan.');
+    }
+});
 AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; handleAudioSourceError();});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
@@ -332,6 +353,8 @@ function savePwaCaches() {
 var hasPrefetchedNext = false;
 var isPreloadingNext = false;
 var audioLoadSequence = 0;
+var endedHandledSequence = 0;
+var endedTransitionBusy = false;
 var activeAudioTrack = null;
 var activeAudioSequence = 0;
 var activeAudioIsOffline = false;
@@ -363,6 +386,7 @@ function getTrackId(track) { return track && (track.videoId || track.id); }
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
 function resolveAudioUrl(track) {
     var vid = getTrackId(track);
+    var forceOffline = S.playbackMode === 'offline' || S.ps === 'offline';
     if (!vid) return Promise.reject(new Error('Track tidak memiliki ID'));
     if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
     audioUrlFetchPromises[vid] = Promise.resolve().then(function(){
@@ -372,6 +396,7 @@ function resolveAudioUrl(track) {
         return null;
     }).then(function(offlinePath){
         if (offlinePath) return offlinePath;
+        if (forceOffline) throw new Error('Offline dan audio belum tersimpan');
         if (audioUrlCache[vid]) return audioUrlCache[vid];
         if (!navigator.onLine) throw new Error('Offline dan audio belum tersimpan');
         var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
@@ -423,6 +448,7 @@ function resolveAudioUrl(track) {
 
 function prefetchTrackAudio(track) {
     var vid = getTrackId(track);
+    if (S.playbackMode === 'offline' || S.ps === 'offline') return;
     if (!vid || prefetchAudioElements[vid]) return;
     resolveAudioUrl(track).then(function(rawUrl){
         if (prefetchAudioElements[vid]) return;
@@ -1010,6 +1036,7 @@ function UU(){
 
 function PK(s,i){
     var l=[];
+    S.playbackMode = s === 'offline' ? 'offline' : 'online';
     if(s==='home1')l=(S.ht||[]).slice(0,6);
     else if(s==='home2')l=(S.ht||[]).slice(6,12);
     else if(s==='homecat')l=S.hc||[];
@@ -1056,6 +1083,8 @@ function getRecentTracks(){
 
 function loadTrack(track,resumeAt,isRecoveryRetry){
     if(!track)return;
+    endedHandledSequence = 0;
+    endedTransitionBusy = false;
     var recoveryKey = trackId(track);
     if (!isRecoveryRetry || audioRecoveryKey !== recoveryKey) {
         audioRecoveryKey = recoveryKey;
@@ -1252,6 +1281,7 @@ async function fetchAutoNextRecommendations(track, expectedLoadSequence) {
 async function NX(){
     var expectedLoadSequence = audioLoadSequence;
     var startingTrack = S.ct;
+    var offlineQueue = S.playbackMode === 'offline' || S.ps === 'offline';
     if(!S.pl || !S.pl.length){
         if(S.ct){
             S.pl = [S.ct];
@@ -1261,7 +1291,7 @@ async function NX(){
         }
     }
 
-    if(S.pi + 1 >= S.pl.length && S.autoNext){
+    if(S.pi + 1 >= S.pl.length && S.autoNext && !offlineQueue){
         if(S.ct){
             S.il = true;
             UB();
@@ -1270,7 +1300,11 @@ async function NX(){
             S.il = false;
             UB();
             if(!fetched){
-                PK(S.ps, 0);
+                if (S.pl.length > 1 && S.rm !== 'one') PK(S.ps, 0);
+                else {
+                    S.ip = false; S.il = false; UB();
+                    if(typeof showToast === 'function') showToast(offlineQueue ? 'Playlist offline selesai.' : 'Belum ada lagu berikutnya.');
+                }
                 return;
             }
         }
