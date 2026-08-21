@@ -50,6 +50,9 @@ var Home = {
                     <button onclick="Home.refresh()" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Muat lagu lain" aria-label="Muat lagu lain">
                         <i data-lucide="shuffle" class="w-5 h-5"></i>
                     </button>
+                    <button id="home-listen-together" class="w-10 h-10 rounded-2xl bg-emerald-400/15 backdrop-blur-md border border-emerald-300/30 flex items-center justify-center text-emerald-200 hover:bg-emerald-400/25 active:scale-95 transition-all shadow-lg" title="Dengarkan bersama teman" aria-label="Dengarkan bersama teman">
+                        <i data-lucide="headphones" class="w-5 h-5"></i>
+                    </button>
                     <button onclick="App.switch('search')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Cari">
                         <i data-lucide="search" class="w-5 h-5"></i>
                     </button>
@@ -95,6 +98,7 @@ var Home = {
         </div>`;
 
                 lucide.createIcons();
+        if (typeof ListenTogether !== 'undefined' && ListenTogether.bindLauncher) ListenTogether.bindLauncher();
         if (typeof Streak !== 'undefined') Streak.refreshHomeCard();
         if (Home.activeCategory && Home.activeCategory !== 'Semua') {
             if (Home.activeCategory === 'Developer Profile') {

@@ -4,7 +4,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=106').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=107').then(function(reg) {
                     reg.update();
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
@@ -624,8 +624,8 @@
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
     <script src="/firebase.js?v=99"></script>
     <script src="/player.js?v=106"></script>
-    <script src="/listen-together.js?v=99"></script>
-    <script src="/home.js?v=106"></script>
+    <script src="/listen-together.js?v=107"></script>
+    <script src="/home.js?v=107"></script>
     <script src="/search.js?v=105"></script>
     <script src="/leaderboard.js?v=99"></script>
     <script src="/stats.js?v=99"></script>

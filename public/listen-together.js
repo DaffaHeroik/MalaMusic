@@ -91,20 +91,14 @@
     }
 
     function ensureLauncher() {
-        if (document.getElementById('listen-together-launcher')) return;
-        var sidebar = document.querySelector('.spotify-sidebar');
-        if (!sidebar) {
-            window.setTimeout(ensureLauncher, 80);
+        var button = document.getElementById('home-listen-together');
+        if (button) {
+            button.id = 'listen-together-launcher';
+            button.onclick = openLobby;
+            if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
             return;
         }
-        var section = el('div', { className: 'spotify-nav-section listen-together-section' });
-        section.innerHTML = '<div class="spotify-section-label">Sosial</div><button id="listen-together-launcher" class="spotify-nav-item listen-together-nav-item" aria-label="Dengarkan bersama teman — buat atau gabung room" title="Dengarkan bersama teman: buat atau gabung room"><i data-lucide="headphones"></i><span>Dengar bersama</span></button>';
-        var button = section.querySelector('#listen-together-launcher');
-        button.onclick = openLobby;
-        var user = sidebar.querySelector('.spotify-user');
-        sidebar.insertBefore(section, user || null);
-        sidebar.classList.add('has-social-nav');
-        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+        window.setTimeout(ensureLauncher, 120);
     }
     function openLobby() {
         closeModal();
@@ -271,6 +265,6 @@
         var match = location.pathname.match(/^\/room\/([A-Za-z0-9_-]+)/);
         if (match) setTimeout(function () { joinRoom(match[1]); }, 700);
     }
-        window.ListenTogether = { open: openLobby, leave: leaveRoom, syncNow: schedulePublish, blockFollowerAction: blockFollowerAction, syncAfterLocalAction: syncAfterLocalAction, getState: function () { return Object.assign({}, state); } };
+        window.ListenTogether = { open: openLobby, bindLauncher: ensureLauncher, leave: leaveRoom, syncNow: schedulePublish, blockFollowerAction: blockFollowerAction, syncAfterLocalAction: syncAfterLocalAction, getState: function () { return Object.assign({}, state); } };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
