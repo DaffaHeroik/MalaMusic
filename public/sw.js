@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v103';
+const CACHE_STATIC_NAME = 'malamusic-static-v104';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 const STATIC_ASSETS = [
@@ -10,10 +10,10 @@ const STATIC_ASSETS = [
   '/banner.png',
   '/firebase.js?v=102',
   '/app.js?v=102',
-  '/player.js?v=102',
+  '/player.js?v=104',
   '/listen-together.js?v=102',
-  '/fullplayer.js?v=102',
-  '/miniplayer.js?v=102',
+  '/fullplayer.js?v=104',
+  '/miniplayer.js?v=104',
   '/home.js?v=102',
   '/library.js?v=102',
   '/liked.js?v=102',
@@ -172,9 +172,10 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // If image fails offline, fallback to logo or FI placeholder
+        // Jangan mengganti artwork dengan logo aplikasi. Biarkan caller memakai cover lama/FI.
+        // Logo fallback membuat browser menganggap logo MalaMusic sebagai cover lagu aktif.
         if (request.headers.get('accept')?.includes('image')) {
-          return caches.match('/logo.png');
+          return new Response('', { status: 504, statusText: 'Artwork unavailable' });
         }
       });
     })

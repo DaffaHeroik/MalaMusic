@@ -894,11 +894,19 @@ function setMetaTag(name, content, isProperty) {
     el.setAttribute('content', content);
 }
 
-function updateCoverWithTransition(imgEl, newSrc, origCover, useScale) {
+function updateCoverWithTransition(imgEl, newSrc, origCover, useScale, videoId) {
     if (!imgEl) return;
-    var fallback = 'https://www.gobox.my.id/file/R0ym4wqfznmp.png';
-    var target = safeMediaUrl(newSrc || origCover, fallback);
-    var previousSrc = imgEl.currentSrc || imgEl.getAttribute('src') || origCover || fallback;
+    var fallback = 'https://i.ytimg.com/vi_webp/' + encodeURIComponent(String(videoId || '')) + '/hqdefault.webp';
+    if (!videoId) fallback = FI;
+    var candidates = [];
+    [newSrc, origCover, fallback].forEach(function(value) {
+        var safe = safeMediaUrl(value, '');
+        if (safe && candidates.indexOf(safe) === -1) candidates.push(safe);
+    });
+    if (!candidates.length) candidates.push(FI);
+    var target = candidates[0];
+    var previousSrc = imgEl.currentSrc || imgEl.getAttribute('src') || '';
+    if (/\/logo(?:-mark)?\.png(?:\?|$)/i.test(previousSrc) || previousSrc === FI) previousSrc = '';
     var transitionToken = String(Date.now()) + ':' + Math.random().toString(36).slice(2);
     if (origCover) imgEl.setAttribute('data-original-src', safeMediaUrl(origCover, fallback));
     imgEl.removeAttribute('data-img-retry');
@@ -920,11 +928,18 @@ function updateCoverWithTransition(imgEl, newSrc, origCover, useScale) {
     function isCurrentTransition() {
         return imgEl.getAttribute('data-cover-transition') === transitionToken;
     }
+    var candidateIndex = 0;
     function restoreCover() {
         if (!isCurrentTransition()) return;
-        var original = safeMediaUrl(origCover, '');
-        var keep = previousSrc && previousSrc !== target ? previousSrc : (original || fallback);
-        imgEl.src = safeMediaUrl(keep, fallback);
+        if (candidateIndex + 1 < candidates.length) {
+            candidateIndex += 1;
+            target = candidates[candidateIndex];
+            imgEl.src = target;
+            tempImg.src = target;
+            return;
+        }
+        var keep = previousSrc || FI;
+        imgEl.src = keep;
         imgEl.style.opacity = '1';
         if (useScale) imgEl.style.transform = 'scale(1)';
     }
@@ -1035,15 +1050,15 @@ function UU(){
     var hdCover = toHDCover(origCover, S.ct.videoId || S.ct.id);
 
     var mc=gid('mini-cover'),mt=gid('mini-title'),ma=gid('mini-artist'),fc=gid('full-cover'),ft=gid('full-title'),fa=gid('full-artist'),fh=gid('full-header-artist'),fb=gid('full-bg-blur'),fba=gid('full-bg-artwork');
-    if(mc) updateCoverWithTransition(mc, hdCover, origCover, false);
+    if(mc) updateCoverWithTransition(mc, hdCover, origCover, false, S.ct.videoId || S.ct.id);
     if(mt) mt.innerText=S.ct.title;
     if(ma) ma.innerText=S.ct.artist;
-    if(fc) updateCoverWithTransition(fc, hdCover, origCover, true);
+    if(fc) updateCoverWithTransition(fc, hdCover, origCover, true, S.ct.videoId || S.ct.id);
     if(ft) ft.innerText=S.ct.title;
     if(fa) fa.innerText=S.ct.artist;
     if(fh) fh.innerText=S.ct.artist;
-    if(fb) updateCoverWithTransition(fb, hdCover, origCover, false);
-    if(fba) updateCoverWithTransition(fba, hdCover, origCover, false);
+    if(fb) updateCoverWithTransition(fb, hdCover, origCover, false, S.ct.videoId || S.ct.id);
+    if(fba) updateCoverWithTransition(fba, hdCover, origCover, false, S.ct.videoId || S.ct.id);
 
     updateOG(S.ct.title, hdCover, S.ct.artist);
     if(typeof updateLikeButtons==='function')updateLikeButtons();
