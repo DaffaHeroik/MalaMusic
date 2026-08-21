@@ -2086,6 +2086,37 @@ function saveUserPlaylists(pls){
     if (typeof writeJsonArray === 'function') writeJsonArray('malamusic_playlists', pls); else try{localStorage.setItem('malamusic_playlists',JSON.stringify(Array.isArray(pls)?pls:[]));}catch(e){}
     syncLibraryRemote();
 }
+function playlistExternalKey(id){ return String(id || '').trim(); }
+function isSavedPlaylist(id){
+    var key = playlistExternalKey(id); if (!key) return false;
+    return getUserPlaylists().some(function(p){ return p.externalId === key || p.id === key; });
+}
+function toggleSavedExternalPlaylist(id, name, image, creator){
+    var key = playlistExternalKey(id); if (!key) return;
+    var pls = getUserPlaylists();
+    var index = pls.findIndex(function(p){ return p.externalId === key || p.id === key; });
+    if (index >= 0 && pls[index].source === 'youtube') {
+        pls.splice(index, 1); saveUserPlaylists(pls); showToast('Playlist dihapus dari Koleksi');
+    } else if (index < 0) {
+        pls.unshift({id:'saved_'+key, externalId:key, source:'youtube', name:String(name || 'Playlist').slice(0,160), creator:String(creator || '').slice(0,160), image:String(image || '').slice(0,600), songs:[], savedAt:Date.now()});
+        saveUserPlaylists(pls); showToast('Playlist disimpan ke Koleksi');
+    }
+    if (typeof Library !== 'undefined' && S.at === 'library') Library.render();
+    if (typeof Search !== 'undefined' && Search.show) Search.show();
+    if (typeof Album !== 'undefined' && Album.currentAlbumId === key && Album.renderActive) Album.renderActive();
+    updateSavedPlaylistButtons();
+}
+function updateSavedPlaylistButtons(){
+    var buttons = document.querySelectorAll('[data-saved-playlist-id]');
+    buttons.forEach(function(btn){
+        var active = isSavedPlaylist(btn.getAttribute('data-saved-playlist-id'));
+        btn.innerHTML = '<i data-lucide="'+(active?'bookmark-check':'bookmark')+'" class="w-4 h-4 '+(active?'text-amber-300':'text-white')+'"></i>';
+        btn.classList.toggle('bg-amber-400/20', active);
+        btn.classList.toggle('border-amber-300/40', active);
+        btn.title = active ? 'Hapus dari Koleksi' : 'Simpan playlist';
+    });
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
 function createPlaylist(name,image){var pls=getUserPlaylists();var id='pl_'+Date.now();pls.push({id:id,name:name,image:image||'',songs:[]});saveUserPlaylists(pls);return id;}
 function updateUserPlaylist(id,name,image){var pls=getUserPlaylists();var pl=pls.find(function(p){return p.id===id;});if(!pl)return;if(name)pl.name=name;if(image)pl.image=image;saveUserPlaylists(pls);}
 function deleteUserPlaylist(id){var pls=getUserPlaylists().filter(function(p){return p.id!==id;});saveUserPlaylists(pls);}

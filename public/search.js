@@ -315,9 +315,10 @@ var Search = {
             lucide.createIcons();
         } else {
             c.innerHTML='<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-8">'+S.sr.map(function(p, i){
-                return '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex flex-col animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><div class="w-full aspect-square mb-2.5 rounded-xl overflow-hidden shadow-md"><img src="'+toWebp(p.cover)+'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="handleImgError(this)" /></div><h3 class="font-semibold text-sm truncate text-white px-0.5">'+es(p.title)+'</h3><p class="text-white/60 text-xs truncate mt-0.5 px-0.5">'+es(p.creator || p.artist || 'Playlist')+'</p></div>';
+                return '<div onclick="Album.open(\''+p.id+'\', \''+(p.cover||FI)+'\')" class="p-2.5 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex flex-col animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><div class="relative w-full aspect-square mb-2.5 rounded-xl overflow-hidden shadow-md"><img src="'+toWebp(p.cover)+'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="handleImgError(this)" /><button data-saved-playlist-id="'+esJs(p.id)+'" onclick="event.stopPropagation();toggleSavedExternalPlaylist(\''+esJs(p.id)+'\',\''+esJs(p.title)+'\',\''+esJs(p.cover||'')+'\',\''+esJs(p.creator||p.artist||'')+'\')" class="absolute top-2 right-2 w-9 h-9 rounded-full bg-black/65 border border-white/20 backdrop-blur-md flex items-center justify-center active:scale-90" title="Simpan playlist"><i data-lucide="bookmark" class="w-4 h-4 text-white"></i></button></div><h3 class="font-semibold text-sm truncate text-white px-0.5">'+es(p.title)+'</h3><p class="text-white/60 text-xs truncate mt-0.5 px-0.5">'+es(p.creator || p.artist || 'Playlist')+'</p></div>';
             }).join('')+'</div>';
             lucide.createIcons();
+            if (typeof updateSavedPlaylistButtons === 'function') updateSavedPlaylistButtons();
         }
     },
     apply(){

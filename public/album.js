@@ -99,6 +99,7 @@ var Album = {
                     <button onclick="Album.playAll('${id}')" class="bg-white hover:bg-gray-200 text-black w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-all shadow-white/20 cursor-pointer">
                         <i data-lucide="play" class="w-7 h-7 fill-current ml-1"></i>
                     </button>
+                    <button data-saved-playlist-id="${esJs(id)}" onclick="event.stopPropagation();toggleSavedExternalPlaylist('${esJs(id)}','${esJs(a.title)}','${esJs(im)}','${esJs(albumCreator)}')" class="w-12 h-12 rounded-full text-white/80 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 border border-white/10 transition-all cursor-pointer" title="Simpan playlist"><i data-lucide="bookmark" class="w-6 h-6"></i></button>
                     <button onclick="Album.importPlaylist('${id}', '${es(a.title).replace(/'/g, "\\'")}', '${im}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Simpan sebagai Playlist Baru"><i data-lucide="download" class="w-6 h-6"></i></button>
                     <button onclick="Album.shuffleAll('${id}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Acak (Shuffle)">
                         <i data-lucide="shuffle" class="w-6 h-6"></i>
@@ -172,6 +173,7 @@ var Album = {
             html += '</div>';
             gid('album-content').innerHTML = html;
             lucide.createIcons();
+            if (typeof updateSavedPlaylistButtons === 'function') updateSavedPlaylistButtons();
         })
         .catch(e => {
             if (requestId !== Album.requestSeq || (e && e.name === 'AbortError')) return;

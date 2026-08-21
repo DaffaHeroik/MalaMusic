@@ -118,14 +118,14 @@ var Library={
             } else {
                 html += '<div class="' + (Library.layout === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2') + '">';
                 pls.forEach(function(p){
-                    html += '<div onclick="Library.open(\'' + p.id + '\')" class="' + (Library.layout === 'grid' ? 'p-2.5 flex-col' : 'p-2.5 flex-row items-center') + ' rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex gap-3">' +
+                    html += '<div onclick="'+(p.source === 'youtube' ? 'Album.open(\'' + esJs(p.externalId || p.id) + '\',\'' + esJs(p.image || '') + '\')' : 'Library.open(\'' + p.id + '\')')+'" class="' + (Library.layout === 'grid' ? 'p-2.5 flex-col' : 'p-2.5 flex-row items-center') + ' rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all group flex gap-3">'
                         '<div class="relative ' + (Library.layout === 'grid' ? 'w-full aspect-square mb-2.5' : 'w-16 h-16 shrink-0') + ' rounded-xl overflow-hidden shadow-md">' +
                             '<img src="' + safeMediaUrl(p.image || (p.songs.length > 0 ? p.songs[0].cover : FI), FI) + '" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src=\'' + FI + '\'" />' +
-                            '<button onclick="event.stopPropagation();Library.showActions(\'' + p.id + '\')" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full p-2 active:scale-90 transition-all" title="Opsi Playlist"><i data-lucide="more-vertical" class="w-4 h-4 text-white"></i></button>' +
+                            '<button onclick="event.stopPropagation();'+(p.source === 'youtube' ? 'toggleSavedExternalPlaylist(\''+esJs(p.externalId || p.id)+'\',\''+esJs(p.name)+'\',\''+esJs(p.image || '')+'\',\''+esJs(p.creator || '')+'\')' : 'Library.showActions(\'' + p.id + '\')')+'" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-full p-2 active:scale-90 transition-all" title="'+(p.source === 'youtube' ? 'Hapus dari Koleksi' : 'Opsi Playlist')+'"><i data-lucide="'+(p.source === 'youtube' ? 'bookmark-check' : 'more-vertical')+'" class="w-4 h-4 '+(p.source === 'youtube' ? 'text-amber-300' : 'text-white')+'"></i></button>' +
                             (p.songs.length > 0 ? '<button onclick="event.stopPropagation();Library.playSong(\'' + p.id + '\',0)" class="absolute bottom-2 right-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full p-2.5 shadow-black/40 active:scale-90" title="Putar"><i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i></button>' : '') +
                         '</div>' +
                         '<div class="min-w-0 flex-1"><h3 class="font-semibold text-sm truncate text-white px-0.5">' + es(p.name) + '</h3>' +
-                        '<p class="text-white/60 text-xs mt-0.5 px-0.5">' + p.songs.length + ' lagu</p></div>' +
+                        '<p class="text-white/60 text-xs mt-0.5 px-0.5">' + (p.source === 'youtube' ? 'Playlist tersimpan' + (p.creator ? ' • ' + es(p.creator) : '') : p.songs.length + ' lagu') + '</p></div>' +
                     '</div>';
                 });
                 html += '</div>';
