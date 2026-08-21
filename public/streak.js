@@ -22,7 +22,6 @@ var Streak = {
     record: async function(track) {
         var id = track && (track.videoId || track.id);
         if (!id || this.sentTracks[id]) return this.stats;
-        this.sentTracks[id] = true;
         try {
             var response = await fetch(this.API + '?action=record', {
                 method: 'POST', credentials: 'same-origin',
@@ -30,10 +29,15 @@ var Streak = {
                 body: JSON.stringify({ trackId: id, title: track.title || '', artist: track.artist || '' })
             });
             if (!response.ok) return this.stats;
+            this.sentTracks[id] = true;
             var data = await response.json();
             var previous = this.stats || { current: 0, activeDays: 0 };
             this.stats = data && data.streak ? data.streak : this.stats;
-            if (this.stats && (Number(this.stats.current || 0) > Number(previous.current || 0) || Number(this.stats.activeDays || 0) > Number(previous.activeDays || 0))) this.celebrate();
+            if (this.stats && (Number(this.stats.current || 0) > Number(previous.current || 0) || Number(this.stats.activeDays || 0) > Number(previous.activeDays || 0))) {
+                this.celebrate();
+                if (typeof Home !== 'undefined' && S.at === 'home') this.refreshHomeCard();
+                if (typeof Profile !== 'undefined' && S.at === 'dev') this.refreshProfileCard();
+            }
             return this.stats;
         } catch (_) { return this.stats; }
     },

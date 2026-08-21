@@ -7,7 +7,7 @@ var Stats = {
         if (!track || !position || !isFinite(position)) return;
         if (this.last !== null) { var delta = position - this.last; if (delta > 0 && delta <= 5) this.pending += delta; }
         this.last = position;
-        if (this.pending >= 60) this.flush();
+        if (this.pending >= 15) this.flush();
     },
     reset: function() { this.last = null; },
     flush: async function() {
@@ -19,6 +19,7 @@ var Stats = {
         try {
             var response = await fetch('/api/stats?action=listen', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seconds: seconds }) });
             if (!response.ok) throw new Error('stats request failed');
+            if (typeof Profile !== 'undefined' && typeof Profile.refreshListeningStats === 'function') Profile.refreshListeningStats();
         } catch (_) {
             this.pending += seconds;
         } finally {

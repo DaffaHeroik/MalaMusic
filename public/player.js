@@ -135,7 +135,7 @@ AU.addEventListener('timeupdate',function(){
         S.pd=AU.duration||0;
         renderProgress();
         if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
-        if(typeof StatsTracker !== 'undefined' && S.ct) StatsTracker.tick(S.ct, AU.currentTime);
+        if(typeof Stats !== 'undefined' && S.ct) Stats.tick(S.ct, AU.currentTime);
         checkAndPreloadNext();
         // Some mobile/background media pipelines can advance to duration without dispatching `ended`.
         // Use a guarded near-end watchdog so auto-next remains reliable outside the visible tab.
@@ -145,7 +145,7 @@ AU.addEventListener('timeupdate',function(){
     }
 });
 AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof StatsTracker !== 'undefined') StatsTracker.flush();}});
+AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined') Stats.flush();}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
 AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
 function queueAutoNextAfterEnd(reason){
@@ -153,7 +153,7 @@ function queueAutoNextAfterEnd(reason){
     var endedSequence = audioLoadSequence;
     if (endedHandledSequence === endedSequence || endedTransitionBusy) return;
     endedHandledSequence = endedSequence;
-    if(typeof StatsTracker !== 'undefined') StatsTracker.flush();
+    if(typeof Stats !== 'undefined') Stats.flush();
     ST();
     if(typeof handleTrackEnded==='function'&&handleTrackEnded()) return;
     if(S.rm==='one'){
