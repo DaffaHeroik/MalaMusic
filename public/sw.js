@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v107';
+const CACHE_STATIC_NAME = 'malamusic-static-v108';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 const STATIC_ASSETS = [
@@ -10,11 +10,11 @@ const STATIC_ASSETS = [
   '/banner.png',
   '/firebase.js?v=102',
   '/app.js?v=106',
-  '/player.js?v=106',
+  '/player.js?v=108',
   '/listen-together.js?v=107',
-  '/fullplayer.js?v=106',
-  '/miniplayer.js?v=106',
-  '/home.js?v=107',
+  '/fullplayer.js?v=108',
+  '/miniplayer.js?v=108',
+  '/home.js?v=108',
   '/library.js?v=105',
   '/liked.js?v=102',
   '/search.js?v=105',

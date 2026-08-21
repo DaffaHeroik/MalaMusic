@@ -34,9 +34,14 @@ function toWebp(url) {
     return safeMediaUrl(u, FI);
 }
 
+function isPlaceholderCover(value) {
+    if (!value) return true;
+    var raw = String(value).trim();
+    return raw === FI || /^data:image\/svg\+xml/i.test(raw) || /\/logo(?:-mark)?\.png(?:\?|$)/i.test(raw);
+}
 function toHDCover(url, videoId) {
-    if (!url && videoId) return safeMediaUrl('https://i.ytimg.com/vi_webp/' + encodeURIComponent(String(videoId)) + '/hqdefault.webp', FI);
-    if (!url) return FI;
+    if (isPlaceholderCover(url) && videoId) return safeMediaUrl('https://i.ytimg.com/vi_webp/' + encodeURIComponent(String(videoId)) + '/hqdefault.webp', FI);
+    if (isPlaceholderCover(url)) return FI;
     var hd = String(url);
     if (hd.includes('googleusercontent.com') || hd.includes('ggpht.com') || hd.includes('ytimg.com')) {
         if (/=w\d+-h\d+/i.test(hd)) {
@@ -782,17 +787,14 @@ function UB(){
         fu.innerHTML='<div class="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>';
 
         if(coverOverlay){
-            coverOverlay.classList.remove('opacity-0', 'pointer-events-none');
-            coverOverlay.classList.add('opacity-100');
-            if(coverIcon) coverIcon.innerHTML='<div class="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-zinc-900/80 border border-white/10 p-2"><img src="/logo.png" class="w-8 h-8 object-contain animate-pulse" alt="Logo"/><div class="absolute inset-0 border-2 border-white/10 border-t-white rounded-2xl animate-spin"></div></div>';
-            if(coverText) {
-                coverText.className = 'text-xs font-semibold text-zinc-300 leading-relaxed text-center drop-shadow-md px-2';
-                coverText.innerText='Sabar yaa, server kami perlu waktu buat siapin lagu';
-            }
+            // Jangan menutupi artwork valid dengan logo/loading overlay. Status loading
+            // tetap terlihat melalui toast, spinner tombol, dan badge MENYIAPKAN.
+            coverOverlay.classList.remove('opacity-100');
+            coverOverlay.classList.add('opacity-0', 'pointer-events-none');
         }
         if(fullCover){
-            fullCover.style.transform='scale(0.95)';
-            fullCover.style.filter='brightness(0.75)';
+            fullCover.style.transform='scale(1)';
+            fullCover.style.filter='brightness(1)';
         }
         if(statusTag){
             statusTag.classList.remove('hidden', 'bg-white/10', 'text-white/80', 'border-white/20');
@@ -822,24 +824,13 @@ function UB(){
         fu.innerHTML='<svg class="w-7 h-7 fill-current ml-0.5" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
 
         if(coverOverlay){
-            if(S.ct){
-                coverOverlay.classList.remove('opacity-0', 'pointer-events-none');
-                coverOverlay.classList.add('opacity-100');
-                if(coverIcon) coverIcon.innerHTML='<svg class="w-12 h-12 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>';
-                if(coverText) coverText.innerText='DIPAUSE';
-            }else{
-                coverOverlay.classList.remove('opacity-100');
-                coverOverlay.classList.add('opacity-0', 'pointer-events-none');
-            }
+            // Pause tetap menampilkan artwork; kontrol play dan status sudah cukup memberi feedback.
+            coverOverlay.classList.remove('opacity-100');
+            coverOverlay.classList.add('opacity-0', 'pointer-events-none');
         }
         if(fullCover){
-            if(S.ct){
-                fullCover.style.transform='scale(0.96)';
-                fullCover.style.filter='brightness(0.85)';
-            }else{
-                fullCover.style.transform='scale(1)';
-                fullCover.style.filter='brightness(1)';
-            }
+            fullCover.style.transform='scale(1)';
+            fullCover.style.filter='brightness(1)';
         }
         if(statusTag){
             if(S.ct){
@@ -900,6 +891,7 @@ function updateCoverWithTransition(imgEl, newSrc, origCover, useScale, videoId) 
     if (!videoId) fallback = FI;
     var candidates = [];
     [newSrc, origCover, fallback].forEach(function(value) {
+        if (isPlaceholderCover(value)) return;
         var safe = safeMediaUrl(value, '');
         if (safe && candidates.indexOf(safe) === -1) candidates.push(safe);
     });
@@ -1111,7 +1103,19 @@ function saveRecentTrack(track){
     } catch(e) {}
 }
 function getRecentTracks(){
-    try { return JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch(e) { return []; }
+    try {
+        var raw = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]');
+        if (!Array.isArray(raw)) return [];
+        var changed = false;
+        var normalized = raw.map(function(item) {
+            var track = normalizeTrack(item || {});
+            if (track.videoId && isPlaceholderCover(item && item.cover)) changed = true;
+            if (track.videoId && item && item.cover !== track.cover) changed = true;
+            return Object.assign({}, item, track);
+        }).filter(function(item){ return !!item.videoId; });
+        if (changed) localStorage.setItem('mala_recent_tracks', JSON.stringify(normalized));
+        return normalized;
+    } catch(e) { return []; }
 }
 
 function loadTrack(track,resumeAt,isRecoveryRetry){
