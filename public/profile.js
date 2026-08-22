@@ -386,9 +386,26 @@ var EmailAuth = {
     }
 };
 
-window.addEventListener('malamusic-google-redirect', function(event) {
-    if (!event.detail || !window.EmailAuth || typeof EmailAuth.finishGoogleLogin !== 'function') return;
-    EmailAuth.finishGoogleLogin(event.detail).catch(function(error) {
+var malamusicGoogleRedirectHandled = false;
+function handleMalaMusicGoogleRedirect(firebaseUser) {
+    if (!firebaseUser || !window.EmailAuth || typeof EmailAuth.finishGoogleLogin !== 'function' || malamusicGoogleRedirectHandled) return;
+    malamusicGoogleRedirectHandled = true;
+    EmailAuth.finishGoogleLogin(firebaseUser).catch(function(error) {
+        malamusicGoogleRedirectHandled = false;
         EmailAuth.renderChoice(EmailAuth.googleErrorMessage(error));
     });
+}
+
+window.addEventListener('malamusic-google-redirect', function(event) {
+    handleMalaMusicGoogleRedirect(event.detail);
 });
+
+// firebase.js can resolve getRedirectResult() before this file registers the event listener.
+// Consume the promise as well so same-tab/mobile redirect login always creates mm_session.
+if (window.MalaFirebase && window.MalaFirebase.redirectResult && typeof window.MalaFirebase.redirectResult.then === 'function') {
+    window.MalaFirebase.redirectResult.then(function(result) {
+        if (result && result.user) handleMalaMusicGoogleRedirect(result.user);
+    }).catch(function(error) {
+        if (error && window.EmailAuth) EmailAuth.renderChoice(EmailAuth.googleErrorMessage(error));
+    });
+}
