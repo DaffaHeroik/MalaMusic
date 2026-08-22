@@ -60,7 +60,8 @@ var Album = {
         .then(res => res.json())
         .then(data => {
             if (requestId !== Album.requestSeq || Album.currentAlbumId !== id) return;
-            if(!data.status || !data.result) {
+            var apiResultEmpty = !data.result || !String(data.result.title || '').trim() || String(data.result.title || '').trim().toLowerCase() === 'unknown' || (Array.isArray(data.result.songs) && data.result.songs.length === 0 && localSavedPlaylist && Array.isArray(localSavedPlaylist.songs) && localSavedPlaylist.songs.length > 0);
+            if(!data.status || apiResultEmpty) {
                 if (localSavedPlaylist) {
                     data = { status: true, result: {
                         title: localSavedPlaylist.name || 'Playlist tersimpan',

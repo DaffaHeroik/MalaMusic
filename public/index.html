@@ -3,7 +3,7 @@
 <head>
     <script>
         if ('serviceWorker' in navigator) {
-            var MALA_SW_VERSION = 'v115';
+            var MALA_SW_VERSION = 'v116';
             navigator.serviceWorker.addEventListener('controllerchange', function() {
                 if (!navigator.serviceWorker.controller) return;
                 var reloadKey = 'malamusic-sw-reloaded-' + MALA_SW_VERSION;
@@ -12,7 +12,7 @@
                 window.location.reload();
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=115').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=116').then(function(reg) {
                     reg.update();
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                     console.log('PWA SW Registered:', reg.scope);
@@ -647,7 +647,7 @@
     <script src="/miniplayer.js?v=109"></script>
     <script src="/fullplayer.js?v=109"></script>
     <script src="/artist.js?v=99"></script>
-    <script src="/album.js?v=115"></script>
+    <script src="/album.js?v=116"></script>
     <script src="/app.js?v=106"></script>
     <script>(function () {
   document.addEventListener('visibilitychange', function () {
