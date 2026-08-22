@@ -386,6 +386,7 @@ var audioStartTimer = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
+var AUDIO_RESOLVE_UI_TIMEOUT_MS = 18000;
 var AUDIO_RESOLVE_MAX_RETRIES = 4;
 var audioUrlFetchPromises = {};
 
@@ -1167,7 +1168,18 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
     function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
     var vid = track.videoId || track.id;
     try{
-        var audioUrl = await resolveAudioUrl(track);
+        // Never leave the visible player in an infinite "Menyiapkan" state when
+        // a browser request hangs before the resolver promise can settle.
+        var resolveTimeoutId;
+        var resolveTimeout = new Promise(function(_, reject){
+            resolveTimeoutId = setTimeout(function(){
+                var timeoutError = new Error('Audio resolver UI timeout');
+                timeoutError.code = 'AUDIO_RESOLVE_UI_TIMEOUT';
+                reject(timeoutError);
+            }, AUDIO_RESOLVE_UI_TIMEOUT_MS);
+        });
+        var audioUrl = await Promise.race([resolveAudioUrl(track), resolveTimeout]);
+        clearTimeout(resolveTimeoutId);
         if(!isCurrentLoad())return;
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
@@ -1225,6 +1237,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
             }
         }
     }catch(e){
+        if (typeof resolveTimeoutId !== 'undefined') clearTimeout(resolveTimeoutId);
         if(isCurrentLoad()){
             S.il=false;S.ip=false;UB();
             if (navigator.onLine) {
