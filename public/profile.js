@@ -409,3 +409,11 @@ if (window.MalaFirebase && window.MalaFirebase.redirectResult && typeof window.M
         if (error && window.EmailAuth) EmailAuth.renderChoice(EmailAuth.googleErrorMessage(error));
     });
 }
+
+// Some browsers restore Firebase currentUser after the redirect but return a null
+// getRedirectResult(). Reconcile that restored client session with the backend too.
+if (window.MalaFirebase && window.MalaFirebase.auth && typeof window.MalaFirebase.auth.onAuthStateChanged === 'function') {
+    window.MalaFirebase.auth.onAuthStateChanged(function(firebaseUser) {
+        if (firebaseUser) handleMalaMusicGoogleRedirect(firebaseUser);
+    });
+}
