@@ -391,8 +391,13 @@ var AUDIO_RESOLVE_UI_TIMEOUT_MS = 18000;
 var AUDIO_RESOLVE_MAX_RETRIES = 4;
 var audioUrlFetchPromises = {};
 
+function sameAudioTrack(a, b){
+    var aid = a && (a.videoId || a.id);
+    var bid = b && (b.videoId || b.id);
+    return !!aid && !!bid && String(aid) === String(bid);
+}
 function isCurrentAudioSource(){
-    return !!activeAudioTrack && activeAudioSequence === audioLoadSequence && S.ct === activeAudioTrack;
+    return !!activeAudioTrack && activeAudioSequence === audioLoadSequence && sameAudioTrack(S.ct, activeAudioTrack);
 }
 function clearAudioStartTimer(){
     if(audioStartTimer){ clearTimeout(audioStartTimer); audioStartTimer = null; }
@@ -404,7 +409,7 @@ function armAudioLoadWatchdog(track, sequence){
     clearAudioLoadWatchdog();
     audioLoadWatchdog = setTimeout(function(){
         audioLoadWatchdog = null;
-        if(sequence !== audioLoadSequence || S.ct !== track || !S.il) return;
+        if(sequence !== audioLoadSequence || !sameAudioTrack(S.ct, track) || !S.il) return;
         S.il = false; S.ip = false; UB();
         if(typeof showToast === 'function') showToast('Audio terlalu lama disiapkan. Coba lagi atau lanjut ke lagu berikutnya.');
         if(S.autoNext && S.rm !== 'one' && !(S.playbackMode === 'offline' || S.ps === 'offline')) {
@@ -417,7 +422,7 @@ function armAudioStartTimer(track, sequence){
     clearAudioStartTimer();
     audioStartTimer = setTimeout(function(){
         audioStartTimer = null;
-        if(sequence !== audioLoadSequence || S.ct !== track || !isCurrentAudioSource()) return;
+        if(sequence !== audioLoadSequence || !sameAudioTrack(S.ct, track) || !isCurrentAudioSource()) return;
         handleAudioSourceError();
     }, 12000);
 }
@@ -1184,7 +1189,7 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
 
 async function fetchAudioAndPlay(track,resumeAt,loadSequence){
     S.il=true;UB();
-    function isCurrentLoad(){ return loadSequence === audioLoadSequence && S.ct === track; }
+    function isCurrentLoad(){ return loadSequence === audioLoadSequence && sameAudioTrack(S.ct, track); }
     var vid = track.videoId || track.id;
     try{
         // Never leave the visible player in an infinite "Menyiapkan" state when
