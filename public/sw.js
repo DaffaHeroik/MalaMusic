@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v110';
+const CACHE_STATIC_NAME = 'malamusic-static-v111';
 const CACHE_DATA_NAME = 'malamusic-api-v44';
 
 self.addEventListener('message', (event) => {
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=102',
+  '/firebase.js?v=111',
   '/app.js?v=106',
   '/player.js?v=109',
   '/listen-together.js?v=107',
