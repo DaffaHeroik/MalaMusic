@@ -81,7 +81,18 @@ var Profile = {
     refreshListeningStats: async function() {
         var el = document.getElementById('profile-listening-card'); if (!el) return;
         el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="text-xs text-white/50">Total waktu mendengar</div><div class="h-9 w-28 mt-2 rounded-lg bg-white/10 animate-pulse"></div></div>';
-        try { var response = await fetch('/api/stats?action=me', { credentials: 'same-origin' }); if (!response.ok) { el.innerHTML = '<div class="rounded-2xl bg-white/[.04] border border-white/10 p-5"><div class="flex items-center gap-3"><i data-lucide="clock-3" class="w-5 h-5 text-white/50"></i><div><strong class="block text-sm text-white">Jam mendengar</strong><span class="block text-xs text-white/50 mt-1">Login untuk menyimpan statistik lintas perangkat.</span></div></div></div>'; lucide.createIcons(); return; } var data = await response.json(), s = data.stats || {}; el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-[.18em] text-amber-200/70 font-black">Aktivitas mendengar</p><strong class="block text-3xl font-black text-white mt-1">'+Number(s.hours || 0).toFixed(1)+' jam</strong><span class="block text-xs text-white/50 mt-1">'+Number(s.activeDays || 0)+' hari aktif · streak '+Number(s.streak || 0)+' hari</span></div><div class="w-14 h-14 rounded-2xl bg-amber-300/15 flex items-center justify-center"><i data-lucide="clock-3" class="w-7 h-7 text-amber-200"></i></div></div></div>'; lucide.createIcons(); } catch (_) { el.innerHTML = ''; }
+        try {
+            var responses = await Promise.all([
+                fetch('/api/stats?action=me', { credentials: 'same-origin' }),
+                fetch('/api/streak?action=me', { credentials: 'same-origin' })
+            ]);
+            if (!responses[0].ok) throw new Error('stats unavailable');
+            var data = await responses[0].json(), s = data.stats || {};
+            var streakData = responses[1].ok ? await responses[1].json() : null;
+            var streak = streakData && streakData.streak ? streakData.streak : {};
+            var currentStreak = Number(streak.current ?? s.streak ?? 0);
+            el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-[.18em] text-amber-200/70 font-black">Aktivitas mendengar</p><strong class="block text-3xl font-black text-white mt-1">'+Number(s.hours || 0).toFixed(1)+' jam</strong><span class="block text-xs text-white/50 mt-1">'+Number(s.activeDays || 0)+' hari aktif · streak '+currentStreak+' hari</span></div><div class="w-14 h-14 rounded-2xl bg-amber-300/15 flex items-center justify-center"><i data-lucide="clock-3" class="w-7 h-7 text-amber-200"></i></div></div></div>'; lucide.createIcons();
+        } catch (_) { el.innerHTML = ''; }
     },
     renderPublicPlaylistSettings: function() {
         var el = document.getElementById('profile-public-playlists'); if (!el) return;
