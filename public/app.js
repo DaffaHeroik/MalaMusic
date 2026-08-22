@@ -217,11 +217,10 @@ function isOfflineSong(track) {
 
 async function saveTrackForOffline(track, options) {
     options = options || {};
-    if (!isPwaInstalled()) {
-        showPwaRequiredModal();
-        return false;
-    }
-    if (!track) return;
+    // Offline downloads must work in a normal browser as well as the installed PWA.
+    // The service worker and Cache Storage are available for both contexts; requiring
+    // standalone mode here made the visible Download action appear broken on Android/desktop.
+    if (!track) return false;
     var vid = track.videoId || track.id;
     if (!vid) return;
 
@@ -336,7 +335,7 @@ async function saveTrackForOffline(track, options) {
 var offlinePlaylistJob = null;
 
 function downloadPlaylistOffline(playlistId) {
-    if (!isPwaInstalled()) { showPwaRequiredModal(); return; }
+    // Binary playlist downloads work in normal browsers and installed PWAs.
     var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
     var playlist = playlists.find(function(p) { return p.id === playlistId; });
     if (!playlist || !playlist.songs || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return; }

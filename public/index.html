@@ -12,7 +12,7 @@
                 window.location.reload();
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=118').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=119').then(function(reg) {
                     reg.update();
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                     console.log('PWA SW Registered:', reg.scope);
@@ -634,21 +634,21 @@
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
     <script src="/firebase.js?v=112"></script>
-    <script src="/player.js?v=118"></script>
+    <script src="/player.js?v=119"></script>
     <script src="/listen-together.js?v=107"></script>
     <script src="/home.js?v=109"></script>
     <script src="/search.js?v=105"></script>
     <script src="/leaderboard.js?v=99"></script>
-    <script src="/stats.js?v=118"></script>
+    <script src="/stats.js?v=119"></script>
     <script src="/liked.js?v=99"></script>
     <script src="/library.js?v=105"></script>
-    <script src="/profile.js?v=118"></script>
+    <script src="/profile.js?v=119"></script>
     <script src="/streak.js?v=109"></script>
-    <script src="/miniplayer.js?v=118"></script>
-    <script src="/fullplayer.js?v=118"></script>
+    <script src="/miniplayer.js?v=119"></script>
+    <script src="/fullplayer.js?v=119"></script>
     <script src="/artist.js?v=99"></script>
-    <script src="/album.js?v=116"></script>
-    <script src="/app.js?v=106"></script>
+    <script src="/album.js?v=119"></script>
+    <script src="/app.js?v=119"></script>
     <script>(function () {
   document.addEventListener('visibilitychange', function () {
     document.documentElement.classList.toggle('tab-hidden', document.hidden);

@@ -77,6 +77,19 @@ var Album = {
                 }
             }
             const a = data.result;
+            // Hydrate an older saved external playlist that only contains metadata.
+            // This makes the saved copy resilient when the catalog API is unavailable later.
+            if (localSavedPlaylist && Array.isArray(a.songs) && a.songs.length && (!Array.isArray(localSavedPlaylist.songs) || localSavedPlaylist.songs.length === 0) && typeof saveUserPlaylists === 'function' && typeof getUserPlaylists === 'function') {
+                try {
+                    var hydrated = getUserPlaylists();
+                    var stored = hydrated.find(function(p){ return p.id === localSavedPlaylist.id || p.externalId === id; });
+                    if (stored) {
+                        stored.songs = a.songs.map(function(song){ return normalizeTrack({ id:song.videoId, videoId:song.videoId, title:song.title, artist:song.artist, artistId:song.artistId || '', cover:(song.thumbnails && song.thumbnails[0] && (song.thumbnails[0].url || song.thumbnails[0])) || stored.image, ytUrl:'https://youtube.com/watch?v=' + song.videoId }); }).filter(function(song){ return song.videoId; }).slice(0,100);
+                        stored.creator = stored.creator || a.creator || a.artist || '';
+                        saveUserPlaylists(hydrated);
+                    }
+                } catch (_) {}
+            }
             let im = (passedCoverUrl && passedCoverUrl !== FI && passedCoverUrl !== 'undefined') ? passedCoverUrl : null;
             if (!im && a.thumbnails && a.thumbnails.length) {
                 const lastThumb = a.thumbnails[a.thumbnails.length - 1];

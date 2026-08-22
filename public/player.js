@@ -2107,15 +2107,31 @@ function isSavedPlaylist(id){
     var key = playlistExternalKey(id); if (!key) return false;
     return getUserPlaylists().some(function(p){ return p.externalId === key || p.id === key; });
 }
-function toggleSavedExternalPlaylist(id, name, image, creator){
+async function toggleSavedExternalPlaylist(id, name, image, creator){
     var key = playlistExternalKey(id); if (!key) return;
     var pls = getUserPlaylists();
     var index = pls.findIndex(function(p){ return p.externalId === key || p.id === key; });
     if (index >= 0 && pls[index].source === 'youtube') {
         pls.splice(index, 1); saveUserPlaylists(pls); showToast('Playlist dihapus dari Koleksi');
     } else if (index < 0) {
-        pls.unshift({id:'saved_'+key, externalId:key, source:'youtube', name:String(name || 'Playlist').slice(0,160), creator:String(creator || '').slice(0,160), image:String(image || '').slice(0,600), songs:[], savedAt:Date.now()});
-        saveUserPlaylists(pls); showToast('Playlist disimpan ke Koleksi');
+        var saved = {id:'saved_'+key, externalId:key, source:'youtube', name:String(name || 'Playlist').slice(0,160), creator:String(creator || '').slice(0,160), image:String(image || '').slice(0,600), songs:[], savedAt:Date.now()};
+        pls.unshift(saved); saveUserPlaylists(pls); showToast('Playlist disimpan ke Koleksi');
+        try {
+            var response = await fetch('/api/album?id=' + encodeURIComponent(key));
+            var payload = await response.json();
+            var result = payload && payload.status && payload.result;
+            if (result && Array.isArray(result.songs) && result.songs.length) {
+                var latest = getUserPlaylists();
+                var stored = latest.find(function(p){ return p.externalId === key || p.id === saved.id; });
+                if (stored) {
+                    stored.creator = stored.creator || String(result.creator || result.artist || '').slice(0,160);
+                    stored.image = stored.image || String((result.thumbnails && result.thumbnails[0] && (result.thumbnails[0].url || result.thumbnails[0])) || '').slice(0,600);
+                    stored.songs = result.songs.map(function(song){ return normalizeTrack({ id:song.videoId, videoId:song.videoId, title:song.title, artist:song.artist, artistId:song.artistId || '', cover:(song.thumbnails && song.thumbnails[0] && (song.thumbnails[0].url || song.thumbnails[0])) || stored.image, ytUrl:'https://youtube.com/watch?v=' + song.videoId }); }).filter(function(song){ return song.videoId; }).slice(0,100);
+                    saveUserPlaylists(latest);
+                    if (typeof Library !== 'undefined' && S.at === 'library') Library.render();
+                }
+            }
+        } catch (_) { /* metadata remains saved; Album.open can retry later */ }
     }
     if (typeof Library !== 'undefined' && S.at === 'library') Library.render();
     if (typeof Search !== 'undefined' && Search.show) Search.show();
