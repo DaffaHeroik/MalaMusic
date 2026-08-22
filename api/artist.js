@@ -43,12 +43,11 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') { res.status(405).json({ status: false, message: 'Method not allowed' }); return; }
     const artistId = (req.query.id || '').trim();
     if (!artistId) { res.status(400).json({ status: false, message: 'Parameter id wajib diisi' }); return; }
-    if (!API_KEY) { return res.status(503).json({ status: false, message: 'Layanan artis belum dikonfigurasi.' }); }
-    // FIXED: YouTube Music API key is loaded from environment, not repository source.
+    // YouTube Music browse works with the public WEB_REMIX client; an API key is optional.
 
     try {
         const data = await makeRequest({
-            hostname: 'music.youtube.com', path: '/youtubei/v1/browse?key='+API_KEY, method: 'POST',
+            hostname: 'music.youtube.com', path: API_KEY ? '/youtubei/v1/browse?key='+encodeURIComponent(API_KEY) : '/youtubei/v1/browse?prettyPrint=false', method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0', 'Origin': 'https://music.youtube.com' },
             // FIXED: keep upstream HTTPS certificate validation enabled.
             timeout: 15000
