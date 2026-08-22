@@ -190,19 +190,44 @@ function getOfflineSongs() {
 
 var OFFLINE_AUDIO_CACHE = 'malamusic-offline-audio-v1';
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
+function isLikelyAudioBinary(buffer, contentType) {
+    if (!buffer || buffer.byteLength < 65536) return false;
+    var type = String(contentType || '').toLowerCase();
+    if (type && !/^audio\//.test(type) && !/^(application\/octet-stream|binary\/octet-stream)/.test(type)) return false;
+    var bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 16));
+    var ascii = String.fromCharCode.apply(null, bytes);
+    // Accept the formats returned by the configured audio resolvers.
+    return ascii.indexOf('ID3') === 0 || ascii.indexOf('OggS') === 0 || ascii.indexOf('RIFF') === 0 || ascii.indexOf('ftyp') >= 4 || ((bytes[0] === 0xff) && ((bytes[1] & 0xe0) === 0xe0));
+}
+async function validateOfflineAudioBinary(vid) {
+    if (!window.caches || !vid) return false;
+    try {
+        var cached = await caches.match(offlineAudioPath(vid));
+        if (!cached || !cached.ok) return false;
+        var buffer = await cached.arrayBuffer();
+        var valid = isLikelyAudioBinary(buffer, cached.headers.get('content-type'));
+        if (!valid) await removeOfflineAudioBinary(vid);
+        return valid;
+    } catch (_) {
+        try { await removeOfflineAudioBinary(vid); } catch (__) {}
+        return false;
+    }
+}
 async function cacheOfflineAudioBinary(vid, rawUrl){
     if (!window.caches || !rawUrl) return false;
     try {
         var response = await fetch('/api/proxy-audio?url=' + encodeURIComponent(rawUrl), { cache: 'no-store' });
         if (!response.ok || !response.body) return false;
+        var buffer = await response.arrayBuffer();
+        var contentType = response.headers.get('content-type') || 'audio/mpeg';
+        if (!isLikelyAudioBinary(buffer, contentType)) return false;
         var cache = await caches.open(OFFLINE_AUDIO_CACHE);
-        await cache.put(offlineAudioPath(vid), response.clone());
-        return true;
+        await cache.put(offlineAudioPath(vid), new Response(buffer, { status: 200, headers: { 'Content-Type': contentType, 'Content-Length': String(buffer.byteLength), 'Accept-Ranges': 'bytes' } }));
+        return await validateOfflineAudioBinary(vid);
     } catch (_) { return false; }
 }
 async function hasOfflineAudioBinary(vid){
-    if (!window.caches || !vid) return false;
-    try { return !!(await caches.match(offlineAudioPath(vid))); } catch (_) { return false; }
+    return validateOfflineAudioBinary(vid);
 }
 async function removeOfflineAudioBinary(vid){
     if (!window.caches) return;
@@ -231,12 +256,14 @@ async function saveTrackForOffline(track, options) {
     if (existingIndex !== -1) {
         if (options.keepExisting) {
             songObj = list[existingIndex];
-            if (await hasOfflineAudioBinary(vid)) {
+            if (await validateOfflineAudioBinary(vid)) {
                 songObj.offlineStatus = 'ready';
                 writeJsonArray('pwa_offline_tracks', list);
                 if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: songObj });
                 return true;
             }
+            // A stale/corrupt cache entry must never block a fresh download.
+            await removeOfflineAudioBinary(vid);
         } else {
             // Remove from offline
             list.splice(existingIndex, 1);
@@ -272,27 +299,35 @@ async function saveTrackForOffline(track, options) {
 
     // 2. Pre-fetch & cache Audio URL
     var binarySaved = false;
-    try {
-        // Partial/legacy entries must resolve a fresh URL; resolver URLs can expire.
-        var rawAudioUrl = existingIndex === -1 && typeof audioUrlCache !== 'undefined' && audioUrlCache[vid] ? audioUrlCache[vid] : '';
-        if (!rawAudioUrl) {
+    var attempts = 0;
+    var maxAttempts = 3;
+    while (!binarySaved && attempts < maxAttempts) {
+        attempts++;
+        try {
+            // Always obtain a fresh resolver URL on retries; resolver URLs can expire or return corrupt data.
+            var rawAudioUrl = '';
             var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
             var r = await fetch(API.ytplay, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: ytUrl })
+                body: JSON.stringify({ query: ytUrl }),
+                cache: 'no-store'
             });
+            if (!r.ok) throw new Error('resolver_http_' + r.status);
             var d = await r.json();
             rawAudioUrl = d && d.result && d.result.download && d.result.download.audio || '';
-        }
-        if (rawAudioUrl) {
+            if (!rawAudioUrl) throw new Error('resolver_empty');
             if (typeof audioUrlCache !== 'undefined') audioUrlCache[vid] = rawAudioUrl;
             if (typeof savePwaCaches === 'function') savePwaCaches();
+            await removeOfflineAudioBinary(vid);
             binarySaved = await cacheOfflineAudioBinary(vid, rawAudioUrl);
+        } catch(e) { binarySaved = false; }
+        if (!binarySaved && attempts < maxAttempts) {
+            await new Promise(function(resolve){ setTimeout(resolve, 500 * Math.pow(2, attempts - 1)); });
         }
-    } catch(e) {}
+    }
     songObj.offlineStatus = binarySaved ? 'ready' : 'partial';
-    if (!binarySaved && typeof showToast === 'function') showToast('Audio belum tersimpan penuh; coba download lagi saat jaringan stabil.');
+    if (!binarySaved && typeof showToast === 'function') showToast('Download gagal setelah ' + attempts + ' percobaan. Coba lagi saat jaringan stabil.');
 
     // 3. Pre-fetch & cache Lyrics
     try {
