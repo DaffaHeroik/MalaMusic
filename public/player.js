@@ -119,6 +119,7 @@ function updateOG(title,image){
 }
 
 // ---- AUDIO ENGINE (elemen <audio> native, sumber stream dari /api/ytplay) ----
+var lastMediaPositionUpdate = 0;
 var AU=gid('audio-player');
 if(!AU){AU=document.createElement('audio');AU.id='audio-player';AU.preload='auto';AU.style.display='none';document.body.appendChild(AU);}
 // Keep playback as a normal Android media session. The browser/Android audio
@@ -136,6 +137,8 @@ AU.addEventListener('timeupdate',function(){
         renderProgress();
         if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
         if(typeof Stats !== 'undefined' && S.ct) Stats.tick(S.ct, AU.currentTime);
+        var mediaNow = Date.now();
+        if (mediaNow - lastMediaPositionUpdate >= 1000) { lastMediaPositionUpdate = mediaNow; updateMediaSessionPlaybackState(); }
         checkAndPreloadNext();
         // Some mobile/background media pipelines can advance to duration without dispatching `ended`.
         // Use a guarded near-end watchdog so auto-next remains reliable outside the visible tab.
@@ -144,7 +147,7 @@ AU.addEventListener('timeupdate',function(){
         }
     }
 });
-AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
+AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();updateMediaSessionPlaybackState();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
 AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined') Stats.flush(true);}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
 AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
@@ -174,24 +177,33 @@ AU.addEventListener('ended',function(){ queueAutoNextAfterEnd('ended'); });
 AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; handleAudioSourceError();});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
-if('mediaSession' in navigator){
-    try{
-        navigator.mediaSession.setActionHandler('play',function(){TP();});
-        navigator.mediaSession.setActionHandler('pause',function(){TP();});
-        navigator.mediaSession.setActionHandler('previoustrack',function(){navigateFromMediaSession('previous');});
-        navigator.mediaSession.setActionHandler('nexttrack',function(){navigateFromMediaSession('next');});
-        navigator.mediaSession.setActionHandler('stop',function(){try{AU.pause();}catch(e){}});
-        navigator.mediaSession.setActionHandler('seekto',function(details){
-            if(details.fastSeek && 'fastSeek' in AU){AU.fastSeek(details.seekTime);return;}
-            if(AU.duration){AU.currentTime=details.seekTime;S.pt=details.seekTime;renderProgress();}
-        });
-        navigator.mediaSession.setActionHandler('seekbackward',function(details){
-            AU.currentTime=Math.max(0,(AU.currentTime||0)-(details.seekOffset||10));
-        });
-        navigator.mediaSession.setActionHandler('seekforward',function(details){
-            AU.currentTime=Math.min(AU.duration||0,(AU.currentTime||0)+(details.seekOffset||10));
-        });
-    }catch(e){}
+function registerMediaAction(name, handler) {
+    if (!('mediaSession' in navigator)) return;
+    try { navigator.mediaSession.setActionHandler(name, handler); } catch (_) { /* action unsupported on this browser */ }
+}
+if ('mediaSession' in navigator) {
+    registerMediaAction('play', function(){
+        if (!S.ct) return;
+        if (AU.paused) AU.play().catch(function(){ S.ip = false; UB(); });
+    });
+    registerMediaAction('pause', function(){ if (!AU.paused) AU.pause(); });
+    registerMediaAction('previoustrack', function(){ navigateFromMediaSession('previous'); });
+    registerMediaAction('nexttrack', function(){ navigateFromMediaSession('next'); });
+    registerMediaAction('stop', function(){ try { AU.pause(); } catch (_) {} });
+    registerMediaAction('seekto', function(details){
+        var target = Number(details && details.seekTime);
+        if (!isFinite(target) || !AU.duration) return;
+        if (details.fastSeek && 'fastSeek' in AU) AU.fastSeek(target); else AU.currentTime = target;
+        S.pt = target; renderProgress(); updateMediaSessionPlaybackState();
+    });
+    registerMediaAction('seekbackward', function(details){
+        AU.currentTime = Math.max(0, (AU.currentTime || 0) - Number(details && details.seekOffset || 10));
+        updateMediaSessionPlaybackState();
+    });
+    registerMediaAction('seekforward', function(details){
+        AU.currentTime = Math.min(AU.duration || 0, (AU.currentTime || 0) + Number(details && details.seekOffset || 10));
+        updateMediaSessionPlaybackState();
+    });
 }
 
 var mediaNavigationBusy = false;
@@ -221,17 +233,18 @@ function navigateFromMediaSession(direction) {
 }
 
 function updateMediaSessionMetadata(track){
-    if(!('mediaSession' in navigator) || !track) return;
+    if(!('mediaSession' in navigator) || !track || typeof MediaMetadata === 'undefined') return;
     try{
         var cover = (typeof toHDCover==='function') ? toHDCover(track.cover, track.videoId||track.id) : (track.cover||FI);
+        var artworkType = /\.webp(?:[?#]|$)/i.test(cover) ? 'image/webp' : (/\.png(?:[?#]|$)/i.test(cover) ? 'image/png' : 'image/jpeg');
         navigator.mediaSession.metadata = new MediaMetadata({
             title: track.title || 'MalaMusic',
-            artist: track.artist || '',
+            artist: track.artist || 'MalaMusic',
             album: 'MalaMusic',
             artwork: [
-                {src: cover, sizes: '96x96', type: 'image/webp'},
-                {src: cover, sizes: '256x256', type: 'image/webp'},
-                {src: cover, sizes: '512x512', type: 'image/webp'}
+                {src: cover, sizes: '96x96', type: artworkType},
+                {src: cover, sizes: '256x256', type: artworkType},
+                {src: cover, sizes: '512x512', type: artworkType}
             ]
         });
     }catch(e){}
