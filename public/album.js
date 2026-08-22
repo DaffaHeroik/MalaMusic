@@ -42,6 +42,12 @@ var Album = {
         var requestController = new AbortController();
         Album.requestController = requestController;
         Album.currentAlbumId = id;
+        var localSavedPlaylist = null;
+        if (typeof getUserPlaylists === 'function') {
+            localSavedPlaylist = getUserPlaylists().find(function(p) {
+                return p && p.source === 'youtube' && (p.externalId === id || p.id === id);
+            }) || null;
+        }
         var url=location.origin+'/album/'+id;
         history.pushState({},'',url);
         gid('album-modal').style.display='flex';
@@ -55,8 +61,19 @@ var Album = {
         .then(data => {
             if (requestId !== Album.requestSeq || Album.currentAlbumId !== id) return;
             if(!data.status || !data.result) {
-                gid('album-content').innerHTML = '<div class="p-6 text-center text-white/70 mt-20">Gagal memuat album</div>';
-                return;
+                if (localSavedPlaylist) {
+                    data = { status: true, result: {
+                        title: localSavedPlaylist.name || 'Playlist tersimpan',
+                        artist: localSavedPlaylist.creator || 'Playlist tersimpan',
+                        creator: localSavedPlaylist.creator || '',
+                        thumbnails: localSavedPlaylist.image ? [{ url: localSavedPlaylist.image }] : [],
+                        songs: Array.isArray(localSavedPlaylist.songs) ? localSavedPlaylist.songs : [],
+                        description: 'Metadata lokal playlist tersimpan'
+                    }};
+                } else {
+                    gid('album-content').innerHTML = '<div class="p-6 text-center text-white/70 mt-20">Gagal memuat album</div>';
+                    return;
+                }
             }
             const a = data.result;
             let im = (passedCoverUrl && passedCoverUrl !== FI && passedCoverUrl !== 'undefined') ? passedCoverUrl : null;
