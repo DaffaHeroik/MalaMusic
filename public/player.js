@@ -1239,7 +1239,15 @@ function handleAudioSourceError(){
         activeAudioTrack = null;
         activeAudioSequence = 0;
         S.il = false; S.ip = false; UB();
-        if(typeof showToast === 'function') showToast('Lagu gagal dimuat. Coba lagi saat jaringan stabil.');
+        if (S.autoNext && S.rm !== 'one' && !(S.playbackMode === 'offline' || S.ps === 'offline')) {
+            if(typeof showToast === 'function') showToast('Lagu gagal dimuat. Melanjutkan ke lagu berikutnya.');
+            endedTransitionBusy = true;
+            Promise.resolve(NX()).catch(function(){
+                if(typeof showToast === 'function') showToast('Lagu berikutnya belum siap. Coba lagi saat jaringan stabil.');
+            }).finally(function(){ endedTransitionBusy = false; });
+        } else if(typeof showToast === 'function') {
+            showToast('Lagu gagal dimuat. Coba lagi saat jaringan stabil.');
+        }
         return;
     }
     audioRecoveryAttempts += 1;

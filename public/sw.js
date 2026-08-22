@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v116';
-const CACHE_DATA_NAME = 'malamusic-api-v48';
+const CACHE_STATIC_NAME = 'malamusic-static-v117';
+const CACHE_DATA_NAME = 'malamusic-api-v49';
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
@@ -14,10 +14,10 @@ const STATIC_ASSETS = [
   '/banner.png',
   '/firebase.js?v=112',
   '/app.js?v=106',
-  '/player.js?v=109',
+  '/player.js?v=117',
   '/listen-together.js?v=107',
-  '/fullplayer.js?v=109',
-  '/miniplayer.js?v=109',
+  '/fullplayer.js?v=117',
+  '/miniplayer.js?v=117',
   '/home.js?v=109',
   '/library.js?v=105',
   '/liked.js?v=102',
