@@ -383,6 +383,7 @@ var activeAudioTrack = null;
 var activeAudioSequence = 0;
 var activeAudioIsOffline = false;
 var audioStartTimer = null;
+var audioLoadWatchdog = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
@@ -395,6 +396,22 @@ function isCurrentAudioSource(){
 }
 function clearAudioStartTimer(){
     if(audioStartTimer){ clearTimeout(audioStartTimer); audioStartTimer = null; }
+}
+function clearAudioLoadWatchdog(){
+    if(audioLoadWatchdog){ clearTimeout(audioLoadWatchdog); audioLoadWatchdog = null; }
+}
+function armAudioLoadWatchdog(track, sequence){
+    clearAudioLoadWatchdog();
+    audioLoadWatchdog = setTimeout(function(){
+        audioLoadWatchdog = null;
+        if(sequence !== audioLoadSequence || S.ct !== track || !S.il) return;
+        S.il = false; S.ip = false; UB();
+        if(typeof showToast === 'function') showToast('Audio terlalu lama disiapkan. Coba lagi atau lanjut ke lagu berikutnya.');
+        if(S.autoNext && S.rm !== 'one' && !(S.playbackMode === 'offline' || S.ps === 'offline')) {
+            endedTransitionBusy = true;
+            Promise.resolve(NX()).catch(function(){}).finally(function(){ endedTransitionBusy = false; });
+        }
+    }, 20000);
 }
 function armAudioStartTimer(track, sequence){
     clearAudioStartTimer();
@@ -1143,6 +1160,7 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
     }
     var loadSequence = ++audioLoadSequence;
     clearAudioStartTimer();
+    clearAudioLoadWatchdog();
     activeAudioTrack = null;
     activeAudioSequence = 0;
     activeAudioIsOffline = false;
@@ -1158,6 +1176,7 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
         AU.load();
     }catch(e){}
     updateMediaSessionMetadata(track);
+    armAudioLoadWatchdog(track, loadSequence);
     fetchAudioAndPlay(track,resumeAt,loadSequence);
     // Resolusi URL lagu sekitar dilakukan di background agar Next/Previous tidak menunggu dari awal.
     setTimeout(preloadAdjacentTracks, 80);
@@ -1181,6 +1200,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
         var audioUrl = await Promise.race([resolveAudioUrl(track), resolveTimeout]);
         clearTimeout(resolveTimeoutId);
         if(!isCurrentLoad())return;
+        clearAudioLoadWatchdog();
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
             var isOfflineBinary = String(audioUrl).indexOf('/offline-audio/') === 0;
@@ -1239,6 +1259,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
     }catch(e){
         if (typeof resolveTimeoutId !== 'undefined') clearTimeout(resolveTimeoutId);
         if(isCurrentLoad()){
+            clearAudioLoadWatchdog();
             S.il=false;S.ip=false;UB();
             if (navigator.onLine) {
                 if(typeof showToast === 'function') showToast('Audio belum tersedia. Coba lagi sebentar.');
