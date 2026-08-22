@@ -1,4 +1,5 @@
 var Profile = {
+    listeningSyncTimer: null,
     render: function() {
         var el = gid('view-dev');
         if (!el) return;
@@ -77,6 +78,14 @@ var Profile = {
         Profile.refreshListeningStats();
         EmailAuth.refresh();
         if (typeof Streak !== 'undefined') Streak.refreshProfileCard();
+        Profile.startListeningStatsSync();
+    },
+    startListeningStatsSync: function() {
+        if (this.listeningSyncTimer) return;
+        var self = this;
+        this.listeningSyncTimer = setInterval(function() {
+            if (document.visibilityState === 'visible' && document.getElementById('profile-listening-card')) self.refreshListeningStats();
+        }, 15000);
     },
     refreshListeningStats: async function() {
         var el = document.getElementById('profile-listening-card'); if (!el) return;

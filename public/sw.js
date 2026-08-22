@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v117';
+const CACHE_STATIC_NAME = 'malamusic-static-v118';
 const CACHE_DATA_NAME = 'malamusic-api-v49';
 
 self.addEventListener('message', (event) => {
@@ -14,20 +14,20 @@ const STATIC_ASSETS = [
   '/banner.png',
   '/firebase.js?v=112',
   '/app.js?v=106',
-  '/player.js?v=117',
+  '/player.js?v=118',
   '/listen-together.js?v=107',
-  '/fullplayer.js?v=117',
-  '/miniplayer.js?v=117',
+  '/fullplayer.js?v=118',
+  '/miniplayer.js?v=118',
   '/home.js?v=109',
   '/library.js?v=105',
   '/liked.js?v=102',
   '/search.js?v=105',
   '/album.js?v=116',
   '/artist.js?v=102',
-  '/profile.js?v=114',
+  '/profile.js?v=118',
   '/streak.js?v=109',
   '/leaderboard.js?v=102',
-  '/stats.js?v=109',
+  '/stats.js?v=118',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];

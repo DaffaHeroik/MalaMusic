@@ -145,7 +145,7 @@ AU.addEventListener('timeupdate',function(){
     }
 });
 AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined') Stats.flush();}});
+AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined') Stats.flush(true);}});
 AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
 AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
 function queueAutoNextAfterEnd(reason){
@@ -153,7 +153,7 @@ function queueAutoNextAfterEnd(reason){
     var endedSequence = audioLoadSequence;
     if (endedHandledSequence === endedSequence || endedTransitionBusy) return;
     endedHandledSequence = endedSequence;
-    if(typeof Stats !== 'undefined') Stats.flush();
+    if(typeof Stats !== 'undefined') Stats.flush(true);
     ST();
     if(typeof handleTrackEnded==='function'&&handleTrackEnded()) return;
     if(S.rm==='one'){
@@ -1136,6 +1136,7 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
     if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
     isPreloadingNext = false;
+    if (typeof Stats !== 'undefined') { Stats.flush(true); Stats.reset(track); }
     ST();
     try{
         AU.pause();
