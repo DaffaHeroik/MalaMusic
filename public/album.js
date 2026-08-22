@@ -76,6 +76,19 @@ var Album = {
                     return;
                 }
             }
+            // A saved external playlist is a user-owned snapshot. Prefer its stored
+            // songs when present; otherwise a fresh catalog response can silently
+            // replace the playlist with a different number/order of tracks.
+            if (localSavedPlaylist && Array.isArray(localSavedPlaylist.songs) && localSavedPlaylist.songs.length > 0) {
+                data = { status: true, result: Object.assign({}, data.result, {
+                    title: localSavedPlaylist.name || data.result.title || 'Playlist tersimpan',
+                    artist: localSavedPlaylist.creator || data.result.artist || '',
+                    creator: localSavedPlaylist.creator || data.result.creator || '',
+                    thumbnails: localSavedPlaylist.image ? [{ url: localSavedPlaylist.image }] : (data.result.thumbnails || []),
+                    songs: localSavedPlaylist.songs,
+                    description: data.result.description || 'Snapshot playlist tersimpan'
+                }) };
+            }
             const a = data.result;
             // Hydrate an older saved external playlist that only contains metadata.
             // This makes the saved copy resilient when the catalog API is unavailable later.
@@ -149,9 +162,10 @@ var Album = {
                         const sThumb = s.thumbnails[0];
                         sim = safeMediaUrl(typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null), FI);
                     }
+                    if (!sim && s.cover) sim = safeMediaUrl(s.cover, FI);
                     if (!sim) sim = im;
                     return normalizeTrack({
-                        id: s.videoId, videoId: s.videoId, title: s.title, artist: s.artist, artistId: s.artistId, thumbnail: sim, ytUrl: 'https://youtube.com/watch?v='+s.videoId
+                        id: s.videoId || s.id, videoId: s.videoId || s.id, title: s.title, artist: s.artist, artistId: s.artistId, cover: sim, thumbnail: sim, ytUrl: s.ytUrl || ('https://youtube.com/watch?v='+(s.videoId || s.id))
                     });
                 });
                 
@@ -162,6 +176,7 @@ var Album = {
                         const sThumb = s.thumbnails[0];
                         sim = safeMediaUrl(typeof sThumb === 'string' ? sThumb : (sThumb.url || sThumb.src || null), FI);
                     }
+                    if (!sim && s.cover) sim = safeMediaUrl(s.cover, FI);
                     if (!sim) sim = im;
 
                     var isCur = S.ct && (
