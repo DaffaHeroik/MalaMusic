@@ -1,5 +1,5 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v111';
-const CACHE_DATA_NAME = 'malamusic-api-v44';
+const CACHE_STATIC_NAME = 'malamusic-static-v113';
+const CACHE_DATA_NAME = 'malamusic-api-v45';
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=111',
+  '/firebase.js?v=112',
   '/app.js?v=106',
   '/player.js?v=109',
   '/listen-together.js?v=107',
@@ -24,7 +24,7 @@ const STATIC_ASSETS = [
   '/search.js?v=105',
   '/album.js?v=105',
   '/artist.js?v=102',
-  '/profile.js?v=106',
+  '/profile.js?v=112',
   '/streak.js?v=109',
   '/leaderboard.js?v=102',
   '/stats.js?v=109',
