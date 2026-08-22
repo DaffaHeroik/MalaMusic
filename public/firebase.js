@@ -4,7 +4,7 @@
  */
 const firebaseConfig = {
   apiKey: 'AIzaSyDP1Yh0E8f_PgLFuLprIhFX3gccM9A4gfk',
-  authDomain: 'heroikzre.firebaseapp.com',
+  authDomain: 'auth.music.malawalipayment.web.id',
   databaseURL: 'https://heroikzre-default-rtdb.asia-southeast1.firebasedatabase.app',
   projectId: 'heroikzre',
   storageBucket: 'heroikzre.firebasestorage.app',
