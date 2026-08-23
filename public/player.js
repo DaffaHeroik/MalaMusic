@@ -430,7 +430,7 @@ function armAudioStartTimer(track, sequence){
     }, 12000);
 }
 var prefetchAudioElements = {};
-
+var prefetchAudioInFlight = {};
 function getTrackId(track) { return track && (track.videoId || track.id); }
 
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
@@ -503,7 +503,8 @@ function resolveAudioUrl(track) {
 function prefetchTrackAudio(track) {
     var vid = getTrackId(track);
     if (S.playbackMode === 'offline' || S.ps === 'offline') return;
-    if (!vid || prefetchAudioElements[vid]) return;
+    if (!vid || prefetchAudioElements[vid] || prefetchAudioInFlight[vid]) return;
+    prefetchAudioInFlight[vid] = true;
     resolveAudioUrl(track).then(function(rawUrl){
         if (prefetchAudioElements[vid]) return;
         var source = '/api/proxy-audio?url=' + encodeURIComponent(rawUrl);
@@ -512,7 +513,29 @@ function prefetchTrackAudio(track) {
         audio.src = source;
         audio.load();
         prefetchAudioElements[vid] = audio;
-    }).catch(function(){});
+    }).catch(function(){}).finally(function(){ delete prefetchAudioInFlight[vid]; });
+}
+function trackFromIntentElement(element) {
+    if (!element || !element.getAttribute) return null;
+    var onclick = element.getAttribute('onclick') || '';
+    var match = onclick.match(/PK\(['\"]([^'\"]+)['\"]\s*,\s*(\d+)\)/);
+    if (match) {
+        var scope = match[1], index = Number(match[2]), list = scope === 'homecat' ? S.hc : (scope === 'home2' ? (S.ht || []).slice(6, 12) : (S.ht || []).slice(0, 6));
+        return list && list[index] ? normalizeTrack(list[index]) : null;
+    }
+    var albumMatch = onclick.match(/Album\.playSong\(['\"][^'\"]+['\"]\s*,\s*(\d+)\)/);
+    if (albumMatch && Array.isArray(S.pl) && S.pl[Number(albumMatch[1])]) return normalizeTrack(S.pl[Number(albumMatch[1])]);
+    return null;
+}
+function prefetchFromIntent(event) {
+    if (S.dataSaver || S.playbackMode === 'offline' || S.ps === 'offline') return;
+    var element = event.target && event.target.closest ? event.target.closest('[onclick*="PK(\"], [onclick*=\'PK(\'], [onclick*="Album.playSong"], [onclick*=\'Album.playSong\']') : null;
+    var track = trackFromIntentElement(element);
+    if (track) prefetchTrackAudio(track);
+}
+if (typeof document !== 'undefined') {
+    document.addEventListener('pointerover', prefetchFromIntent, {passive:true, capture:true});
+    document.addEventListener('touchstart', prefetchFromIntent, {passive:true, capture:true});
 }
 
 function preloadAdjacentTracks() {
