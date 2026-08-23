@@ -389,7 +389,7 @@ var audioLoadWatchdog = null;
 var audioRecoveryKey = '';
 var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
-var AUDIO_RESOLVE_UI_TIMEOUT_MS = 18000;
+var AUDIO_RESOLVE_UI_TIMEOUT_MS = 28000;
 var AUDIO_RESOLVE_MAX_RETRIES = 4;
 var AUDIO_URL_CACHE_TTL_MS = 90000;
 var audioUrlFetchPromises = {};
@@ -419,7 +419,7 @@ function armAudioLoadWatchdog(track, sequence){
             endedTransitionBusy = true;
             Promise.resolve(NX()).catch(function(){}).finally(function(){ endedTransitionBusy = false; });
         }
-    }, 20000);
+    }, 30000);
 }
 function armAudioStartTimer(track, sequence){
     clearAudioStartTimer();
