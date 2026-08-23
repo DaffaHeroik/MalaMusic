@@ -518,6 +518,12 @@ function prefetchTrackAudio(track) {
 function trackFromIntentElement(element) {
     if (!element || !element.getAttribute) return null;
     var onclick = element.getAttribute('onclick') || '';
+    var directMatch = onclick.match(/App\.autoPlayTrack\(['\"]([^'\"]+)['\"]\)/);
+    if (directMatch) {
+        var recent = typeof getRecentTracks === 'function' ? getRecentTracks() : [];
+        var recentTrack = Array.isArray(recent) ? recent.find(function(item){ return String(item && (item.videoId || item.id) || '') === directMatch[1]; }) : null;
+        return normalizeTrack(recentTrack || { videoId: directMatch[1] });
+    }
     var match = onclick.match(/PK\(['\"]([^'\"]+)['\"]\s*,\s*(\d+)\)/);
     if (match) {
         var scope = match[1], index = Number(match[2]), list = scope === 'homecat' ? S.hc : (scope === 'home2' ? (S.ht || []).slice(6, 12) : (S.ht || []).slice(0, 6));
