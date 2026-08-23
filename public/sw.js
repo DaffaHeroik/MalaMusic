@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v125';
+const CACHE_STATIC_NAME = 'malamusic-static-v127';
 const CACHE_DATA_NAME = 'malamusic-api-v49';
 
 self.addEventListener('message', (event) => {
