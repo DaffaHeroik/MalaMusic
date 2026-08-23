@@ -5,3 +5,6 @@ node_modules/
 npm-debug.log*
 .DS_Store
 graphify-out/
+
+android-wrapper/build/
+android-wrapper/debug.keystore
