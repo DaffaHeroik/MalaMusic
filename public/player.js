@@ -365,11 +365,13 @@ function writeStorageMap(key, map) {
     }
 }
 var audioUrlCache = readStorageMap('pwa_audio_cache');
+var audioUrlCacheTimes = readStorageMap('pwa_audio_cache_times');
 var lyricsCache = readStorageMap('pwa_lyrics_cache');
 
 function savePwaCaches() {
     var lyricsSaved = writeStorageMap('pwa_lyrics_cache', lyricsCache);
     var audioSaved = writeStorageMap('pwa_audio_cache', audioUrlCache);
+    writeStorageMap('pwa_audio_cache_times', audioUrlCacheTimes);
     if (!lyricsSaved) console.warn('[MalaMusic] Lirik tidak dapat disimpan karena quota localStorage.');
     if (!audioSaved) console.warn('[MalaMusic] URL audio tidak dapat disimpan karena quota localStorage.');
 }
@@ -389,6 +391,7 @@ var audioRecoveryAttempts = 0;
 var AUDIO_RESOLVE_TIMEOUT_MS = 25000;
 var AUDIO_RESOLVE_UI_TIMEOUT_MS = 18000;
 var AUDIO_RESOLVE_MAX_RETRIES = 4;
+var AUDIO_URL_CACHE_TTL_MS = 90000;
 var audioUrlFetchPromises = {};
 
 function sameAudioTrack(a, b){
@@ -444,7 +447,9 @@ function resolveAudioUrl(track) {
     }).then(function(offlinePath){
         if (offlinePath) return offlinePath;
         if (forceOffline) throw new Error('Offline dan audio belum tersimpan');
-        if (audioUrlCache[vid]) return audioUrlCache[vid];
+        var cachedAt = Number(audioUrlCacheTimes[vid] || 0);
+        if (audioUrlCache[vid] && cachedAt && (Date.now() - cachedAt) < AUDIO_URL_CACHE_TTL_MS) return audioUrlCache[vid];
+        if (audioUrlCache[vid]) { delete audioUrlCache[vid]; delete audioUrlCacheTimes[vid]; }
         if (!navigator.onLine) throw new Error('Offline dan audio belum tersimpan');
         var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
         var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -487,6 +492,7 @@ function resolveAudioUrl(track) {
                 throw staleError;
             }
             audioUrlCache[vid] = url;
+            audioUrlCacheTimes[vid] = Date.now();
             savePwaCaches();
             return url;
         }).finally(function(){ clearTimeout(timeoutId); });
@@ -1307,6 +1313,7 @@ function handleAudioSourceError(){
     var vid = getTrackId(failedTrack);
     if (vid && audioUrlCache[vid]) {
         delete audioUrlCache[vid];
+        delete audioUrlCacheTimes[vid];
         savePwaCaches();
     }
     activeAudioTrack = null;

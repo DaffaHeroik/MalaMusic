@@ -159,6 +159,7 @@ app.all('/api/proxy-image', (req, res) => {
 
 // Proxy audio needs to stream in node, bypassing edge function.
 const AUDIO_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36';
+const AUDIO_HTTPS_AGENT = new https.Agent({ keepAlive: true, maxSockets: 64, maxFreeSockets: 16, timeout: 15000 });
 const AUDIO_REDIRECT_LIMIT = 1;
 function isAllowedAudioUrl(value, baseUrl) {
     try {
@@ -173,7 +174,7 @@ function isAllowedAudioUrl(value, baseUrl) {
 function proxyAudioStream(req, res, targetUrl, redirectsRemaining) {
     const parsed = isAllowedAudioUrl(targetUrl);
     if (!parsed) return res.status(400).send('Audio source tidak diizinkan');
-    const options = { headers: { 'User-Agent': AUDIO_USER_AGENT } };
+    const options = { headers: { 'User-Agent': AUDIO_USER_AGENT }, agent: AUDIO_HTTPS_AGENT };
     if (req.headers.range) options.headers.Range = req.headers.range;
     const proxyReq = https.get(parsed, options, (proxyRes) => {
         if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
@@ -185,6 +186,7 @@ function proxyAudioStream(req, res, targetUrl, redirectsRemaining) {
             return proxyAudioStream(req, res, redirected.href, redirectsRemaining - 1);
         }
         res.status(proxyRes.statusCode || 502);
+        res.setHeader('Cache-Control', 'private, max-age=20, stale-while-revalidate=30');
         const allowedOrigin = getAllowedOrigin(req);
         if (allowedOrigin) {
             res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
