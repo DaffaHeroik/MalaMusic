@@ -535,7 +535,7 @@ function trackFromIntentElement(element) {
 }
 function prefetchFromIntent(event) {
     if (S.dataSaver || S.playbackMode === 'offline' || S.ps === 'offline') return;
-    var element = event.target && event.target.closest ? event.target.closest('[onclick*="PK(\"], [onclick*=\'PK(\'], [onclick*="Album.playSong"], [onclick*=\'Album.playSong\']') : null;
+    var element = event.target && event.target.closest ? event.target.closest('[onclick*="PK(\"], [onclick*=\'PK(\'], [onclick*="Album.playSong"], [onclick*=\'Album.playSong\'], [onclick*="App.autoPlayTrack"], [onclick*=\'App.autoPlayTrack\']') : null;
     var track = trackFromIntentElement(element);
     if (track) prefetchTrackAudio(track);
 }
