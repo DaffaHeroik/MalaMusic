@@ -1153,7 +1153,8 @@ function PK(s,i){
 
     if(!l || !l[i]) return;
 
-    if(S.ct && ((S.ct.id && S.ct.id === l[i].id) || (S.ct.videoId && S.ct.videoId === l[i].videoId)) && AU.src && !AU.paused){
+    var requestedOffline = s === 'offline';
+    if(S.ct && ((S.ct.id && S.ct.id === l[i].id) || (S.ct.videoId && S.ct.videoId === l[i].videoId)) && AU.src && !AU.paused && (!requestedOffline || activeAudioIsOffline)){
         if(typeof MP !== 'undefined' && MP.togglePlay) { MP.togglePlay(); return; }
     }
 
