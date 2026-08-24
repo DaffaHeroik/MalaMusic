@@ -44,11 +44,11 @@ function normalizeQuery(value) {
 
 module.exports = async function users(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ status: false, message: 'Method tidak didukung.' });
-    const db = getDatabase();
     const query = normalizeQuery(req.query && (req.query.query || req.query.q));
     const uid = String(req.query && req.query.uid || '').trim();
     if (!query && !uid) return res.status(400).json({ status: false, message: 'Parameter query atau uid diperlukan.' });
     try {
+        const db = getDatabase();
         if (uid) {
             const profileSnap = await db.ref(`userProfiles/${uid}`).once('value');
             if (!profileSnap.exists()) return res.status(404).json({ status: false, message: 'Profil pengguna tidak ditemukan.' });
@@ -59,25 +59,18 @@ module.exports = async function users(req, res) {
             const playlists = Array.isArray(library.playlists) ? library.playlists.map(cleanPublicPlaylist).filter(Boolean).slice(0, 50) : [];
             return res.status(200).json({ status: true, profile: cleanProfile(uid, profile), playlists });
         }
-        const usersById = new Map();
-        const indexed = await db.ref('userProfiles').orderByChild('nameLower').startAt(query).endAt(`${query}\uf8ff`).limitToFirst(20).once('value');
-        indexed.forEach(child => {
+        // Keep this read compatible with legacy RTDB data that has no nameLower index.
+        // Only sanitized public fields are returned; private profiles remain excluded.
+        const snapshot = await db.ref('userProfiles').limitToFirst(500).once('value');
+        const users = [];
+        snapshot.forEach(child => {
+            if (users.length >= 20) return;
             const profile = child.val() || {};
-            if (profile.publicSearch !== false) usersById.set(child.key, cleanProfile(child.key, profile));
+            if (profile.publicSearch === false) return;
+            const name = normalizeQuery(profile.name);
+            if (name.includes(query)) users.push(cleanProfile(child.key, profile));
         });
-        // Backward-compatible fallback for profiles created before nameLower was introduced.
-        // The response is still sanitized, and private profiles remain excluded.
-        if (usersById.size < 20) {
-            const legacy = await db.ref('userProfiles').limitToFirst(500).once('value');
-            legacy.forEach(child => {
-                if (usersById.size >= 20 || usersById.has(child.key)) return;
-                const profile = child.val() || {};
-                if (profile.publicSearch === false) return;
-                const name = normalizeQuery(profile.name);
-                if (name.includes(query)) usersById.set(child.key, cleanProfile(child.key, profile));
-            });
-        }
-        return res.status(200).json({ status: true, users: Array.from(usersById.values()).slice(0, 20) });
+        return res.status(200).json({ status: true, users });
     } catch (error) {
         console.error('[users]', error && error.stack ? error.stack : error);
         return res.status(503).json({ status: false, message: 'Pencarian pengguna sementara belum tersedia.' });
