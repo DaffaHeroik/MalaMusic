@@ -434,11 +434,15 @@ var prefetchAudioInFlight = {};
 function getTrackId(track) { return track && (track.videoId || track.id); }
 
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
+function isOfflineAudioUrl(value) {
+    try { return new URL(String(value || ''), location.origin).pathname.indexOf('/offline-audio/') === 0; }
+    catch(e) { return String(value || '').indexOf('/offline-audio/') === 0; }
+}
 function resolveAudioUrl(track) {
     var vid = getTrackId(track);
     var forceOffline = S.playbackMode === 'offline' || S.ps === 'offline';
     if (!vid) return Promise.reject(new Error('Track tidak memiliki ID'));
-    if (audioUrlFetchPromises[vid]) return audioUrlFetchPromises[vid];
+    if (audioUrlFetchPromises[vid] && !forceOffline) return audioUrlFetchPromises[vid];
     audioUrlFetchPromises[vid] = Promise.resolve().then(function(){
         if (typeof caches !== 'undefined') {
             return caches.match(offlineAudioPath(vid)).then(function(hit){ return hit ? offlineAudioPath(vid) : null; }).catch(function(){ return null; });
@@ -1246,7 +1250,7 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
         clearAudioLoadWatchdog();
         if(audioUrl){
             var preloaded = prefetchAudioElements[vid];
-            var isOfflineBinary = String(audioUrl).indexOf('/offline-audio/') === 0;
+            var isOfflineBinary = isOfflineAudioUrl(audioUrl);
             var nextSrc = isOfflineBinary ? audioUrl : ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl));
             if (preloaded && preloaded.src) {
                 nextSrc = preloaded.src;
