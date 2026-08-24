@@ -452,6 +452,14 @@ function updateOfflineButtons() {
     if (window.lucide) lucide.createIcons();
 }
 
+async function retryOfflineTrack(track) {
+    if (!track) return false;
+    showToast('Mengulang download audio offline...');
+    var ok = await saveTrackForOffline(track, { keepExisting: true });
+    if (ok) showToast('Audio offline sudah lengkap dan siap diputar.');
+    return ok;
+}
+
 var OfflineView = {
     render() {
         var el = gid('view-offline');
@@ -470,6 +478,7 @@ var OfflineView = {
                 );
                 var isPlay = isCur && S.ip;
                 var isLoad = isCur && S.il;
+                var isIncomplete = s.offlineStatus === 'partial' || s.offlineStatus === 'pending';
 
                 var playIconHtml = '';
                 if (isLoad) {
@@ -485,9 +494,10 @@ var OfflineView = {
 
                 var dateStr = s.savedAt ? new Date(s.savedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '';
                 var safeSongJson = JSON.stringify(s).replace(/"/g, '&quot;');
+                var offlineClick = isIncomplete ? 'retryOfflineTrack('+safeSongJson+')' : "PK('offline',"+i+")";
 
                 return '<div class="flex items-center gap-3 p-2.5 rounded-2xl border '+cardBg+' active:scale-[0.98] transition-all duration-200 group shadow-md">'+
-                    '<div onclick="PK(\'offline\','+i+')" class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">'+
+                    '<div onclick="'+offlineClick+'" class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">'+
                         '<div class="w-5 text-center text-white/50 text-xs font-bold group-hover:text-white shrink-0">'+(i + 1)+'</div>'+
                         '<img src="'+(s.cover || FI)+'" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
                         '<div class="min-w-0 flex-1">'+
@@ -498,8 +508,8 @@ var OfflineView = {
                     '<button onclick="event.stopPropagation();saveTrackForOffline('+safeSongJson+');" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-red-400 border border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all" title="Hapus dari Mode Offline PWA">'+
                         '<i data-lucide="trash-2" class="w-4 h-4"></i>'+
                     '</button>'+
-                    '<button onclick="PK(\'offline\','+i+')" class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shrink-0 active:scale-90 transition-all shadow-md">'+
-                        playIconHtml+
+                    '<button onclick="'+offlineClick+'" class="w-8 h-8 rounded-full '+(isIncomplete ? 'bg-amber-300 text-black' : 'bg-white text-black')+' flex items-center justify-center shrink-0 active:scale-90 transition-all shadow-md" title="'+(isIncomplete ? 'Download ulang audio offline' : 'Putar offline')+'">'+
+                        (isIncomplete ? '<i data-lucide="refresh-cw" class="w-4 h-4"></i>' : playIconHtml)+
                     '</button>'+
                 '</div>';
             }).join('');
