@@ -9,9 +9,9 @@ var Search = {
         gid('view-search').innerHTML=`
         <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
             <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md mb-3">Cari</h1>
-            <form id="search-form" class="relative" autocomplete="off">
+            <form id="search-form" class="relative" autocomplete="off" role="search"><label for="search-input" class="sr-only">Cari lagu, artis, playlist, atau pengguna</label>
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/60"><i data-lucide="search" class="h-5 w-5"></i></div>
-                <input type="text" id="search-input" class="w-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium rounded-2xl pl-12 pr-20 py-3.5 focus:outline-none placeholder:text-white/50" placeholder="Cari lagu, artis, playlist, atau pengguna..." autocomplete="off" />
+                <input type="text" id="search-input" class="w-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium rounded-2xl pl-12 pr-20 py-3.5 focus:outline-none placeholder:text-white/50" placeholder="Cari lagu, artis, playlist, atau pengguna..." aria-label="Cari lagu, artis, playlist, atau pengguna" aria-describedby="search-help" autocomplete="off" /><span id="search-help" class="sr-only">Masukkan minimal satu kata, lalu tekan Cari.</span>
                 <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-black font-extrabold px-4 py-2 rounded-xl active:scale-90 shadow-md">Cari</button>
             </form>
             <div id="suggestions" class="hidden mt-2 glass-strong rounded-2xl max-h-72 overflow-y-auto hide-scrollbar border border-white/10"></div>
