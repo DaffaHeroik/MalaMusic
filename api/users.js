@@ -50,17 +50,17 @@ module.exports = async function users(req, res) {
     if (!query && !uid) return res.status(400).json({ status: false, message: 'Parameter query atau uid diperlukan.' });
     try {
         if (uid) {
-            const profileSnap = await db.ref(`userProfiles/${uid}`).get();
+            const profileSnap = await db.ref(`userProfiles/${uid}`).once('value');
             if (!profileSnap.exists()) return res.status(404).json({ status: false, message: 'Profil pengguna tidak ditemukan.' });
             const profile = profileSnap.val() || {};
             if (profile.publicSearch === false) return res.status(404).json({ status: false, message: 'Profil pengguna tidak tersedia.' });
-            const librarySnap = await db.ref(`userLibraries/${uid}`).get();
+            const librarySnap = await db.ref(`userLibraries/${uid}`).once('value');
             const library = librarySnap.val() || {};
             const playlists = Array.isArray(library.playlists) ? library.playlists.map(cleanPublicPlaylist).filter(Boolean).slice(0, 50) : [];
             return res.status(200).json({ status: true, profile: cleanProfile(uid, profile), playlists });
         }
         const usersById = new Map();
-        const indexed = await db.ref('userProfiles').orderByChild('nameLower').startAt(query).endAt(`${query}\uf8ff`).limitToFirst(20).get();
+        const indexed = await db.ref('userProfiles').orderByChild('nameLower').startAt(query).endAt(`${query}\uf8ff`).limitToFirst(20).once('value');
         indexed.forEach(child => {
             const profile = child.val() || {};
             if (profile.publicSearch !== false) usersById.set(child.key, cleanProfile(child.key, profile));
@@ -68,7 +68,7 @@ module.exports = async function users(req, res) {
         // Backward-compatible fallback for profiles created before nameLower was introduced.
         // The response is still sanitized, and private profiles remain excluded.
         if (usersById.size < 20) {
-            const legacy = await db.ref('userProfiles').limitToFirst(500).get();
+            const legacy = await db.ref('userProfiles').limitToFirst(500).once('value');
             legacy.forEach(child => {
                 if (usersById.size >= 20 || usersById.has(child.key)) return;
                 const profile = child.val() || {};
