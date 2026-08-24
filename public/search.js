@@ -11,7 +11,7 @@ var Search = {
             <h1 class="text-3xl font-black text-white tracking-tight drop-shadow-md mb-3">Cari</h1>
             <form id="search-form" class="relative" autocomplete="off">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/60"><i data-lucide="search" class="h-5 w-5"></i></div>
-                <input type="text" id="search-input" class="w-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium rounded-2xl pl-12 pr-20 py-3.5 focus:outline-none placeholder:text-white/50" placeholder="Cari lagu, artis, atau album..." autocomplete="off" />
+                <input type="text" id="search-input" class="w-full bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium rounded-2xl pl-12 pr-20 py-3.5 focus:outline-none placeholder:text-white/50" placeholder="Cari lagu, artis, playlist, atau pengguna..." autocomplete="off" />
                 <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-black font-extrabold px-4 py-2 rounded-xl active:scale-90 shadow-md">Cari</button>
             </form>
             <div id="suggestions" class="hidden mt-2 glass-strong rounded-2xl max-h-72 overflow-y-auto hide-scrollbar border border-white/10"></div>
@@ -20,6 +20,7 @@ var Search = {
             <button type="button" onclick="setFilter('songs')" id="f-songs" aria-pressed="true" class="filter-tab active flex-1 py-2 px-4 rounded-full text-xs font-bold btn-chrome text-white border border-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Musik</button>
             <button type="button" onclick="setFilter('playlists')" id="f-playlists" aria-pressed="false" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Playlist</button>
             <button type="button" onclick="setFilter('artists')" id="f-artists" aria-pressed="false" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Artis</button>
+            <button type="button" onclick="setFilter('users')" id="f-users" aria-pressed="false" class="filter-tab flex-1 py-2 px-4 rounded-full text-xs font-semibold text-[#a0a5b0] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Pengguna</button>
         </div>
         <div class="px-4 mt-2" id="search-results"></div>
         <div id="search-recs" class="px-4 mt-2 space-y-6 pb-8"></div>`;
@@ -218,6 +219,7 @@ var Search = {
             try{
                 var r=await fetch(API.search+'?query='+encodeURIComponent(submittedQuery)+'&type=all', { signal: queryController.signal });
                 var d=await r.json();
+                var userData = await fetch('/api/users?query='+encodeURIComponent(submittedQuery), { signal: queryController.signal }).then(function(response){ return response.ok ? response.json() : {status:false}; }).catch(function(){ return {status:false}; });
                 if (requestId !== Search.querySeq || S.sq !== submittedQuery) return;
                 S.ar=d.status&&d.result.songs?d.result.songs.map(function(s){return{id:s.videoId,videoId:s.videoId,title:cn(s.title),artist:cn(s.artist),artistId:s.artistId||'',cover:toHDCover(s.thumbnail,s.videoId),ytUrl:s.url};}):[];
                 
@@ -225,6 +227,7 @@ var Search = {
                 var al = d.status&&d.result.albums?d.result.albums:[];
                 S.pr = [].concat(pl).concat(al); // combine playlists & albums
                 S.art = d.status&&d.result.artists?d.result.artists:[];
+                S.users = userData.status && Array.isArray(userData.users) ? userData.users : [];
 
                 gid('filter-tabs').classList.remove('hidden');
                 S.filter = 'songs';
@@ -308,6 +311,11 @@ var Search = {
                 '</div>';
             }).join('');
             lucide.createIcons();
+        } else if (S.filter === 'users') {
+            c.innerHTML='<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pb-8">'+S.sr.map(function(user, i){
+                return '<button type="button" onclick="Search.openUser(\''+esJs(user.id)+'\')" class="text-left flex items-center gap-3 p-4 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] active:scale-[.98] transition-all animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><img src="'+safeMediaUrl(user.picture || FI, FI)+'" class="w-14 h-14 rounded-full object-cover border border-white/15 shrink-0" onerror="this.src=\''+FI+'\'" /><span class="min-w-0"><strong class="block text-white font-bold truncate">'+es(user.name)+'</strong><span class="block text-xs text-white/50 mt-1">Profil publik · Lihat playlist</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40 ml-auto shrink-0"></i></button>';
+            }).join('')+'</div>';
+            lucide.createIcons();
         } else if (S.filter === 'artists') {
             c.innerHTML='<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-8">'+S.sr.map(function(p, i){
                 return '<div onclick="Artist.open(\''+p.id+'\', \''+esJs(p.name||p.title)+'\')" class="p-3 rounded-2xl bg-[#20222c] border border-white/10 shadow-xl hover:bg-[#282b38] cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group animate-card-up" style="animation-delay:'+Math.min(i*40, 500)+'ms"><div class="relative w-20 h-20 mb-2.5 rounded-full overflow-hidden border-2 border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300"><img src="'+toWebp(p.cover)+'" class="w-full h-full object-cover" onerror="handleImgError(this)" /></div><h3 class="font-bold text-sm truncate text-white w-full px-1">'+es(p.name||p.title)+'</h3><p class="text-white/60 text-[10px] uppercase tracking-wider font-semibold mt-0.5">'+es(p.subtitle||'Artist')+'</p></div>';
@@ -321,10 +329,20 @@ var Search = {
             if (typeof updateSavedPlaylistButtons === 'function') updateSavedPlaylistButtons();
         }
     },
+    openUser(uid){
+        fetch('/api/users?uid='+encodeURIComponent(uid)).then(function(response){ return response.ok ? response.json() : Promise.reject(new Error()); }).then(function(data){
+            var profile=data.profile||{}, playlists=Array.isArray(data.playlists)?data.playlists:[], modal=document.createElement('div');
+            modal.className='fixed inset-0 z-[350] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
+            modal.onclick=function(event){if(event.target===modal)modal.remove();};
+            modal.innerHTML='<div class="w-full sm:max-w-lg max-h-[88vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="p-5 flex items-center gap-4 border-b border-white/10"><img src="'+safeMediaUrl(profile.picture||FI,FI)+'" class="w-16 h-16 rounded-full object-cover border border-white/15" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><p class="text-[10px] uppercase tracking-widest text-amber-200/70 font-black">Profil publik</p><h2 class="text-xl font-black text-white truncate mt-1">'+es(profile.name||'Pengguna MalaMusic')+'</h2><p class="text-xs text-white/50 mt-1">'+playlists.length+' playlist publik</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[58vh] overflow-y-auto p-3">'+(playlists.length?playlists.map(function(pl){return '<button type="button" onclick="App.openPublicPlaylist(\''+esJs(pl.id)+'\');this.closest(\'.fixed\').remove()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-left"><img src="'+safeMediaUrl(pl.image||((pl.songs[0]&&pl.songs[0].cover)||FI),FI)+'" class="w-12 h-12 rounded-xl object-cover" onerror="this.src=\''+FI+'\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(pl.name)+'</strong><span class="text-xs text-white/50">'+pl.songs.length+' lagu</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/40"></i></button>';}).join(''):'<p class="p-8 text-center text-sm text-white/50">Belum ada playlist publik.</p>')+'</div></div>';
+            document.body.appendChild(modal); lucide.createIcons();
+        }).catch(function(){showToast('Profil pengguna tidak tersedia.');});
+    },
     apply(){
         if(S.filter==='songs') S.sr=S.ar||[];
         else if(S.filter==='playlists') S.sr=S.pr||[];
         else if(S.filter==='artists') S.sr=S.art||[];
+        else if(S.filter==='users') S.sr=S.users||[];
         Search.show();
     }
 };

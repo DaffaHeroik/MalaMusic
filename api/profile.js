@@ -58,16 +58,21 @@ module.exports = async function profile(req, res) {
         if (req.method === 'GET') {
             const snapshot = await ref.once('value');
             const stored = snapshot.val() || {};
-            return res.json({ status: true, profile: { name: cleanName(stored.name || user.name), picture: typeof stored.picture === 'string' ? stored.picture : '' } });
+            const publicName = cleanName(stored.name || user.name);
+            const publicSearch = stored.publicSearch !== false;
+            if (stored.nameLower !== publicName.toLocaleLowerCase('id-ID') || stored.publicSearch === undefined) {
+                ref.update({ nameLower: publicName.toLocaleLowerCase('id-ID'), publicSearch }).catch(() => {});
+            }
+            return res.json({ status: true, profile: { name: publicName, picture: typeof stored.picture === 'string' ? stored.picture : '', publicSearch } });
         }
         if (req.method !== 'PATCH' && req.method !== 'POST') return responseError(res, 405, 'Method tidak didukung.');
         let body = req.body || {};
         if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
         const picture = validatePicture(body.picture);
         if (picture === null) return responseError(res, 400, 'Avatar tidak valid atau terlalu besar. Gunakan JPG, PNG, atau WebP maksimal 200 KB.');
-        const profile = { name: cleanName(body.name || user.name), picture, updatedAt: Date.now() };
+        const profile = { name: cleanName(body.name || user.name), nameLower: cleanName(body.name || user.name).toLocaleLowerCase('id-ID'), picture, publicSearch: body.publicSearch !== false, updatedAt: Date.now() };
         await ref.update(profile);
-        return res.json({ status: true, profile: { name: profile.name, picture: profile.picture } });
+        return res.json({ status: true, profile: { name: profile.name, picture: profile.picture, publicSearch: profile.publicSearch } });
     } catch (error) {
         console.error('[profile]', error && error.stack ? error.stack : error);
         return responseError(res, 500, 'Profil belum dapat disimpan.');
