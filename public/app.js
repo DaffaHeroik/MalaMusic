@@ -922,11 +922,32 @@ App.init();Home.fetch();
 
 // SPLASH SCREEN - LOGO BULAT BESAR & RENDER HOME SYNC
 var splashStartTime = Date.now();
+function setSplashStatus(message) {
+    var status = document.getElementById('splash-status');
+    if (status && message) status.textContent = message;
+}
+function ensureImageAccessibility(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('img').forEach(function(img) {
+        if (!img.hasAttribute('alt')) {
+            var owner = img.closest('[data-title], article, button, [role="button"], .group');
+            var label = owner && owner.getAttribute('data-title');
+            if (!label && owner) {
+                var textNode = owner.querySelector('h1,h2,h3,h4,strong,p');
+                label = textNode && textNode.textContent.trim();
+            }
+            img.setAttribute('alt', (label || 'Artwork MalaMusic').replace(/\s+/g, ' ').slice(0, 140));
+        }
+        if (!img.hasAttribute('loading') && !img.closest('#splash-screen, #full-player, #mini-player')) img.setAttribute('loading', 'lazy');
+    });
+}
+ensureImageAccessibility(document);
+if (window.MutationObserver) new MutationObserver(function(records) { records.forEach(function(record) { record.addedNodes.forEach(function(node) { if (node.nodeType === 1) ensureImageAccessibility(node); }); }); }).observe(document.body, { childList: true, subtree: true });
 var splashDismissed = false;
 
 function hideSplashScreen() {
     if (splashDismissed) return;
-    var minDuration = 1000;
+    var minDuration = 500;
     var elapsed = Date.now() - splashStartTime;
     if (elapsed < minDuration) {
         setTimeout(hideSplashScreen, minDuration - elapsed);
@@ -959,8 +980,9 @@ function hideSplashScreen() {
     }
     // Safety max fallback timer in case network or API is extremely slow
     setTimeout(function(){
+        setSplashStatus('Menyiapkan tampilan utama…');
         hideSplashScreen();
-    }, 4500);
+    }, 1800);
 })();
 
 // Library object moved to /library.js
