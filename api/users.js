@@ -1,6 +1,6 @@
 'use strict';
 
-const { getDatabase } = require('./firebase-admin.js');
+const { getDatabase, getAuth } = require('./firebase-admin.js');
 
 function cleanText(value, fallback, max) {
     return String(value || fallback || '').replace(/[<>]/g, '').trim().slice(0, max);
@@ -51,24 +51,35 @@ module.exports = async function users(req, res) {
         const db = getDatabase();
         if (uid) {
             const profileSnap = await db.ref(`userProfiles/${uid}`).once('value');
-            if (!profileSnap.exists()) return res.status(404).json({ status: false, message: 'Profil pengguna tidak ditemukan.' });
             const profile = profileSnap.val() || {};
+            let authUser = null;
+            try { authUser = await getAuth().getUser(uid); } catch (_) {}
+            if (!profileSnap.exists() && !authUser) return res.status(404).json({ status: false, message: 'Profil pengguna tidak ditemukan.' });
             if (profile.publicSearch === false) return res.status(404).json({ status: false, message: 'Profil pengguna tidak tersedia.' });
+            const publicProfile = { ...profile, name: profile.name || (authUser && authUser.displayName) || 'Pengguna MalaMusic', picture: profile.picture || (authUser && authUser.photoURL) || '' };
             const librarySnap = await db.ref(`userLibraries/${uid}`).once('value');
             const library = librarySnap.val() || {};
             const playlists = Array.isArray(library.playlists) ? library.playlists.map(cleanPublicPlaylist).filter(Boolean).slice(0, 50) : [];
-            return res.status(200).json({ status: true, profile: cleanProfile(uid, profile), playlists });
+            return res.status(200).json({ status: true, profile: cleanProfile(uid, publicProfile), playlists });
         }
-        // Keep this read compatible with legacy RTDB data that has no nameLower index.
-        // Only sanitized public fields are returned; private profiles remain excluded.
-        const snapshot = await db.ref('userProfiles').limitToFirst(500).once('value');
+        // Firebase Auth is the source of truth for accounts; RTDB profile data only overrides public fields.
+        // Email, provider metadata, and other private account fields are deliberately never returned.
+        const profileSnapshot = await db.ref('userProfiles').limitToFirst(1000).once('value');
+        const profiles = new Map();
+        profileSnapshot.forEach(child => profiles.set(child.key, child.val() || {}));
+        const authUsers = await getAuth().listUsers(1000);
         const users = [];
-        snapshot.forEach(child => {
+        authUsers.users.forEach(authUser => {
             if (users.length >= 20) return;
-            const profile = child.val() || {};
+            const profile = profiles.get(authUser.uid) || {};
             if (profile.publicSearch === false) return;
-            const name = normalizeQuery(profile.name);
-            if (name.includes(query)) users.push(cleanProfile(child.key, profile));
+            const name = normalizeQuery(profile.name || authUser.displayName || 'Pengguna MalaMusic');
+            if (name.includes(query)) {
+                users.push(cleanProfile(authUser.uid, {
+                    name: profile.name || authUser.displayName || 'Pengguna MalaMusic',
+                    picture: profile.picture || authUser.photoURL || ''
+                }));
+            }
         });
         return res.status(200).json({ status: true, users });
     } catch (error) {
