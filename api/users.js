@@ -59,15 +59,25 @@ module.exports = async function users(req, res) {
             const playlists = Array.isArray(library.playlists) ? library.playlists.map(cleanPublicPlaylist).filter(Boolean).slice(0, 50) : [];
             return res.status(200).json({ status: true, profile: cleanProfile(uid, profile), playlists });
         }
-        const ref = db.ref('userProfiles').orderByChild('nameLower').startAt(query).endAt(`${query}\uf8ff`).limitToFirst(20);
-        const snapshot = await ref.get();
-        const users = [];
-        snapshot.forEach(child => {
+        const usersById = new Map();
+        const indexed = await db.ref('userProfiles').orderByChild('nameLower').startAt(query).endAt(`${query}\uf8ff`).limitToFirst(20).get();
+        indexed.forEach(child => {
             const profile = child.val() || {};
-            if (profile.publicSearch === false) return;
-            users.push(cleanProfile(child.key, profile));
+            if (profile.publicSearch !== false) usersById.set(child.key, cleanProfile(child.key, profile));
         });
-        return res.status(200).json({ status: true, users });
+        // Backward-compatible fallback for profiles created before nameLower was introduced.
+        // The response is still sanitized, and private profiles remain excluded.
+        if (usersById.size < 20) {
+            const legacy = await db.ref('userProfiles').limitToFirst(500).get();
+            legacy.forEach(child => {
+                if (usersById.size >= 20 || usersById.has(child.key)) return;
+                const profile = child.val() || {};
+                if (profile.publicSearch === false) return;
+                const name = normalizeQuery(profile.name);
+                if (name.includes(query)) usersById.set(child.key, cleanProfile(child.key, profile));
+            });
+        }
+        return res.status(200).json({ status: true, users: Array.from(usersById.values()).slice(0, 20) });
     } catch (error) {
         console.error('[users]', error && error.stack ? error.stack : error);
         return res.status(503).json({ status: false, message: 'Pencarian pengguna sementara belum tersedia.' });
