@@ -855,7 +855,7 @@ function UB(){
 
     if(S.il){
         mi.innerHTML='<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
-        fu.innerHTML='<div class="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>';
+        fu.innerHTML='<div class="w-6 h-6 border-3 border-black/70 border-t-transparent rounded-full animate-spin" role="status" aria-label="Menyiapkan lagu"></div>';
 
         if(coverOverlay){
             // Jangan menutupi artwork valid dengan logo/loading overlay. Status loading
@@ -917,6 +917,8 @@ function UB(){
 
     if(playWrap){
         playWrap.style.backgroundColor = accent;
+        playWrap.setAttribute('aria-busy', S.il ? 'true' : 'false');
+        playWrap.setAttribute('aria-label', S.il ? 'Menyiapkan lagu' : (S.ip ? 'Jedaikan lagu' : 'Putar lagu'));
     }
     if(mi){
         mi.style.borderColor = accent + '88';
