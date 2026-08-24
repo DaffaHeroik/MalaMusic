@@ -673,6 +673,10 @@ var App={
                 }, 300);
             }
         }
+        else if(path.startsWith('/blend/')){
+            var blendId = decodeURIComponent(path.split('/blend/')[1] || '').split('/')[0];
+            if(blendId && typeof Blend !== 'undefined') setTimeout(function(){ Blend.promptJoin(blendId); }, 300);
+        }
         else if(path.startsWith('/playlist-public/')){
             var publicId = path.split('/playlist-public/')[1];
             if(publicId) setTimeout(function(){ App.openPublicPlaylist(publicId); }, 300);

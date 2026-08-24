@@ -1,0 +1,10 @@
+'use strict';
+const { cleanSongs, buildBlend, track } = require('../api/blend.js')._test;
+const a = { likedSongs: [{ id: 'shared', title: 'Shared', artist: 'A' }, { id: 'only-a', title: 'Only A', artist: 'A' }] };
+const b = { likedSongs: [{ id: 'shared', title: 'Shared', artist: 'A' }, { id: 'only-b', title: 'Only B', artist: 'B' }] };
+const songs = buildBlend({ a, b }, { a: 'A', b: 'B' });
+if (songs.length !== 3) throw new Error('expected three unique blend songs');
+if (songs[0].videoId !== 'shared') throw new Error('shared song must rank first');
+if (cleanSongs([{ id: 'x', title: '<bad>' }, { id: 'x' }, null]).length !== 1) throw new Error('track deduplication failed');
+if (!track({ videoId: 'z', title: 'Z' }).ytUrl.includes('youtube.com/watch')) throw new Error('track URL fallback failed');
+console.log('BLEND_LOCAL_CHECK_PASS');
