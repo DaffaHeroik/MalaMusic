@@ -22,6 +22,7 @@ assert.match(app, /upsertOfflinePlaylist\(playlist/);
 assert.match(app, /OFFLINE_PLAYLISTS_KEY/);
 assert.match(app, /pwa_offline_playlists/);
 assert.match(app, /Penyimpanan perangkat/);
+assert.match(app, /if \(name !== OFFLINE_AUDIO_CACHE\) caches\.delete\(name\)/);
 
 assert.match(library, /onclick="downloadPlaylistOffline\('\$\{id\}'\)"/);
 assert.match(library, /aria-label="Download seluruh playlist ke Mode Offline"/);
