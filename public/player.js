@@ -528,7 +528,9 @@ function prefetchTrackAudio(track) {
     prefetchAudioInFlight[vid] = true;
     resolveAudioUrl(track).then(function(rawUrl){
         if (prefetchAudioElements[vid]) return;
-        var source = '/api/proxy-audio?url=' + encodeURIComponent(rawUrl);
+        // FIXED: an offline cache path is same-origin and must bypass the live proxy.
+        // Wrapping `/offline-audio/{id}` in proxy-audio makes Chromium report a format error.
+        var source = isOfflineAudioUrl(rawUrl) ? rawUrl : ('/api/proxy-audio?url=' + encodeURIComponent(rawUrl));
         var audio = new Audio();
         audio.preload = 'auto';
         audio.src = source;
@@ -1269,8 +1271,13 @@ async function fetchAudioAndPlay(track,resumeAt,loadSequence){
             var preloaded = prefetchAudioElements[vid];
             var isOfflineBinary = isOfflineAudioUrl(audioUrl);
             var nextSrc = isOfflineBinary ? audioUrl : ('/api/proxy-audio?url=' + encodeURIComponent(audioUrl));
-            if (preloaded && preloaded.src) {
+            // FIXED: never reuse a live-proxy prefetch for an offline binary.
+            // Older entries may contain `/api/proxy-audio?url=/offline-audio/...`.
+            if (preloaded && preloaded.src && !(isOfflineBinary && preloaded.src.indexOf('/api/proxy-audio?') !== -1)) {
                 nextSrc = preloaded.src;
+                delete prefetchAudioElements[vid];
+            } else if (preloaded) {
+                try { preloaded.pause(); preloaded.removeAttribute('src'); preloaded.load(); } catch (_) {}
                 delete prefetchAudioElements[vid];
             }
             activeAudioTrack = track;

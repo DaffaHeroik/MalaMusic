@@ -38,12 +38,12 @@ assert.doesNotMatch(worker, /Math\.max\(1, Math\.min\(120, Math\.round\(Number\(
 
 const index = fs.readFileSync('public/index.html', 'utf8');
 const sw = fs.readFileSync('public/sw.js', 'utf8');
-assert.match(index, /MALA_SW_VERSION = 'v147'/);
-assert.match(index, /stats\.js\?v=147/);
+assert.match(index, /MALA_SW_VERSION = 'v148'/);
+assert.match(index, /stats\.js\?v=148/);
 assert.match(index, /reg\.addEventListener\('updatefound'/);
 assert.match(index, /installing\.state === 'installed'/);
 assert.match(index, /type: 'SKIP_WAITING'/);
 assert.match(sw, /malamusic-static-v141/);
-assert.match(sw, /stats\.js\?v=147/);
+assert.match(sw, /stats\.js\?v=148/);
 
 console.log('RUNTIME_LISTENING_STATIC_GUARD_PASS');
