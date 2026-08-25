@@ -2,6 +2,34 @@ const CACHE_STATIC_NAME = 'malamusic-static-v139';
 const CACHE_DATA_NAME = 'malamusic-api-v52';
 const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1';
 
+async function respondWithOfflineAudio(request) {
+  const cached = await caches.match(request, { ignoreSearch: true });
+  if (!cached) return new Response('Offline audio tidak tersedia', { status: 404 });
+  const range = request.headers.get('range');
+  if (!range) return cached;
+  try {
+    const buffer = await cached.arrayBuffer();
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(range.trim());
+    if (!match) return cached;
+    const total = buffer.byteLength;
+    let start = match[1] ? Number(match[1]) : 0;
+    let end = match[2] ? Number(match[2]) : total - 1;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || start >= total) {
+      return new Response(null, { status: 416, headers: { 'Content-Range': 'bytes */' + total } });
+    }
+    end = Math.min(end, total - 1);
+    if (!match[1] && match[2]) start = Math.max(0, total - Number(match[2]));
+    const body = buffer.slice(start, end + 1);
+    const headers = new Headers(cached.headers);
+    headers.set('Content-Length', String(body.byteLength));
+    headers.set('Content-Range', 'bytes ' + start + '-' + end + '/' + total);
+    headers.set('Accept-Ranges', 'bytes');
+    return new Response(body, { status: 206, headers });
+  } catch (_) {
+    return cached;
+  }
+}
+
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
@@ -92,7 +120,7 @@ self.addEventListener('fetch', (event) => {
 
   // Offline binary audio is explicitly cached and must never fall back to network.
   if (url.pathname.startsWith('/offline-audio/')) {
-    event.respondWith(caches.match(request).then((cached) => cached || new Response('Offline audio tidak tersedia', { status: 404 })));
+    event.respondWith(respondWithOfflineAudio(request));
     return;
   }
 

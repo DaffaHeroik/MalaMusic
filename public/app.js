@@ -193,6 +193,36 @@ function writeJsonArray(key, value) {
 function getOfflineSongs() {
     return readJsonArray('pwa_offline_tracks').filter(function(song){ return !!(song.videoId || song.id); });
 }
+
+// Cache Storage is the source of truth for offline readiness. Metadata can survive
+// an interrupted download, browser restore, or an old deployment while the binary
+// is gone; reconcile both states after startup without blocking the first render.
+async function reconcileOfflineAudioState() {
+    if (!window.caches) return;
+    var list = getOfflineSongs();
+    if (!list.length) return;
+    var changed = false;
+    for (var i = 0; i < list.length; i++) {
+        var song = list[i];
+        var vid = song.videoId || song.id;
+        var valid = false;
+        try { valid = await validateOfflineAudioBinary(vid); } catch (_) { valid = false; }
+        var nextStatus = valid ? 'ready' : 'partial';
+        if (song.offlineStatus !== nextStatus) { song.offlineStatus = nextStatus; changed = true; }
+    }
+    if (changed) {
+        writeJsonArray('pwa_offline_tracks', list);
+        var playlists = getOfflinePlaylists();
+        playlists.forEach(function(p){
+            var ready = (p.songIds || []).filter(function(id){ return list.some(function(s){ return (s.videoId || s.id) === id && s.offlineStatus === 'ready'; }); }).length;
+            var next = ready === (p.songIds || []).length && (p.songIds || []).length > 0 ? 'ready' : 'partial';
+            if (p.status !== next) p.status = next;
+        });
+        saveOfflinePlaylists(playlists);
+        if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+    }
+    if (typeof updateOfflineButtons === 'function') updateOfflineButtons();
+}
 var OFFLINE_PLAYLISTS_KEY = 'pwa_offline_playlists';
 function getOfflinePlaylists() {
     try {
@@ -690,6 +720,9 @@ var App={
         MP.init();FullPlayer.init();Artist.init();Album.init();Home.render();Search.render();
         if(typeof updateOG==='function') updateOG(null);
         App.switch(!navigator.onLine ? 'offline' : 'home');
+        // Reconcile in the background so startup remains responsive while stale
+        // "ready" entries are corrected before the user tries to play them.
+        setTimeout(function(){ reconcileOfflineAudioState().catch(function(){}); }, 0);
         lucide.createIcons();
         setTimeout(function(){ App.checkUrl(); }, 1000);
         window.addEventListener('popstate', function(e) {

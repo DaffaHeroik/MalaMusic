@@ -453,7 +453,21 @@ function resolveAudioUrl(track) {
         return null;
     }).then(function(offlinePath){
         if (offlinePath) return offlinePath;
-        if (forceOffline) throw new Error('Offline dan audio belum tersimpan');
+        if (forceOffline) {
+            // Metadata may survive an interrupted download while the binary does not.
+            // Repair the item transparently when online, then keep playback offline.
+            if (navigator.onLine && typeof saveTrackForOffline === 'function') {
+                if (typeof showToast === 'function') showToast('Memulihkan audio offline...');
+                return saveTrackForOffline(track, { keepExisting: true, silent: true }).then(function(ok){
+                    if (!ok) throw new Error('Offline dan audio belum tersimpan');
+                    return caches.match(offlineAudioPath(vid)).then(function(repaired){
+                        if (!repaired) throw new Error('Offline dan audio belum tersimpan');
+                        return offlineAudioPath(vid);
+                    });
+                });
+            }
+            throw new Error('Offline dan audio belum tersimpan');
+        }
         var cachedAt = Number(audioUrlCacheTimes[vid] || 0);
         if (audioUrlCache[vid] && cachedAt && (Date.now() - cachedAt) < AUDIO_URL_CACHE_TTL_MS) return audioUrlCache[vid];
         if (audioUrlCache[vid]) { delete audioUrlCache[vid]; delete audioUrlCacheTimes[vid]; }
