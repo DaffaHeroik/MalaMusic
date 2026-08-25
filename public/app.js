@@ -46,6 +46,7 @@ async function clearOfflineDownloads() {
     var songs = typeof getOfflineSongs === 'function' ? getOfflineSongs() : [];
     for (var i = 0; i < songs.length; i++) { if (typeof removeOfflineAudioBinary === 'function') await removeOfflineAudioBinary(songs[i].videoId || songs[i].id); }
     if (typeof writeJsonArray === 'function') writeJsonArray('pwa_offline_tracks', []); else localStorage.removeItem('pwa_offline_tracks');
+    try { localStorage.removeItem(OFFLINE_PLAYLISTS_KEY); } catch (_) {}
     if (typeof audioUrlCache !== 'undefined') audioUrlCache = {};
     showToast('Semua download offline dihapus');
     if (typeof OfflineView !== 'undefined') OfflineView.render();
@@ -187,6 +188,37 @@ function writeJsonArray(key, value) {
 function getOfflineSongs() {
     return readJsonArray('pwa_offline_tracks').filter(function(song){ return !!(song.videoId || song.id); });
 }
+var OFFLINE_PLAYLISTS_KEY = 'pwa_offline_playlists';
+function getOfflinePlaylists() {
+    try {
+        var parsed = JSON.parse(localStorage.getItem(OFFLINE_PLAYLISTS_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed.filter(function(item){ return item && item.id && Array.isArray(item.songIds); }) : [];
+    } catch (_) { return []; }
+}
+function saveOfflinePlaylists(items) {
+    try { localStorage.setItem(OFFLINE_PLAYLISTS_KEY, JSON.stringify(items)); return true; }
+    catch (_) { if (typeof showToast === 'function') showToast('Metadata playlist offline tidak dapat disimpan.'); return false; }
+}
+function upsertOfflinePlaylist(playlist, status) {
+    if (!playlist || !playlist.id) return;
+    var items = getOfflinePlaylists().filter(function(item){ return item.id !== playlist.id; });
+    items.unshift({
+        id: String(playlist.id),
+        name: playlist.name || 'Playlist Offline',
+        image: playlist.image || '',
+        source: playlist.source || 'local',
+        songIds: (playlist.songs || []).map(function(song){ return song && (song.videoId || song.id); }).filter(Boolean),
+        status: status || 'partial',
+        updatedAt: Date.now()
+    });
+    saveOfflinePlaylists(items.slice(0, 50));
+}
+function markOfflineSongPlaylist(song, options, list) {
+    if (!song || !options || !options.playlistId || !Array.isArray(list)) return;
+    song.offlinePlaylistId = String(options.playlistId);
+    song.offlinePlaylistName = options.playlistName || '';
+    song.offlinePlaylistSource = options.playlistSource || 'local';
+}
 
 var OFFLINE_AUDIO_CACHE = 'malamusic-offline-audio-v1';
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
@@ -258,6 +290,7 @@ async function saveTrackForOffline(track, options) {
             songObj = list[existingIndex];
             if (await validateOfflineAudioBinary(vid)) {
                 songObj.offlineStatus = 'ready';
+                markOfflineSongPlaylist(songObj, options, list);
                 writeJsonArray('pwa_offline_tracks', list);
                 if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: songObj });
                 return true;
@@ -360,6 +393,7 @@ async function saveTrackForOffline(track, options) {
         }
     } catch(e) {}
 
+    markOfflineSongPlaylist(songObj, options, list);
     writeJsonArray('pwa_offline_tracks', list);
     if (typeof options.onProgress === 'function') options.onProgress({ status: binarySaved ? 'saved' : 'partial', track: songObj });
     if (!options.silent) showToast(binarySaved ? 'Lagu "' + track.title + '" tersimpan untuk Mode Offline!' : 'Metadata tersimpan, tetapi audio offline belum lengkap.');
@@ -370,11 +404,41 @@ async function saveTrackForOffline(track, options) {
 var offlinePlaylistJob = null;
 
 function downloadPlaylistOffline(playlistId) {
-    // Binary playlist downloads work in normal browsers and installed PWAs.
     var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
     var playlist = playlists.find(function(p) { return p.id === playlistId; });
-    if (!playlist || !playlist.songs || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return; }
-    if (offlinePlaylistJob) { showToast('Download playlist sedang berjalan'); return; }
+    return downloadOfflinePlaylistItems(playlist);
+}
+function downloadExternalPlaylistOffline(playlistId) {
+    var songs = (typeof S !== 'undefined' && Array.isArray(S['album_' + playlistId])) ? S['album_' + playlistId].map(normalizeTrack).filter(function(song){ return song.videoId || song.id; }) : [];
+    var info = typeof Album !== 'undefined' ? (Album.currentAlbumInfo || {}) : {};
+    return downloadOfflinePlaylistItems({
+        id: 'youtube:' + String(playlistId),
+        name: info.title || 'Playlist YouTube',
+        image: info.cover || '',
+        creator: info.creator || info.artist || '',
+        source: 'youtube',
+        songs: songs
+    });
+}
+function downloadPublicPlaylistOffline(playlistId) {
+    var info = window.__publicPlaylistInfo;
+    if (!info || String(info.id) !== String(playlistId)) {
+        showToast('Playlist publik belum siap diunduh');
+        return Promise.resolve(false);
+    }
+    return downloadOfflinePlaylistItems({
+        id: 'public:' + String(playlistId),
+        name: info.name || 'Playlist Publik',
+        image: info.image || '',
+        creator: info.creator || '',
+        source: 'public',
+        songs: Array.isArray(info.songs) ? info.songs : []
+    });
+}
+function downloadOfflinePlaylistItems(playlist) {
+    // Binary playlist downloads work in normal browsers and installed PWAs.
+    if (!playlist || !Array.isArray(playlist.songs) || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return Promise.resolve(false); }
+    if (offlinePlaylistJob) { showToast('Download playlist sedang berjalan'); return Promise.resolve(false); }
 
     var modal = document.createElement('div');
     modal.id = 'offline-playlist-progress';
@@ -389,8 +453,8 @@ function downloadPlaylistOffline(playlistId) {
     var detail = modal.querySelector('#offline-playlist-progress-detail');
     modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; this.disabled = true; this.textContent = 'Membatalkan...'; };
 
-    (async function() {
-        var done = 0, failed = 0, already = 0;
+    return (async function() {
+        var done = 0, failed = 0, already = 0, saved = 0;
         for (var i = 0; i < playlist.songs.length; i++) {
             if (job.cancelled) break;
             var track = playlist.songs[i];
@@ -401,19 +465,20 @@ function downloadPlaylistOffline(playlistId) {
                 var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
                 var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name });
                 var hasAudio = await hasOfflineAudioBinary(vid);
-                if (before && hasAudio) already++; else if (!result || !hasAudio) failed++;
+                if (before && hasAudio) already++; else if (result && hasAudio) saved++; else failed++;
             } catch (e) { failed++; }
             done++;
             bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
             count.textContent = done + '/' + playlist.songs.length;
         }
         offlinePlaylistJob = null;
+        upsertOfflinePlaylist(playlist, job.cancelled || failed ? 'partial' : 'ready');
         if (job.cancelled) {
             text.textContent = 'Download dibatalkan';
             detail.textContent = done + ' lagu diproses';
         } else {
             text.textContent = failed ? 'Selesai dengan beberapa kegagalan' : 'Playlist tersedia offline';
-            detail.textContent = done + ' berhasil, ' + already + ' sudah ada, ' + failed + ' gagal';
+            detail.textContent = saved + ' berhasil, ' + already + ' sudah ada, ' + failed + ' gagal';
         }
         modal.querySelector('#offline-playlist-cancel').textContent = 'Tutup';
         modal.querySelector('#offline-playlist-cancel').disabled = false;
@@ -527,6 +592,8 @@ var OfflineView = {
                 </div>
             </div><button onclick="App.switch('search')" class="mt-3 rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-xs font-bold text-white"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i>Cari Lagu</button></div>`;
         }
+        var offlinePlaylists = typeof getOfflinePlaylists === 'function' ? getOfflinePlaylists() : [];
+        var playlistSummary = offlinePlaylists.length ? '<div class="rounded-2xl border border-cyan-400/15 bg-cyan-500/[.06] p-3"><div class="flex items-center gap-2 text-xs font-bold text-cyan-200 mb-2"><i data-lucide="list-music" class="w-4 h-4"></i><span>Playlist Offline</span></div>' + offlinePlaylists.slice(0, 10).map(function(p){ var readyCount = (p.songIds || []).filter(function(id){ return offlineSongs.some(function(s){ return (s.videoId || s.id) === id && s.offlineStatus === 'ready'; }); }).length; var state = p.status === 'ready' && readyCount === (p.songIds || []).length ? 'Siap diputar' : readyCount + '/' + (p.songIds || []).length + ' lagu siap'; return '<div class="flex items-center justify-between gap-3 py-1 text-xs"><span class="text-white/80 truncate">' + es(p.name) + '</span><span class="text-cyan-200/70 shrink-0">' + state + '</span></div>'; }).join('') + '</div>' : '';
         el.innerHTML = `
         <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center bg-black/80 backdrop-blur-md">
             <div>
@@ -542,6 +609,7 @@ var OfflineView = {
         </div>
 
         <div class="px-4 mt-4 space-y-3">
+            ${playlistSummary}
             ${offlineSongs.length > 0 ? `
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-semibold text-white/60 uppercase tracking-wider">${offlineSongs.length} Lagu Tersimpan</span>
@@ -706,7 +774,18 @@ var App={
             if(!data.status || !data.playlist) throw new Error();
             var pl=data.playlist, songs=(pl.songs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }), modal=document.createElement('div'); modal.className='fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/70 px-0 sm:px-4';
             modal.innerHTML='<div class="w-full sm:max-w-lg max-h-[88vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="p-5 flex items-center gap-4 border-b border-white/10"><img src="'+safeMediaUrl(pl.image || ((songs[0] && songs[0].cover) || FI), FI)+'" class="w-20 h-20 rounded-2xl object-cover" onerror="this.src=\''+FI+'\'" /><div class="min-w-0 flex-1"><p class="text-[10px] uppercase tracking-widest text-amber-200/70 font-black">Playlist Publik</p><h2 class="text-xl font-black text-white truncate mt-1">'+es(pl.name)+'</h2><p class="text-xs text-white/50 mt-1">Oleh '+es(pl.owner_name||'Pendengar MalaMusic')+' · '+songs.length+' lagu</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[48vh] overflow-y-auto p-3">'+(songs.length?songs.map(function(s,i){return '<button onclick="App.playPublicPlaylist('+i+')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-left"><img src="'+safeMediaUrl(s.cover || FI, FI)+'" class="w-10 h-10 rounded-lg object-cover" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">'+es(s.title||'Lagu')+'</strong><span class="text-xs text-white/50 truncate">'+es(s.artist||'MalaMusic')+'</span></span></button>';}).join(''):'<p class="p-8 text-center text-sm text-white/50">Playlist ini belum memiliki lagu.</p>')+'</div><div class="p-4 border-t border-white/10"><button onclick="App.playPublicPlaylist(0)" class="w-full rounded-full bg-white text-black py-3 font-black text-sm">Putar Playlist</button></div></div>';
-            document.body.appendChild(modal); window.__publicPlaylistSongs=songs; lucide.createIcons();
+            document.body.appendChild(modal); window.__publicPlaylistSongs=songs; window.__publicPlaylistInfo={id:String(id),name:pl.name||'Playlist Publik',image:pl.image||'',creator:pl.owner_name||'',songs:songs}; lucide.createIcons();
+            var publicPlayButton = modal.querySelector('button[onclick="App.playPublicPlaylist(0)"]');
+            if (publicPlayButton && songs.length) {
+                var publicOfflineButton = document.createElement('button');
+                publicOfflineButton.type = 'button';
+                publicOfflineButton.className = 'w-full mb-2 rounded-full bg-cyan-500/15 border border-cyan-400/25 text-cyan-100 py-3 font-black text-sm';
+                publicOfflineButton.setAttribute('aria-label', 'Download playlist publik ke Mode Offline');
+                publicOfflineButton.innerHTML = '<i data-lucide="download-cloud" class="w-4 h-4 inline mr-1"></i>Download ke Mode Offline';
+                publicOfflineButton.onclick = function(){ downloadPublicPlaylistOffline(id); };
+                publicPlayButton.parentNode.insertBefore(publicOfflineButton, publicPlayButton);
+                lucide.createIcons();
+            }
         }).catch(function(){showToast('Playlist publik tidak ditemukan.');});
     },
     playPublicPlaylist(index){ if (window.ListenTogether && typeof ListenTogether.blockFollowerAction === 'function' && ListenTogether.blockFollowerAction()) return; var songs=(window.__publicPlaylistSongs||[]).map(normalizeTrack).filter(function(song){ return trackId(song); }); if(!songs[index]) return; window.__publicPlaylistSongs=songs; S.pl=songs; S.pi=index; S.ps='queue'; S.ct=normalizeTrack(songs[index]); var playUrl=location.origin+'/play/'+trackId(S.ct); history.pushState({},'',playUrl); UU(); MP.show(); S.il=true; UB(); resetLyricsUI(trackId(S.ct)); loadTrack(S.ct); var modal=document.querySelector('.fixed.z-\\[300\\]'); if(modal) modal.remove(); if (window.ListenTogether && typeof ListenTogether.syncAfterLocalAction === 'function') ListenTogether.syncAfterLocalAction(); },

@@ -145,6 +145,7 @@ var Album = {
                     </button>
                     <button data-saved-playlist-id="${esJs(id)}" onclick="event.stopPropagation();toggleSavedExternalPlaylist('${esJs(id)}','${esJs(a.title)}','${esJs(im)}','${esJs(albumCreator)}')" class="w-12 h-12 rounded-full text-white/80 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 border border-white/10 transition-all cursor-pointer" title="Simpan playlist"><i data-lucide="bookmark" class="w-6 h-6"></i></button>
                     <button onclick="Album.importPlaylist('${id}', '${es(a.title).replace(/'/g, "\\'")}', '${im}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Simpan sebagai Playlist Baru"><i data-lucide="download" class="w-6 h-6"></i></button>
+                    <button onclick="downloadExternalPlaylistOffline('${esJs(id)}')" class="text-cyan-200 hover:text-cyan-100 p-3 rounded-full active:scale-90 bg-cyan-500/15 border border-cyan-400/20 transition-all cursor-pointer" title="Download playlist ke Mode Offline" aria-label="Download playlist ke Mode Offline"><i data-lucide="download-cloud" class="w-6 h-6"></i></button>
                     <button onclick="Album.shuffleAll('${id}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Acak (Shuffle)">
                         <i data-lucide="shuffle" class="w-6 h-6"></i>
                     </button>
