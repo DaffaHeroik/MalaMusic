@@ -8,8 +8,8 @@ var Album = {
         gid('album-container').innerHTML = `
         <div id="album-modal" class="fixed inset-0 bg-[#050507] flex flex-col z-[100]" style="display:none; animation: slideUp 0.3s ease-out forwards;">
             <div class="flex items-center justify-between p-4 pt-safe bg-transparent absolute top-0 left-0 w-full z-[100]" id="album-header">
-                <button onclick="Album.close()" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/80 cursor-pointer"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-                <button id="album-top-share-btn" onclick="Album.share(Album.currentAlbumId)" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/80 cursor-pointer" title="Bagikan Album"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+                <button onclick="Album.close()" aria-label="Kembali ke halaman sebelumnya" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/80 cursor-pointer"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <button id="album-top-share-btn" onclick="Album.share(Album.currentAlbumId)" aria-label="Bagikan playlist" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/80 cursor-pointer" title="Bagikan Album"><i data-lucide="share-2" class="w-5 h-5"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto hide-scrollbar pb-36 relative" id="album-content" onscroll="Album.handleScroll()">
                 <div class="flex justify-center mt-32">
@@ -140,11 +140,11 @@ var Album = {
 
             let html = `
             <div class="relative w-full aspect-square md:aspect-video max-h-[50vh] overflow-hidden -mt-20 mb-6">
-                <img src="${safeMediaUrl(im, FI)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
+                <img src="${safeMediaUrl(im, FI)}" alt="${es(a.title)}" class="w-full h-full object-cover" onerror="this.src='${FI}'" />
                 <div class="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#050507]/60 to-transparent"></div>
                 
                 <div class="absolute bottom-6 left-6 right-6 flex flex-col justify-end items-center text-center z-10">
-                    <img src="${safeMediaUrl(im, FI)}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
+                    <img src="${safeMediaUrl(im, FI)}" alt="${es(a.title)}" class="w-32 h-32 md:w-48 md:h-48 rounded-xl object-cover border border-white/10 mb-4" onerror="this.src='${FI}'" />
                     <div>
                         <p class="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-1">ALBUM / PLAYLIST</p>
                         <h1 class="text-3xl md:text-5xl font-black text-white mb-2 leading-tight drop-line-clamp-2">${es(a.title)}</h1>
@@ -156,16 +156,16 @@ var Album = {
 
             <div class="px-6">
                 <div class="flex items-center gap-4 mb-6">
-                    <button onclick="Album.playAll('${id}')" class="bg-white hover:bg-gray-200 text-black w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-all shadow-white/20 cursor-pointer">
+                    <button onclick="Album.playAll('${id}')" aria-label="Putar semua lagu di playlist" class="bg-white hover:bg-gray-200 text-black w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-all shadow-white/20 cursor-pointer">
                         <i data-lucide="play" class="w-7 h-7 fill-current ml-1"></i>
                     </button>
-                    <button data-saved-playlist-id="${esJs(id)}" onclick="event.stopPropagation();toggleSavedExternalPlaylist('${esJs(id)}','${esJs(a.title)}','${esJs(im)}','${esJs(albumCreator)}')" class="w-12 h-12 rounded-full text-white/80 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 border border-white/10 transition-all cursor-pointer" title="Simpan playlist"><i data-lucide="bookmark" class="w-6 h-6"></i></button>
-                    <button onclick="Album.importPlaylist('${id}', '${es(a.title).replace(/'/g, "\\'")}', '${im}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Simpan sebagai Playlist Baru"><i data-lucide="download" class="w-6 h-6"></i></button>
+                    <button data-saved-playlist-id="${esJs(id)}" onclick="event.stopPropagation();toggleSavedExternalPlaylist('${esJs(id)}','${esJs(a.title)}','${esJs(im)}','${esJs(albumCreator)}')" aria-label="Simpan atau hapus playlist" class="w-12 h-12 rounded-full text-white/80 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 border border-white/10 transition-all cursor-pointer" title="Simpan playlist"><i data-lucide="bookmark" class="w-6 h-6"></i></button>
+                    <button onclick="Album.importPlaylist('${id}', '${es(a.title).replace(/'/g, "\\'")}', '${im}')" aria-label="Simpan sebagai playlist baru" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Simpan sebagai Playlist Baru"><i data-lucide="download" class="w-6 h-6"></i></button>
                     <button onclick="downloadExternalPlaylistOffline('${esJs(id)}')" class="text-cyan-200 hover:text-cyan-100 p-3 rounded-full active:scale-90 bg-cyan-500/15 border border-cyan-400/20 transition-all cursor-pointer" title="Download playlist ke Mode Offline" aria-label="Download playlist ke Mode Offline"><i data-lucide="download-cloud" class="w-6 h-6"></i></button>
-                    <button onclick="Album.shuffleAll('${id}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Acak (Shuffle)">
+                    <button onclick="Album.shuffleAll('${id}')" aria-label="Acak semua lagu di playlist" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Acak (Shuffle)">
                         <i data-lucide="shuffle" class="w-6 h-6"></i>
                     </button>
-                    <button onclick="Album.share('${id}')" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Bagikan Album">
+                    <button onclick="Album.share('${id}')" aria-label="Bagikan playlist" class="text-white/70 hover:text-white p-3 rounded-full active:scale-95 bg-white/5 transition-all cursor-pointer" title="Bagikan Album">
                         <i data-lucide="share-2" class="w-6 h-6"></i>
                     </button>
                 </div>`;

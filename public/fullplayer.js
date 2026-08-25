@@ -18,17 +18,17 @@ var FullPlayer={
 
             <!-- Top Header (Padding top 16-20px) -->
             <div class="relative z-10 flex justify-between items-center flex-shrink-0 pt-1 pb-1">
-                <button onclick="FullPlayer.close()" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Tutup Player"><i data-lucide="chevron-down" class="w-7 h-7"></i></button>
+                <button onclick="FullPlayer.close()" aria-label="Tutup player" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Tutup Player"><i data-lucide="chevron-down" class="w-7 h-7"></i></button>
                 <div class="text-center">
                     <p id="full-header-tag" class="text-[9px] uppercase tracking-[0.22em] text-[#a0a5b0] font-bold transition-all duration-300">Sedang Diputar</p>
                     <p id="full-header-artist" class="text-xs font-bold text-white/90 truncate max-w-[180px] mt-0.5 transition-all duration-300"></p>
                 </div>
                 <!-- Tombol Opsi dirapatkan ke kanan (hamburger menu) -->
                 <div class="flex items-center gap-1">
-                    <button id="full-bg-glow-toggle" onclick="FullPlayer.toggleBgGlow()" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Matikan/Nyalakan Latar Bergerak">
+                    <button id="full-bg-glow-toggle" onclick="FullPlayer.toggleBgGlow()" aria-label="Matikan atau nyalakan latar player" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Matikan/Nyalakan Latar Bergerak">
                         <i data-lucide="audio-waveform" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="FullPlayer.openMoreSheet()" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Opsi"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
+                    <button onclick="FullPlayer.openMoreSheet()" aria-label="Buka opsi player" class="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full active:scale-90 transition-all cursor-pointer" title="Opsi"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
                 </div>
             </div>
 
@@ -49,11 +49,11 @@ var FullPlayer={
                 <div id="full-cover-lyrics-wrap" class="relative w-[86%] sm:w-[88%] max-w-[340px] aspect-square flex items-center justify-center transition-all duration-300">
                     <!-- 1. Cover View Container -->
                     <div id="full-cover-view" class="w-full h-full relative flex items-center justify-center">
-                        <img id="full-cover" src="" class="w-full h-full object-cover rounded-2xl transition-transform duration-300 border border-white/10 shadow-2xl" />
+                        <img id="full-cover" src="${FI}" alt="Artwork lagu yang sedang diputar" class="w-full h-full object-cover rounded-2xl transition-transform duration-300 border border-white/10 shadow-2xl" />
                         
                         <!-- Next Cover Overlay for Smooth Transition -->
                         <div id="full-cover-next-overlay" class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none opacity-0 z-10">
-                            <img id="full-cover-next-img" src="" class="w-full h-full object-cover rounded-2xl border border-white/10 shadow-2xl" />
+                            <img id="full-cover-next-img" src="${FI}" alt="Artwork lagu berikutnya" class="w-full h-full object-cover rounded-2xl border border-white/10 shadow-2xl" />
                         </div>
 
                         <!-- Loading & Overlay -->
@@ -67,7 +67,7 @@ var FullPlayer={
                     <div id="full-lyrics-view" class="hidden w-full h-full relative rounded-2xl bg-black/50 backdrop-blur-2xl border border-white/15 p-3.5 overflow-hidden flex flex-col shadow-2xl">
                         <!-- Mini Header: small cover thumbnail + title/artist, stays above lyrics (does NOT replace the cover) -->
                         <div class="flex items-center gap-3 pb-3 mb-1 border-b border-white/10 shrink-0 relative z-10">
-                            <img id="full-lyrics-mini-cover" src="" class="w-11 h-11 rounded-lg object-cover shadow-md border border-white/10 shrink-0" />
+                            <img id="full-lyrics-mini-cover" src="${FI}" alt="Artwork lirik lagu" class="w-11 h-11 rounded-lg object-cover shadow-md border border-white/10 shrink-0" />
                             <div class="min-w-0 flex-1">
                                 <p id="full-lyrics-mini-title" class="text-sm font-bold text-white truncate"></p>
                                 <p id="full-lyrics-mini-artist" class="text-xs text-white/60 truncate"></p>
@@ -92,9 +92,9 @@ var FullPlayer={
                             <!-- Sync +/- buttons -->
                             <div class="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1 border border-white/10">
                                 <span class="text-[10px] text-white/60 font-semibold mr-0.5">Sync</span>
-                                <button onclick="lyricSyncPrev()" class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center active:scale-90 transition cursor-pointer" title="Lirik Mundur 1 Baris">-</button>
+                                <button onclick="lyricSyncPrev()" aria-label="Mundur satu baris lirik" class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center active:scale-90 transition cursor-pointer" title="Lirik Mundur 1 Baris">-</button>
                                 <span id="full-inline-sync-badge" class="hidden text-[10px] font-bold text-rose-400"></span>
-                                <button onclick="lyricSyncNext()" class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center active:scale-90 transition cursor-pointer" title="Lirik Maju 1 Baris">+</button>
+                                <button onclick="lyricSyncNext()" aria-label="Maju satu baris lirik" class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center active:scale-90 transition cursor-pointer" title="Lirik Maju 1 Baris">+</button>
                             </div>
 
                             <button onclick="toggleLyrics()" class="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md flex items-center gap-1.5 transition-all shadow-md cursor-pointer" title="Buka Lirik Penuh">
