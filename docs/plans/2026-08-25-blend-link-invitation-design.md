@@ -35,3 +35,7 @@ Link membawa kode room yang tidak memuat identitas, email, atau token session. C
 | Link salah/kedaluwarsa | Error jelas dengan tombol kembali atau coba lagi |
 | Regression | Blend existing create/join/add, User Search, playback, dan automated checks tetap lulus |
 | Privacy | Tidak ada email/token Firebase/session di URL atau teks share |
+
+## Hasil validasi awal
+
+Pada browser lokal tanpa session, route `/blend/TESTV132` menampilkan modal **Login untuk melihat invitation**. `sessionStorage` berisi `{"room":"TESTV132","path":"/blend/TESTV132",...}`. Menekan **Login / Daftar** membuka panel autentikasi Google/Gmail dan modal invitation tetap terlihat; konteks room tidak hilang. Login nyata belum dijalankan pada fixture lokal karena belum ada akun penerima khusus untuk operasi tersebut.

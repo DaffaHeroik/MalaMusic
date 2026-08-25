@@ -321,6 +321,7 @@ var EmailAuth = {
         if (!response.ok || !data.status) throw new Error(data.message || 'Google Login gagal.');
         showToast('Berhasil masuk dengan Google');
         Profile.render();
+        if (typeof Blend !== 'undefined' && typeof Blend.resumePendingInvite === 'function') Blend.resumePendingInvite();
     },
     googleErrorMessage: function(error) {
         var code = String(error && error.code || '');
@@ -362,6 +363,7 @@ var EmailAuth = {
             if (!response.ok || !data.status) throw new Error(data.message || 'Autentikasi gagal.');
             showToast(this.entryMode === 'register' ? 'Akun berhasil dibuat' : 'Berhasil masuk ke MalaMusic');
             Profile.render();
+            if (typeof Blend !== 'undefined' && typeof Blend.resumePendingInvite === 'function') Blend.resumePendingInvite();
         } catch (error) { this.renderEmailForm(error.message); }
     },
     logout: async function() {
