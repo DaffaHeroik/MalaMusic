@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v136';
+const CACHE_STATIC_NAME = 'malamusic-static-v137';
 const CACHE_DATA_NAME = 'malamusic-api-v52';
 const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1';
 
@@ -13,23 +13,23 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=136',
-  '/app.js?v=136',
-  '/player.js?v=136',
-  '/listen-together.js?v=136',
-  '/fullplayer.js?v=136',
-  '/miniplayer.js?v=136',
-  '/home.js?v=136',
-  '/library.js?v=136',
-  '/liked.js?v=136',
-  '/search.js?v=136',
-  '/blend.js?v=136',
-  '/album.js?v=136',
-  '/artist.js?v=136',
-  '/profile.js?v=136',
-  '/streak.js?v=136',
-  '/leaderboard.js?v=136',
-  '/stats.js?v=136',
+  '/firebase.js?v=137',
+  '/app.js?v=137',
+  '/player.js?v=137',
+  '/listen-together.js?v=137',
+  '/fullplayer.js?v=137',
+  '/miniplayer.js?v=137',
+  '/home.js?v=137',
+  '/library.js?v=137',
+  '/liked.js?v=137',
+  '/search.js?v=137',
+  '/blend.js?v=137',
+  '/album.js?v=137',
+  '/artist.js?v=137',
+  '/profile.js?v=137',
+  '/streak.js?v=137',
+  '/leaderboard.js?v=137',
+  '/stats.js?v=137',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -41,7 +41,7 @@ self.addEventListener('install', (event) => {
       console.log('[SW] Pre-caching static assets');
       return Promise.allSettled(
         STATIC_ASSETS.map((url) => {
-          return fetch(url).then((res) => {
+          return fetch(url, { cache: 'no-store' }).then((res) => {
             if (res.status === 200 || res.type === 'opaque') {
               return cache.put(url, res);
             }
@@ -83,7 +83,7 @@ self.addEventListener('fetch', (event) => {
   // 1. Navigation requests -> Network first, fallback to cached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => {
+      fetch(new Request(request, { cache: 'no-store' })).catch(() => {
         return caches.match('/index.html', { ignoreSearch: true }) || caches.match('/', { ignoreSearch: true });
       })
     );

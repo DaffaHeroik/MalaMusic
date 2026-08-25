@@ -33,13 +33,15 @@ assert.match(player, /if \(offlinePath\) return offlinePath/);
 assert.match(player, /if \(forceOffline\) throw new Error\('Offline dan audio belum tersimpan'\)/);
 assert.match(sw, /url\.pathname === '\/api\/proxy-audio'/);
 assert.match(sw, /event\.respondWith\(fetch\(request\)\)/);
+assert.match(sw, /fetch\(url, \{ cache: 'no-store' \}\)/);
+assert.match(sw, /fetch\(new Request\(request, \{ cache: 'no-store' \}\)\)/);
 assert.match(sw, /const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1'/);
 assert.match(sw, /key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME && key !== CACHE_AUDIO_NAME/);
 
 const scriptUrls = [...index.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
-for (const required of ['/app.js?v=136', '/player.js?v=136', '/library.js?v=136', '/album.js?v=136']) {
+for (const required of ['/app.js?v=137', '/player.js?v=137', '/library.js?v=137', '/album.js?v=137']) {
   assert.ok(scriptUrls.includes(required), `asset marker missing: ${required}`);
 }
-assert.match(index, /sw\.js\?v=136/);
+assert.match(index, /sw\.js\?v=137/);
 
 console.log('offline-playlist-check: PASS');
