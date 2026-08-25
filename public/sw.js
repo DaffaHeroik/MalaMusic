@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v133';
+const CACHE_STATIC_NAME = 'malamusic-static-v134';
 const CACHE_DATA_NAME = 'malamusic-api-v52';
 
 self.addEventListener('message', (event) => {
@@ -12,23 +12,23 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=133',
-  '/app.js?v=133',
-  '/player.js?v=133',
-  '/listen-together.js?v=133',
-  '/fullplayer.js?v=133',
-  '/miniplayer.js?v=133',
-  '/home.js?v=133',
-  '/library.js?v=133',
-  '/liked.js?v=133',
-  '/search.js?v=133',
-  '/blend.js?v=133',
-  '/album.js?v=133',
-  '/artist.js?v=133',
-  '/profile.js?v=133',
-  '/streak.js?v=133',
-  '/leaderboard.js?v=133',
-  '/stats.js?v=133',
+  '/firebase.js?v=134',
+  '/app.js?v=134',
+  '/player.js?v=134',
+  '/listen-together.js?v=134',
+  '/fullplayer.js?v=134',
+  '/miniplayer.js?v=134',
+  '/home.js?v=134',
+  '/library.js?v=134',
+  '/liked.js?v=134',
+  '/search.js?v=134',
+  '/blend.js?v=134',
+  '/album.js?v=134',
+  '/artist.js?v=134',
+  '/profile.js?v=134',
+  '/streak.js?v=134',
+  '/leaderboard.js?v=134',
+  '/stats.js?v=134',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];

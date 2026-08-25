@@ -17,6 +17,7 @@
     "test:blend-invite-link": "node tests/blend-invite-link-check.js",
     "test:runtime-listening": "node tests/runtime-listening-check.js",
     "test:runtime-listening-behavior": "node tests/runtime-listening-behavior-check.js",
+    "test:offline-playlist": "node tests/offline-playlist-check.js",
     "start": "node server.js"
   },
   "dependencies": {
