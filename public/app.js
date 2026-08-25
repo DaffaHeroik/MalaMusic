@@ -407,6 +407,20 @@ async function saveTrackForOffline(track, options) {
     return binarySaved;
 }
 var offlinePlaylistJob = null;
+var OFFLINE_DOWNLOAD_JOB_KEY = 'pwa_offline_download_job';
+function getOfflineDownloadJob(){ try { var j = JSON.parse(localStorage.getItem(OFFLINE_DOWNLOAD_JOB_KEY) || 'null'); return j && j.status === 'running' ? j : null; } catch (_) { return null; } }
+function persistOfflineDownloadJob(job){ try { localStorage.setItem(OFFLINE_DOWNLOAD_JOB_KEY, JSON.stringify(job)); } catch (_) {} }
+function clearOfflineDownloadJob(){ try { localStorage.removeItem(OFFLINE_DOWNLOAD_JOB_KEY); } catch (_) {} }
+function renderOfflineDownloadStatus(job){
+    var el = gid('offline-download-status');
+    if (!job || job.status !== 'running') { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('button'); el.id = 'offline-download-status'; el.className = 'fixed right-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-5 z-[460] rounded-2xl border border-cyan-300/30 bg-[#111820]/95 px-3 py-2 text-left text-xs text-white shadow-2xl backdrop-blur-md'; document.body.appendChild(el); }
+    var done = Number(job.done || 0), total = Math.max(1, Number(job.total || 1)), pct = Math.round(done / total * 100);
+    el.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-cyan-300"></i><span><b class="text-cyan-200">Download berjalan</b><br><span class="text-white/60">' + done + '/' + total + ' lagu • ' + pct + '%</span></span></span>';
+    el.title = 'Lihat status download playlist';
+    el.onclick = function(){ var modal = gid('offline-playlist-progress'); if (modal) modal.classList.remove('hidden'); };
+    if (window.lucide) lucide.createIcons();
+}
 
 function downloadPlaylistOffline(playlistId) {
     var playlists = typeof getUserPlaylists === 'function' ? getUserPlaylists() : [];
@@ -447,16 +461,20 @@ function downloadOfflinePlaylistItems(playlist) {
 
     var modal = document.createElement('div');
     modal.id = 'offline-playlist-progress';
-    modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4';
-    modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><button id="offline-playlist-cancel" class="w-full mt-4 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button></div>';
+    modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-end bg-transparent px-3 sm:px-4 pb-[5.5rem] sm:pb-5 pointer-events-none';
+    modal.innerHTML = '<div class="pointer-events-auto w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><div class="pointer-events-auto flex gap-2 mt-4"><button id="offline-playlist-cancel" class="flex-1 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button><button id="offline-playlist-minimize" class="flex-1 rounded-xl bg-cyan-500/15 border border-cyan-400/20 text-cyan-100 py-3 text-xs font-bold">Sembunyikan</button></div></div>';
     document.body.appendChild(modal); lucide.createIcons();
-    offlinePlaylistJob = { cancelled: false };
+    offlinePlaylistJob = { cancelled: false, total: playlist.songs.length, done: 0, failed: 0, saved: 0, already: 0 };
     var job = offlinePlaylistJob;
+    persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: 0, failed: 0, saved: 0, already: 0 });
+    upsertOfflinePlaylist(playlist, 'partial');
+    renderOfflineDownloadStatus(job);
     var bar = modal.querySelector('#offline-playlist-progress-bar');
     var text = modal.querySelector('#offline-playlist-progress-text');
     var count = modal.querySelector('#offline-playlist-progress-count');
     var detail = modal.querySelector('#offline-playlist-progress-detail');
     modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; this.disabled = true; this.textContent = 'Membatalkan...'; };
+    modal.querySelector('#offline-playlist-minimize').onclick = function() { modal.classList.add('hidden'); };
 
     return (async function() {
         var done = 0, failed = 0, already = 0, saved = 0;
@@ -475,8 +493,15 @@ function downloadOfflinePlaylistItems(playlist) {
             done++;
             bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
             count.textContent = done + '/' + playlist.songs.length;
+            job.done = done; job.failed = failed; job.saved = saved; job.already = already;
+            persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: done, failed: failed, saved: saved, already: already });
+            renderOfflineDownloadStatus(job);
+            upsertOfflinePlaylist(playlist, 'partial');
+            if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
         }
         offlinePlaylistJob = null;
+        clearOfflineDownloadJob();
+        renderOfflineDownloadStatus(null);
         upsertOfflinePlaylist(playlist, job.cancelled || failed ? 'partial' : 'ready');
         if (job.cancelled) {
             text.textContent = 'Download dibatalkan';
@@ -905,6 +930,7 @@ var App={
         });
 
         gid('main-area').scrollTop=0;lucide.createIcons();
+        if (offlinePlaylistJob) renderOfflineDownloadStatus(offlinePlaylistJob);
     },
     renderLiked() {
         if (typeof Liked !== 'undefined') Liked.render();
