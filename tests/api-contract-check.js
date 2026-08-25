@@ -21,7 +21,8 @@ assert.match(server, /IMAGE_MAX_BYTES/);
 assert.match(server, /Endpoint API tidak ditemukan/);
 assert.match(stats, /requestedSeconds/);
 assert.match(stats, /requestedSeconds <= 0/);
-assert.match(stats, /const seconds = Math.min\(120, requestedSeconds\)/);
+assert.match(stats, /const seconds = Math.min\(120, Math.floor\(requestedSeconds\)\)/);
+assert.match(stats, /seconds < 1/);
 assert.doesNotMatch(stats, /Math\.max\(1, Math\.min\(120, Math\.round\(Number\(body\(req\)\.seconds/);
 
 console.log('API_CONTRACT_STATIC_GUARD_PASS');

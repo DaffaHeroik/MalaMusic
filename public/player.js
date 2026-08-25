@@ -148,15 +148,18 @@ AU.addEventListener('timeupdate',function(){
     }
 });
 AU.addEventListener('play',function(){if(!isCurrentAudioSource()) return; S.ip=true;S.il=false;UB();updateMediaSessionPlaybackState();SP();try{AU.playbackRate=S.playbackRate||1.0;}catch(ex){}});
-AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined') Stats.flush(true);}});
-AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; S.il=true;UB();});
-AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false;UB();updateMediaSessionPlaybackState();});
+AU.addEventListener('pause',function(){if(!isCurrentAudioSource()) return; if(!AU.ended){S.ip=false;UB();updateMediaSessionPlaybackState();ST();if(typeof Stats !== 'undefined'){Stats.stop(S.ct,AU.currentTime);Stats.flush(true);}}});
+AU.addEventListener('waiting',function(){if(!isCurrentAudioSource()) return; if(typeof Stats !== 'undefined'){Stats.stop(S.ct,AU.currentTime);Stats.flush(true);} S.il=true;UB();});
+AU.addEventListener('stalled',function(){if(!isCurrentAudioSource()) return; if(typeof Stats !== 'undefined'){Stats.stop(S.ct,AU.currentTime);Stats.flush(true);} S.il=true;UB();});
+AU.addEventListener('playing',function(){if(!isCurrentAudioSource()) return; clearAudioStartTimer(); S.il=false; if(typeof Stats !== 'undefined') Stats.start(S.ct,AU.currentTime); UB();updateMediaSessionPlaybackState();});
+AU.addEventListener('seeking',function(){if(!isCurrentAudioSource()) return; if(typeof Stats !== 'undefined') Stats.markSeeking(S.ct);});
+AU.addEventListener('seeked',function(){if(!isCurrentAudioSource()) return; if(typeof Stats !== 'undefined') Stats.rebase(S.ct,AU.currentTime);});
 function queueAutoNextAfterEnd(reason){
     if(!isCurrentAudioSource()) return;
     var endedSequence = audioLoadSequence;
     if (endedHandledSequence === endedSequence || endedTransitionBusy) return;
     endedHandledSequence = endedSequence;
-    if(typeof Stats !== 'undefined') Stats.flush(true);
+    if(typeof Stats !== 'undefined'){ Stats.stop(S.ct,AU.currentTime); Stats.flush(true); }
     ST();
     if(typeof handleTrackEnded==='function'&&handleTrackEnded()) return;
     if(S.rm==='one'){
@@ -173,7 +176,7 @@ function queueAutoNextAfterEnd(reason){
         if(typeof showToast === 'function') showToast('Auto-next sedang dimatikan.');
     }
 }
-AU.addEventListener('ended',function(){ queueAutoNextAfterEnd('ended'); });
+AU.addEventListener('ended',function(){ if(typeof Stats !== 'undefined'){Stats.stop(S.ct,AU.currentTime);Stats.flush(true);} queueAutoNextAfterEnd('ended'); });
 AU.addEventListener('error',function(){if(!isCurrentAudioSource()) return; handleAudioSourceError();});
 
 // ---- MEDIA SESSION (kontrol next/prev/play/pause di notifikasi & lockscreen) ----
@@ -1205,6 +1208,7 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
         audioRecoveryKey = recoveryKey;
         audioRecoveryAttempts = 0;
     }
+    if (typeof Stats !== 'undefined') { Stats.stop(activeAudioTrack, AU.currentTime); Stats.flush(true); Stats.reset(track); }
     var loadSequence = ++audioLoadSequence;
     clearAudioStartTimer();
     clearAudioLoadWatchdog();
@@ -1215,7 +1219,6 @@ function loadTrack(track,resumeAt,isRecoveryRetry){
     if (window.MalaFirebase) MalaFirebase.log('play_track', { track_id: String(track.videoId || track.id || '').slice(0, 80) });
     hasPrefetchedNext = false;
     isPreloadingNext = false;
-    if (typeof Stats !== 'undefined') { Stats.flush(true); Stats.reset(track); }
     ST();
     try{
         AU.pause();
@@ -1322,6 +1325,7 @@ function handleAudioSourceError(){
     var failedTrack = activeAudioTrack;
     var failedSequence = activeAudioSequence;
     if (!failedTrack || !failedSequence) return;
+    if (typeof Stats !== 'undefined') { Stats.stop(failedTrack, AU.currentTime); Stats.flush(true); }
     if (activeAudioIsOffline) {
         activeAudioTrack = null;
         activeAudioSequence = 0;
