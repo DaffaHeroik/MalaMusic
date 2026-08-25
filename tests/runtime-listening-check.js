@@ -38,9 +38,9 @@ assert.doesNotMatch(worker, /Math\.max\(1, Math\.min\(120, Math\.round\(Number\(
 
 const index = fs.readFileSync('public/index.html', 'utf8');
 const sw = fs.readFileSync('public/sw.js', 'utf8');
-assert.match(index, /MALA_SW_VERSION = 'v138'/);
-assert.match(index, /stats\.js\?v=138/);
-assert.match(sw, /malamusic-static-v138/);
-assert.match(sw, /stats\.js\?v=138/);
+assert.match(index, /MALA_SW_VERSION = 'v139'/);
+assert.match(index, /stats\.js\?v=139/);
+assert.match(sw, /malamusic-static-v139/);
+assert.match(sw, /stats\.js\?v=139/);
 
 console.log('RUNTIME_LISTENING_STATIC_GUARD_PASS');

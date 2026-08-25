@@ -17,6 +17,7 @@ assert.match(app, /function downloadPublicPlaylistOffline\(playlistId\)/);
 assert.match(app, /__publicPlaylistInfo/);
 assert.match(app, /return \(async function\(\)/);
 assert.match(app, /OFFLINE_DOWNLOAD_JOB_KEY/);
+assert.match(app, /status: 'running', cancelled: false/);
 assert.match(app, /pointer-events-none/);
 assert.match(app, /offline-playlist-minimize/);
 assert.match(app, /persistOfflineDownloadJob/);
@@ -45,9 +46,9 @@ assert.match(sw, /const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1'/);
 assert.match(sw, /key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME && key !== CACHE_AUDIO_NAME/);
 
 const scriptUrls = [...index.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
-for (const required of ['/app.js?v=138', '/player.js?v=138', '/library.js?v=138', '/album.js?v=138']) {
+for (const required of ['/app.js?v=139', '/player.js?v=139', '/library.js?v=139', '/album.js?v=139']) {
   assert.ok(scriptUrls.includes(required), `asset marker missing: ${required}`);
 }
-assert.match(index, /sw\.js\?v=138/);
+assert.match(index, /sw\.js\?v=139/);
 
 console.log('offline-playlist-check: PASS');
