@@ -436,6 +436,7 @@ async function saveTrackForOffline(track, options) {
             });
         } catch(e) {
             binarySaved = false;
+            if (offlineDownloadControl && offlineDownloadControl.stopped) break;
             if (offlineDownloadControl && offlineDownloadControl.paused && !offlineDownloadControl.stopped) {
                 attempts--;
                 reportDownloadProgress(Number(songObj.downloadProgress || 0), 'dijeda', songObj.downloadBytes, songObj.downloadTotalBytes);
@@ -443,18 +444,24 @@ async function saveTrackForOffline(track, options) {
                 if (offlineDownloadControl && offlineDownloadControl.stopped) break;
             }
         }
+        if (offlineDownloadControl && offlineDownloadControl.stopped) break;
         if (!binarySaved && attempts < maxAttempts && !(offlineDownloadControl && offlineDownloadControl.paused)) {
             await new Promise(function(resolve){ setTimeout(resolve, 500 * Math.pow(2, attempts - 1)); });
         }
     }
+    var wasStopped = !!(offlineDownloadControl && offlineDownloadControl.stopped);
     songObj.offlineStatus = binarySaved ? 'ready' : 'partial';
     songObj.downloadProgress = binarySaved ? 100 : Math.min(99, Number(songObj.downloadProgress || 0));
-    songObj.downloadStage = binarySaved ? 'siap diputar' : 'gagal — tekan untuk ulang';
-    songObj.downloadError = binarySaved ? '' : 'Audio belum tervalidasi';
+    songObj.downloadStage = binarySaved ? 'siap diputar' : (wasStopped ? 'dihentikan' : 'gagal — tekan untuk ulang');
+    songObj.downloadError = binarySaved ? '' : (wasStopped ? 'Download dihentikan pengguna' : 'Audio belum tervalidasi');
     songObj.downloadUpdatedAt = Date.now();
-    if (!binarySaved && typeof showToast === 'function') showToast('Download gagal setelah ' + attempts + ' percobaan. Coba lagi saat jaringan stabil.');
+    if (!binarySaved && !wasStopped && typeof showToast === 'function') showToast('Download gagal setelah ' + attempts + ' percobaan. Coba lagi saat jaringan stabil.');
 
-    // 3. Pre-fetch & cache Lyrics
+    // 3. Pre-fetch & cache Lyrics. Do not start unrelated work after Stop.
+    if (offlineDownloadControl && offlineDownloadControl.stopped) {
+        delete offlineTrackActiveIds[vid];
+        return false;
+    }
     try {
         var cachedLyric = (typeof lyricsCache !== 'undefined' && lyricsCache[vid]) ? lyricsCache[vid] : null;
         if (!cachedLyric && typeof S !== 'undefined' && S.ld && S.ld.vid === vid && S.ld.lines && S.ld.lines.length > 0) {
@@ -578,8 +585,8 @@ function downloadOfflinePlaylistItems(playlist) {
             job.currentTitle = track.title || 'Lagu';
             job.currentPercent = 0;
             job.paused = false;
-            text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • 0%';
-            detail.textContent = track.title || 'Lagu';
+            text.textContent = 'Selesai ' + done + ' dari ' + playlist.songs.length + ' • 0%';
+            detail.textContent = 'Lagu ' + (i + 1) + '/' + playlist.songs.length + ': ' + (track.title || 'Lagu');
             try {
                 var vid = track.videoId || track.id;
                 if (offlineDownloadControl) offlineDownloadControl.controller = new AbortController();
@@ -588,8 +595,8 @@ function downloadOfflinePlaylistItems(playlist) {
                     var progress = event && event.track ? Number(event.track.downloadProgress || 0) : 0;
                     job.currentPercent = progress;
                     job.paused = !!(offlineDownloadControl && offlineDownloadControl.paused);
-                    text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • ' + progress + '%';
-                    detail.textContent = (track.title || 'Lagu') + ' • ' + (event.track.downloadStage || 'memproses');
+                    text.textContent = 'Selesai ' + done + ' dari ' + playlist.songs.length + ' • ' + progress + '%';
+                    detail.textContent = 'Lagu ' + (i + 1) + '/' + playlist.songs.length + ': ' + (track.title || 'Lagu') + ' • ' + (event.track.downloadStage || 'memproses');
                     renderOfflineDownloadStatus(job);
                 } });
                 var hasAudio = await hasOfflineAudioBinary(vid);
