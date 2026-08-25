@@ -39,3 +39,19 @@ Link membawa kode room yang tidak memuat identitas, email, atau token session. C
 ## Hasil validasi awal
 
 Pada browser lokal tanpa session, route `/blend/TESTV132` menampilkan modal **Login untuk melihat invitation**. `sessionStorage` berisi `{"room":"TESTV132","path":"/blend/TESTV132",...}`. Menekan **Login / Daftar** membuka panel autentikasi Google/Gmail dan modal invitation tetap terlihat; konteks room tidak hilang. Login nyata belum dijalankan pada fixture lokal karena belum ada akun penerima khusus untuk operasi tersebut.
+
+## Hasil validasi production
+
+Custom domain `music.malawalipayment.web.id` menyajikan `MALA_SW_VERSION = 'v132'`, `blend.js?v=132`, dan `sw.js?v=132`. Pada sesi production yang sudah login, route room sintetis `/blend/TESTV132` menampilkan modal **Link Blend tidak ditemukan** dengan tombol **Tutup**, bukan blank state atau loading tanpa akhir. Ini mengonfirmasi deployment v132 dan error handling route.
+
+## Hasil fixture invitation UI
+
+Route lokal `/blend/MOCK132` menampilkan modal **Login untuk melihat invitation** pada browser anonim. Ini digunakan sebagai fixture aman karena room tidak dibuat di Firebase. Hasil visual menunjukkan CTA **Login / Daftar**, tombol **Nanti**, dan pesan bahwa link akan dipulihkan setelah autentikasi.
+
+## Hasil fixture authenticated invitation
+
+Dengan response state sintetis yang hanya disuntikkan di browser, modal menampilkan label **Kamu mendapat undangan**, judul **Blend Daffa + Nisa**, chip anggota/pengundang, jumlah lagu awal, serta CTA **Tolak** dan **Gabung Blend**. Tidak ada request write ke server pada tahap membuka invitation.
+
+## Hasil fixture join
+
+Dengan response join sintetis, klik **Gabung Blend** menghasilkan toast **Kamu sudah bergabung ke Blend** dan modal berubah menjadi **Blend Kolaboratif** dengan dua anggota, satu lagu, tombol **Bagikan link undangan**, refresh, serta daftar lagu. Tidak ada operasi write ke Firebase selama fixture ini.
