@@ -5,6 +5,12 @@ async function getLyrics2(videoId) {
     let lyricsData = { type: 'none', lines: [] };
     let title = '', artist = '';
 
+    // AssemblyAI is an optional last-resort transcriber. When it is not configured,
+    // skip it silently so normal lyrics requests do not create production errors.
+    if (!String(process.env.ASSEMBLYAI_API_KEY || '').trim()) {
+        return { videoId, title, artist, lyrics: lyricsData };
+    }
+
     try {
         const transcribed = await getTranscribe(videoId);
         if (transcribed) {
@@ -25,7 +31,7 @@ async function getLyrics2(videoId) {
             }
         }
     } catch (err) {
-        console.error('[LYRICS2] Transcribe error:', err.message);
+        console.warn('[LYRICS2] Optional transcriber unavailable:', err.message);
     }
 
     if (lyricsData.lines && lyricsData.lines.length > 0) {
