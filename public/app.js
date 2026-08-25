@@ -54,7 +54,12 @@ async function clearOfflineDownloads() {
 function clearPwaCache() {
     if ('caches' in window) {
         caches.keys().then(function(names) {
-            names.forEach(function(name) { caches.delete(name); });
+            names.forEach(function(name) {
+                // Keep downloaded audio intact. Full removal is handled explicitly
+                // by clearOfflineDownloads() so a routine cache cleanup cannot
+                // make saved songs appear unavailable offline.
+                if (name !== OFFLINE_AUDIO_CACHE) caches.delete(name);
+            });
         });
     }
     localStorage.removeItem('pwa_lyrics_cache');
