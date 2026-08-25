@@ -1,5 +1,6 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v134';
+const CACHE_STATIC_NAME = 'malamusic-static-v135';
 const CACHE_DATA_NAME = 'malamusic-api-v52';
+const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1';
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
@@ -12,23 +13,23 @@ const STATIC_ASSETS = [
   '/logo.png',
   '/logo-mark.png',
   '/banner.png',
-  '/firebase.js?v=134',
-  '/app.js?v=134',
-  '/player.js?v=134',
-  '/listen-together.js?v=134',
-  '/fullplayer.js?v=134',
-  '/miniplayer.js?v=134',
-  '/home.js?v=134',
-  '/library.js?v=134',
-  '/liked.js?v=134',
-  '/search.js?v=134',
-  '/blend.js?v=134',
-  '/album.js?v=134',
-  '/artist.js?v=134',
-  '/profile.js?v=134',
-  '/streak.js?v=134',
-  '/leaderboard.js?v=134',
-  '/stats.js?v=134',
+  '/firebase.js?v=135',
+  '/app.js?v=135',
+  '/player.js?v=135',
+  '/listen-together.js?v=135',
+  '/fullplayer.js?v=135',
+  '/miniplayer.js?v=135',
+  '/home.js?v=135',
+  '/library.js?v=135',
+  '/liked.js?v=135',
+  '/search.js?v=135',
+  '/blend.js?v=135',
+  '/album.js?v=135',
+  '/artist.js?v=135',
+  '/profile.js?v=135',
+  '/streak.js?v=135',
+  '/leaderboard.js?v=135',
+  '/stats.js?v=135',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -59,7 +60,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME) {
+          if (key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME && key !== CACHE_AUDIO_NAME) {
             console.log('[SW] Removing old cache:', key);
             return caches.delete(key);
           }
