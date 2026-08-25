@@ -10,8 +10,8 @@ var FullPlayer={
             
             <!-- Blurred Artwork Background Container -->
             <div class="player-bg-container">
-                <img id="full-bg-artwork" src="" class="player-bg-blur-img" alt="" />
-                <img id="full-bg-artwork-next" src="" class="player-bg-blur-img transition-opacity duration-300" style="opacity:0; z-index:2;" alt="" />
+                <img id="full-bg-artwork" src="" class="player-bg-blur-img" alt="" aria-hidden="true" />
+                <img id="full-bg-artwork-next" src="" class="player-bg-blur-img transition-opacity duration-300" style="opacity:0; z-index:2;" alt="" aria-hidden="true" />
                 <div id="full-bg-glow" class="player-bg-glow"></div>
                 <div class="player-bg-vignette"></div>
             </div>
@@ -152,7 +152,7 @@ var FullPlayer={
 
                 <!-- Spotify Volume Control -->
                 <div class="flex items-center gap-3 px-2 pt-1 pb-1.5">
-                    <button id="full-vol-icon-btn" onclick="toggleMute()" class="text-white/70 hover:text-white transition cursor-pointer p-1 rounded-full active:scale-90 shrink-0" title="Mute / Unmute">
+                    <button id="full-vol-icon-btn" onclick="toggleMute()" aria-label="Mute atau nyalakan suara" class="text-white/70 hover:text-white transition cursor-pointer p-1 rounded-full active:scale-90 shrink-0" title="Mute / Unmute">
                         <i id="full-vol-icon" data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </button>
                     <div class="relative flex-1 h-1.5 bg-white/20 rounded-full flex items-center group cursor-pointer">
@@ -166,11 +166,11 @@ var FullPlayer={
 
                 <!-- Music Controls (Shuffle Prev Play Next Repeat) -->
                 <div class="flex items-center justify-between px-2 py-1">
-                    <button id="full-shuffle-btn" onclick="SF()" class="relative text-white/70 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Acak (Shuffle)">
+                    <button id="full-shuffle-btn" onclick="SF()" aria-label="Acak lagu" class="relative text-white/70 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Acak (Shuffle)">
                         <i data-lucide="shuffle" class="w-5 h-5"></i>
                         <span id="full-shuffle-dot" class="hidden absolute top-2 right-2 w-1.5 h-1.5 bg-white rounded-full"></span>
                     </button>
-                    <button id="full-prev-btn" onclick="PV()" class="text-white/80 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Lagu Sebelumnya">
+                    <button id="full-prev-btn" onclick="PV()" aria-label="Lagu sebelumnya" class="text-white/80 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Lagu Sebelumnya">
                         <i data-lucide="skip-back" class="w-6 h-6 fill-current"></i>
                     </button>
                     <button onclick="TP()" id="full-play-btn-wrap" aria-label="Putar atau jeda lagu" class="relative bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-white/20 cursor-pointer flex items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shrink-0">
@@ -178,7 +178,7 @@ var FullPlayer={
                             <i data-lucide="play" class="w-8 h-8 fill-current ml-0.5"></i>
                         </div>
                     </button>
-                    <button id="full-next-btn" onclick="NX()" class="text-white/80 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Lagu Berikutnya">
+                    <button id="full-next-btn" onclick="NX()" aria-label="Lagu berikutnya" class="text-white/80 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Lagu Berikutnya">
                         <i data-lucide="skip-forward" class="w-6 h-6 fill-current"></i>
                     </button>
                     <button onclick="TR()" id="btn-repeat" class="relative text-white/70 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Ulang (Repeat)">
