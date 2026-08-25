@@ -280,16 +280,31 @@ async function validateOfflineAudioBinary(vid) {
         return false;
     }
 }
-async function cacheOfflineAudioBinary(vid, rawUrl){
+async function cacheOfflineAudioBinary(vid, rawUrl, onProgress){
     if (!window.caches || !rawUrl) return false;
     try {
         var response = await fetch('/api/proxy-audio?url=' + encodeURIComponent(rawUrl), { cache: 'no-store' });
         if (!response.ok || !response.body) return false;
-        var buffer = await response.arrayBuffer();
+        var total = Number(response.headers.get('content-length') || 0);
+        var reader = response.body.getReader();
+        var chunks = [], received = 0;
+        while (true) {
+            var part = await reader.read();
+            if (part.done) break;
+            if (part.value) {
+                chunks.push(part.value);
+                received += part.value.byteLength;
+                if (typeof onProgress === 'function') onProgress(total > 0 ? Math.min(99, Math.round(received / total * 100)) : 0, 'mengunduh', received, total);
+            }
+        }
+        var buffer = new Uint8Array(received);
+        var offset = 0;
+        chunks.forEach(function(chunk){ buffer.set(chunk, offset); offset += chunk.byteLength; });
         var contentType = response.headers.get('content-type') || 'audio/mpeg';
-        if (!isLikelyAudioBinary(buffer, contentType)) return false;
+        if (!isLikelyAudioBinary(buffer.buffer, contentType)) return false;
         var cache = await caches.open(OFFLINE_AUDIO_CACHE);
-        await cache.put(offlineAudioPath(vid), new Response(buffer, { status: 200, headers: { 'Content-Type': contentType, 'Content-Length': String(buffer.byteLength), 'Accept-Ranges': 'bytes' } }));
+        await cache.put(offlineAudioPath(vid), new Response(buffer.buffer, { status: 200, headers: { 'Content-Type': contentType, 'Content-Length': String(buffer.byteLength), 'Accept-Ranges': 'bytes' } }));
+        if (typeof onProgress === 'function') onProgress(100, 'memvalidasi', received, total || received);
         return await validateOfflineAudioBinary(vid);
     } catch (_) { return false; }
 }
@@ -366,6 +381,22 @@ async function saveTrackForOffline(track, options) {
     writeJsonArray('pwa_offline_tracks', list);
 
     // 2. Pre-fetch & cache Audio URL
+    var lastProgressWrite = 0;
+    function reportDownloadProgress(percent, stage, received, total) {
+        songObj.downloadProgress = Math.max(0, Math.min(100, Number(percent) || 0));
+        songObj.downloadStage = stage || 'menyiapkan';
+        songObj.downloadBytes = Number(received || 0);
+        songObj.downloadTotalBytes = Number(total || 0);
+        songObj.downloadUpdatedAt = Date.now();
+        var now = Date.now();
+        if (now - lastProgressWrite >= 250 || songObj.downloadProgress >= 100) {
+            lastProgressWrite = now;
+            writeJsonArray('pwa_offline_tracks', list);
+            if (typeof options.onProgress === 'function') options.onProgress({ status: 'progress', track: songObj });
+            if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+        }
+    }
+    reportDownloadProgress(1, 'menyiapkan', 0, 0);
     var binarySaved = false;
     var attempts = 0;
     var maxAttempts = 3;
@@ -375,6 +406,7 @@ async function saveTrackForOffline(track, options) {
             // Always obtain a fresh resolver URL on retries; resolver URLs can expire or return corrupt data.
             var rawAudioUrl = '';
             var ytUrl = track.ytUrl || ('https://youtube.com/watch?v=' + vid);
+            reportDownloadProgress(Math.min(10, 2 + attempts * 2), 'mencari audio', 0, 0);
             var r = await fetch(API.ytplay, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -385,16 +417,23 @@ async function saveTrackForOffline(track, options) {
             var d = await r.json();
             rawAudioUrl = d && d.result && d.result.download && d.result.download.audio || '';
             if (!rawAudioUrl) throw new Error('resolver_empty');
+            reportDownloadProgress(10, 'menyiapkan stream audio', 0, 0);
             if (typeof audioUrlCache !== 'undefined') audioUrlCache[vid] = rawAudioUrl;
             if (typeof savePwaCaches === 'function') savePwaCaches();
             await removeOfflineAudioBinary(vid);
-            binarySaved = await cacheOfflineAudioBinary(vid, rawAudioUrl);
+            binarySaved = await cacheOfflineAudioBinary(vid, rawAudioUrl, function(percent, stage, received, total){
+                reportDownloadProgress(10 + Math.round(Number(percent || 0) * 0.88), stage, received, total);
+            });
         } catch(e) { binarySaved = false; }
         if (!binarySaved && attempts < maxAttempts) {
             await new Promise(function(resolve){ setTimeout(resolve, 500 * Math.pow(2, attempts - 1)); });
         }
     }
     songObj.offlineStatus = binarySaved ? 'ready' : 'partial';
+    songObj.downloadProgress = binarySaved ? 100 : Math.min(99, Number(songObj.downloadProgress || 0));
+    songObj.downloadStage = binarySaved ? 'siap diputar' : 'gagal — tekan untuk ulang';
+    songObj.downloadError = binarySaved ? '' : 'Audio belum tervalidasi';
+    songObj.downloadUpdatedAt = Date.now();
     if (!binarySaved && typeof showToast === 'function') showToast('Download gagal setelah ' + attempts + ' percobaan. Coba lagi saat jaringan stabil.');
 
     // 3. Pre-fetch & cache Lyrics
@@ -445,8 +484,9 @@ function renderOfflineDownloadStatus(job){
     var el = gid('offline-download-status');
     if (!job || job.status !== 'running') { if (el) el.remove(); return; }
     if (!el) { el = document.createElement('button'); el.id = 'offline-download-status'; el.className = 'fixed right-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-5 z-[460] rounded-2xl border border-cyan-300/30 bg-[#111820]/95 px-3 py-2 text-left text-xs text-white shadow-2xl backdrop-blur-md'; document.body.appendChild(el); }
-    var done = Number(job.done || 0), total = Math.max(1, Number(job.total || 1)), pct = Math.round(done / total * 100);
-    el.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-cyan-300"></i><span><b class="text-cyan-200">Download berjalan</b><br><span class="text-white/60">' + done + '/' + total + ' lagu • ' + pct + '%</span></span></span>';
+    var done = Number(job.done || 0), total = Math.max(1, Number(job.total || 1)), pct = Math.round(done / total * 100), current = Number(job.currentPercent || 0);
+    var currentText = job.currentTitle ? '<br><span class="text-white/45 truncate inline-block max-w-[220px]">' + es(job.currentTitle) + ' • ' + current + '%</span>' : '';
+    el.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-cyan-300"></i><span><b class="text-cyan-200">Download berjalan</b><br><span class="text-white/60">Playlist ' + done + '/' + total + ' • ' + pct + '%</span>' + currentText + '</span></span>';
     el.title = 'Lihat status download playlist';
     el.onclick = function(){ var modal = gid('offline-playlist-progress'); if (modal) modal.classList.remove('hidden'); };
     if (window.lucide) lucide.createIcons();
@@ -494,9 +534,9 @@ function downloadOfflinePlaylistItems(playlist) {
     modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-end bg-transparent px-3 sm:px-4 pb-[5.5rem] sm:pb-5 pointer-events-none';
     modal.innerHTML = '<div class="pointer-events-auto w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><div class="pointer-events-auto flex gap-2 mt-4"><button id="offline-playlist-cancel" class="flex-1 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button><button id="offline-playlist-minimize" class="flex-1 rounded-xl bg-cyan-500/15 border border-cyan-400/20 text-cyan-100 py-3 text-xs font-bold">Sembunyikan</button></div></div>';
     document.body.appendChild(modal); lucide.createIcons();
-    offlinePlaylistJob = { status: 'running', cancelled: false, total: playlist.songs.length, done: 0, failed: 0, saved: 0, already: 0 };
+    offlinePlaylistJob = { status: 'running', cancelled: false, total: playlist.songs.length, done: 0, failed: 0, saved: 0, already: 0, currentTitle: '', currentPercent: 0 };
     var job = offlinePlaylistJob;
-    persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: 0, failed: 0, saved: 0, already: 0 });
+    persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: 0, failed: 0, saved: 0, already: 0, currentTitle: '', currentPercent: 0 });
     upsertOfflinePlaylist(playlist, 'partial');
     renderOfflineDownloadStatus(job);
     var bar = modal.querySelector('#offline-playlist-progress-bar');
@@ -511,20 +551,29 @@ function downloadOfflinePlaylistItems(playlist) {
         for (var i = 0; i < playlist.songs.length; i++) {
             if (job.cancelled) break;
             var track = playlist.songs[i];
-            text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length;
+            job.currentTitle = track.title || 'Lagu';
+            job.currentPercent = 0;
+            text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • 0%';
             detail.textContent = track.title || 'Lagu';
             try {
                 var vid = track.videoId || track.id;
                 var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
-                var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name });
+                var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name, onProgress: function(event){
+                    var progress = event && event.track ? Number(event.track.downloadProgress || 0) : 0;
+                    job.currentPercent = progress;
+                    text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • ' + progress + '%';
+                    detail.textContent = (track.title || 'Lagu') + ' • ' + (event.track.downloadStage || 'memproses');
+                    renderOfflineDownloadStatus(job);
+                } });
                 var hasAudio = await hasOfflineAudioBinary(vid);
                 if (before && hasAudio) already++; else if (result && hasAudio) saved++; else failed++;
             } catch (e) { failed++; }
             done++;
+            job.currentPercent = 100;
             bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
             count.textContent = done + '/' + playlist.songs.length;
             job.done = done; job.failed = failed; job.saved = saved; job.already = already;
-            persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: done, failed: failed, saved: saved, already: already });
+            persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: done, failed: failed, saved: saved, already: already, currentTitle: job.currentTitle, currentPercent: job.currentPercent });
             renderOfflineDownloadStatus(job);
             upsertOfflinePlaylist(playlist, 'partial');
             if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
@@ -627,7 +676,8 @@ var OfflineView = {
                         '<img src="'+(s.cover || FI)+'" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" onerror="this.src=\''+FI+'\'" />'+
                         '<div class="min-w-0 flex-1">'+
                             '<h3 class="'+titleClass+' text-sm truncate">'+es(s.title)+'</h3>'+
-                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlineStatus === 'partial' ? ' • <span class="text-amber-300/80">Audio belum lengkap</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
+                            '<p class="text-xs text-white/50 truncate mt-0.5">'+es(s.artist)+(dateStr ? ' • <span class="text-white/40">Offline ('+dateStr+')</span>' : '')+(s.offlineStatus === 'partial' ? ' • <span class="text-amber-300/80">'+es(s.downloadStage || 'Audio belum lengkap')+'</span>' : '')+(s.offlineStatus === 'ready' ? ' • <span class="text-emerald-300/80">Audio siap • 100%</span>' : '')+(s.offlinePlaylistName ? ' • <span class="text-cyan-300/60">'+es(s.offlinePlaylistName)+'</span>' : '')+'</p>'+
+                            ((s.offlineStatus === 'partial' || s.offlineStatus === 'pending') ? '<div class="mt-1 h-1 rounded-full bg-white/10 overflow-hidden"><div class="h-full rounded-full bg-amber-300 transition-all" style="width:'+Math.max(1, Math.min(99, Number(s.downloadProgress || 0)))+'%"></div></div><span class="text-[10px] text-amber-200/70">'+Math.round(Number(s.downloadProgress || 0))+'%</span>' : '')+
                         '</div>'+
                     '</div>'+trackMenuButton(s)+
                     '<button onclick="event.stopPropagation();saveTrackForOffline('+safeSongJson+');" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-red-400 border border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all" title="Hapus dari Mode Offline PWA">'+
