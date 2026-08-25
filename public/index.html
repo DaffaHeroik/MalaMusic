@@ -3,7 +3,7 @@
 <head>
     <script>
         if ('serviceWorker' in navigator) {
-            var MALA_SW_VERSION = 'v144';
+            var MALA_SW_VERSION = 'v145';
             navigator.serviceWorker.addEventListener('controllerchange', function() {
                 if (!navigator.serviceWorker.controller) return;
                 var reloadKey = 'malamusic-sw-reloaded-' + MALA_SW_VERSION;
@@ -12,9 +12,20 @@
                 window.location.reload();
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js?v=144').then(function(reg) {
+                navigator.serviceWorker.register('/sw.js?v=145').then(function(reg) {
+                    // FIXED: handle worker yang baru selesai install; reg.waiting sering masih null tepat setelah register().
+                    var activateUpdate = function() {
+                        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    };
+                    if (reg.waiting) activateUpdate();
+                    reg.addEventListener('updatefound', function() {
+                        var installing = reg.installing;
+                        if (!installing) return;
+                        installing.addEventListener('statechange', function() {
+                            if (installing.state === 'installed') activateUpdate();
+                        });
+                    });
                     reg.update();
-                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                     console.log('PWA SW Registered:', reg.scope);
                 }).catch(function(err) {
                     console.error('PWA SW Register failed:', err);
@@ -633,23 +644,23 @@
 
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
-    <script src="/firebase.js?v=144"></script>
-    <script src="/stats.js?v=144"></script>
-    <script src="/player.js?v=144"></script>
-    <script src="/listen-together.js?v=144"></script>
-    <script src="/home.js?v=144"></script>
-    <script src="/search.js?v=144"></script>
-    <script src="/blend.js?v=144"></script>
-    <script src="/leaderboard.js?v=144"></script>
-    <script src="/liked.js?v=144"></script>
-    <script src="/library.js?v=144"></script>
-    <script src="/profile.js?v=144"></script>
-    <script src="/streak.js?v=144"></script>
-    <script src="/miniplayer.js?v=144"></script>
-    <script src="/fullplayer.js?v=144"></script>
-    <script src="/artist.js?v=144"></script>
-    <script src="/album.js?v=144"></script>
-    <script src="/app.js?v=144"></script>
+    <script src="/firebase.js?v=145"></script>
+    <script src="/stats.js?v=145"></script>
+    <script src="/player.js?v=145"></script>
+    <script src="/listen-together.js?v=145"></script>
+    <script src="/home.js?v=145"></script>
+    <script src="/search.js?v=145"></script>
+    <script src="/blend.js?v=145"></script>
+    <script src="/leaderboard.js?v=145"></script>
+    <script src="/liked.js?v=145"></script>
+    <script src="/library.js?v=145"></script>
+    <script src="/profile.js?v=145"></script>
+    <script src="/streak.js?v=145"></script>
+    <script src="/miniplayer.js?v=145"></script>
+    <script src="/fullplayer.js?v=145"></script>
+    <script src="/artist.js?v=145"></script>
+    <script src="/album.js?v=145"></script>
+    <script src="/app.js?v=145"></script>
     <script>(function () {
   document.addEventListener('visibilitychange', function () {
     document.documentElement.classList.toggle('tab-hidden', document.hidden);
