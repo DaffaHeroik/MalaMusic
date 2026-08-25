@@ -1162,6 +1162,19 @@ function ensureImageAccessibility(root) {
             }
             img.setAttribute('alt', (label || 'Artwork MalaMusic').replace(/\s+/g, ' ').slice(0, 140));
         }
+        // FIXED: empty image sources resolve ke URL halaman sendiri dan memicu request sia-sia/broken image.
+        var rawSrc = String(img.getAttribute('src') || '').trim();
+        if (!rawSrc || rawSrc === location.href) {
+            var imageFallback = (typeof FI !== 'undefined' && FI) ? FI : '/logo-mark.png';
+            img.setAttribute('src', imageFallback);
+        }
+        if (!img.dataset.malaFallbackBound) {
+            img.dataset.malaFallbackBound = 'true';
+            img.addEventListener('error', function() {
+                var imageFallback = (typeof FI !== 'undefined' && FI) ? FI : '/logo-mark.png';
+                if (img.getAttribute('src') !== imageFallback) img.setAttribute('src', imageFallback);
+            });
+        }
         if (!img.hasAttribute('loading') && !img.closest('#splash-screen, #full-player, #mini-player')) img.setAttribute('loading', 'lazy');
     });
 }
