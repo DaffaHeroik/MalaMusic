@@ -53,10 +53,10 @@ var Home = {
                     <button id="home-listen-together" class="w-10 h-10 rounded-2xl bg-emerald-400/15 backdrop-blur-md border border-emerald-300/30 flex items-center justify-center text-emerald-200 hover:bg-emerald-400/25 active:scale-95 transition-all shadow-lg" title="Dengarkan bersama teman" aria-label="Dengarkan bersama teman">
                         <i data-lucide="headphones" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="App.switch('search')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Cari">
+                    <button onclick="App.switch('search')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Cari" aria-label="Cari">
                         <i data-lucide="search" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="App.switch('dev')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Profil">
+                    <button onclick="App.switch('dev')" class="w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-lg" title="Profil" aria-label="Profil">
                         <i data-lucide="user" class="w-5 h-5"></i>
                     </button>
                 </div>
