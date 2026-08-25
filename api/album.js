@@ -48,6 +48,54 @@ function extractPlaylistCreator(data) {
     return getRunsText(owner?.title?.runs) || owner?.title?.simpleText || '';
 }
 
+function extractContinuationToken(data) {
+    const commands = [];
+    findAllKeys(data, 'continuationCommand', commands);
+    const tokens = commands.map(x => String(x?.token || '').trim()).filter(Boolean);
+    return tokens.length ? tokens[tokens.length - 1] : '';
+}
+
+function appendPlaylistSongs(data, songs) {
+    const lockups = [];
+    findAllKeys(data, 'lockupViewModel', lockups);
+    for (const lock of lockups) {
+        const videoId = lock.contentId || '';
+        if (!videoId || songs.find(s => s.videoId === videoId)) continue;
+        const songTitle = lock.metadata?.lockupMetadataViewModel?.title?.content || 'Unknown';
+        const rows = lock.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows || [];
+        let artist = '';
+        if (rows[0]?.metadataParts?.[0]?.text?.content) artist = rows[0].metadataParts[0].text.content;
+        let duration = '';
+        const a11yLabel = lock.rendererContext?.accessibilityContext?.label || '';
+        const m = a11yLabel.match(/(\d+\s*(?:detik|menit|jam|\d+:\d+))/);
+        if (m) duration = m[1];
+        if (!duration) {
+            const badges = lock.contentImage?.thumbnailViewModel?.overlays?.[0]?.thumbnailBottomOverlayViewModel?.badges || [];
+            if (badges[0]?.thumbnailBadgeViewModel?.text) duration = badges[0].thumbnailBadgeViewModel.text;
+        }
+        const sources = lock.contentImage?.thumbnailViewModel?.image?.sources || [];
+        const thumb = transformThumbs(sources.map(s => ({ url: s.url })), videoId);
+        songs.push({ videoId, title: songTitle, artist: artist || 'Unknown', artistId: '', duration, thumbnails: thumb });
+    }
+}
+
+function appendResponsiveSongs(data, songs) {
+    const items = [];
+    findAllKeys(data, 'musicResponsiveListItemRenderer', items);
+    for (const wrapper of items) {
+        const i = wrapper;
+        const videoId = i.playlistItemData?.videoId || i.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.[0]?.navigationEndpoint?.watchEndpoint?.videoId || '';
+        if (!videoId || songs.find(s => s.videoId === videoId)) continue;
+        const songTitle = getRunsText(i.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs || []);
+        const artistRuns = i.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs || [];
+        const artist = getRunsText(artistRuns) || 'Unknown Artist';
+        const artistId = artistRuns[0]?.navigationEndpoint?.browseEndpoint?.browseId || '';
+        const duration = getRunsText(i.fixedColumns?.[0]?.musicResponsiveListItemFixedColumnRenderer?.text?.runs || []);
+        const rawThumb = i.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+        songs.push({ videoId, title: songTitle || 'Unknown', artist, artistId, duration, thumbnails: transformThumbs(rawThumb, videoId) });
+    }
+}
+
 function makeRequest(o, p) {
     return new Promise((resolve, reject) => {
         const r = https.request(o, res => { let d=''; res.on('data', c=>d+=c); res.on('end', ()=>{ try{resolve(JSON.parse(d));}catch(e){resolve(d);} }); });
@@ -71,15 +119,17 @@ module.exports = async (req, res) => {
         }
 
         const isPlaylist = browseId.startsWith('VL');
-        const clientName = isPlaylist ? 'WEB' : 'WEB_REMIX';
-        const hostname = isPlaylist ? 'youtubei.googleapis.com' : 'music.youtube.com';
+        // WEB_REMIX exposes the complete playlist shelf and its song continuation.
+        // WEB can return related-playlist continuations that look like song lockups.
+        const clientName = 'WEB_REMIX';
+        const hostname = 'music.youtube.com';
 
         const data = await makeRequest({
             hostname: hostname, 
             path: '/youtubei/v1/browse?prettyPrint=false' + (API_KEY ? '&key=' + encodeURIComponent(API_KEY) : ''),
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/131.0.0.0', 'Origin': 'https://music.youtube.com' }
-        }, { context: { client: { clientName: clientName, clientVersion: isPlaylist ? '2.20240726.00.00' : '1.20240101.00.00', hl: 'en', gl: 'ID' } }, browseId });
+        }, { context: { client: { clientName: clientName, clientVersion: '1.20250826.01.00', hl: 'en', gl: 'ID' } }, browseId });
 
         let title = 'Unknown';
         let description = '';
@@ -100,44 +150,28 @@ module.exports = async (req, res) => {
                 }
             }
 
-            const lockups = [];
-            findAllKeys(data, 'lockupViewModel', lockups);
-            
-            for (const lock of lockups) {
-                const videoId = lock.contentId || '';
-                if (!videoId || songs.find(s => s.videoId === videoId)) continue;
-                
-                const songTitle = lock.metadata?.lockupMetadataViewModel?.title?.content || 'Unknown';
-                
-                const rows = lock.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows || [];
-                let artist = '';
-                if (rows[0]?.metadataParts?.[0]?.text?.content) {
-                    artist = rows[0].metadataParts[0].text.content;
-                }
-                
-                let duration = '';
-                const a11yLabel = lock.rendererContext?.accessibilityContext?.label || '';
-                const m = a11yLabel.match(/(\d+\s*(?:detik|menit|jam|\d+:\d+))/);
-                if (m) duration = m[1];
-                
-                if (!duration) {
-                    const badges = lock.contentImage?.thumbnailViewModel?.overlays?.[0]?.thumbnailBottomOverlayViewModel?.badges || [];
-                    if (badges[0]?.thumbnailBadgeViewModel?.text) {
-                        duration = badges[0].thumbnailBadgeViewModel.text;
-                    }
-                }
-                
-                const sources = lock.contentImage?.thumbnailViewModel?.image?.sources || [];
-                let thumb = transformThumbs(sources.map(s => ({ url: s.url })), videoId);
-                
-                songs.push({
-                    videoId,
-                    title: songTitle,
-                    artist: artist || 'Unknown',
-                    artistId: '',
-                    duration: duration,
-                    thumbnails: thumb
-                });
+            if (title === 'Unknown') title = data?.microformat?.microformatDataRenderer?.title || 'Unknown';
+            const microDescription = data?.microformat?.microformatDataRenderer?.description || '';
+            if (!description) description = microDescription;
+            if (!creator && microDescription.includes(' • ')) creator = microDescription.split(' • ').slice(1).join(' • ').trim();
+            if (!thumbnails.length) thumbnails = data?.microformat?.microformatDataRenderer?.thumbnail?.thumbnails || [];
+            appendPlaylistSongs(data, songs);
+            appendResponsiveSongs(data, songs);
+            let continuation = extractContinuationToken(data);
+            const seenContinuations = new Set();
+            let pageCount = 0;
+            while (continuation && !seenContinuations.has(continuation) && pageCount < 20) {
+                seenContinuations.add(continuation);
+                pageCount++;
+                const next = await makeRequest({
+                    hostname: hostname,
+                    path: '/youtubei/v1/browse?prettyPrint=false' + (API_KEY ? '&key=' + encodeURIComponent(API_KEY) : ''),
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 Chrome/131.0.0.0', 'Origin': 'https://music.youtube.com' }
+                }, { context: { client: { clientName: clientName, clientVersion: '1.20250826.01.00', hl: 'en', gl: 'ID' } }, continuation });
+                appendPlaylistSongs(next, songs);
+                appendResponsiveSongs(next, songs);
+                continuation = extractContinuationToken(next);
             }
         } else {
             title = data?.microformat?.microformatDataRenderer?.title || 'Unknown Album';
