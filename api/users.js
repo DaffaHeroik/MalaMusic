@@ -18,7 +18,7 @@ function cleanProfile(uid, value) {
 function cleanPublicPlaylist(value) {
     const p = value && typeof value === 'object' ? value : {};
     if (!p.isPublic || !p.id) return null;
-    const songs = Array.isArray(p.songs) ? p.songs.slice(0, 100).map(song => {
+    const songs = Array.isArray(p.songs) ? p.songs.slice(0, 500).map(song => {
         const id = String(song && (song.videoId || song.id) || '').slice(0, 120);
         return id ? {
             id,

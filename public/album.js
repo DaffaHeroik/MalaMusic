@@ -76,9 +76,25 @@ var Album = {
                     return;
                 }
             }
-            // A saved external playlist is a user-owned snapshot. Prefer its stored
-            // songs when present; otherwise a fresh catalog response can silently
-            // replace the playlist with a different number/order of tracks.
+            // A saved external playlist is a user-owned snapshot. Refresh an older
+            // truncated snapshot when the live catalog now contains more songs.
+            if (localSavedPlaylist && Array.isArray(data.result.songs) && data.result.songs.length > (Array.isArray(localSavedPlaylist.songs) ? localSavedPlaylist.songs.length : 0) && typeof saveUserPlaylists === 'function' && typeof getUserPlaylists === 'function') {
+                try {
+                    var refreshed = getUserPlaylists();
+                    var refreshedStored = refreshed.find(function(p){ return p.id === localSavedPlaylist.id || p.externalId === id; });
+                    if (refreshedStored) {
+                        var refreshedSongs = data.result.songs.map(function(song){ return normalizeTrack({ id:song.videoId, videoId:song.videoId, title:song.title, artist:song.artist, artistId:song.artistId || '', cover:(song.thumbnails && song.thumbnails[0] && (song.thumbnails[0].url || song.thumbnails[0])) || refreshedStored.image, ytUrl:'https://youtube.com/watch?v=' + song.videoId }); }).filter(function(song){ return song.videoId; }).slice(0,500);
+                        if (refreshedSongs.length > (Array.isArray(refreshedStored.songs) ? refreshedStored.songs.length : 0)) {
+                            refreshedStored.songs = refreshedSongs;
+                            refreshedStored.creator = refreshedStored.creator || data.result.creator || data.result.artist || '';
+                            saveUserPlaylists(refreshed);
+                            localSavedPlaylist = refreshedStored;
+                        }
+                    }
+                } catch (_) {}
+            }
+            // Prefer the refreshed/stored snapshot so opening a saved playlist
+            // does not silently change its order or content.
             if (localSavedPlaylist && Array.isArray(localSavedPlaylist.songs) && localSavedPlaylist.songs.length > 0) {
                 data = { status: true, result: Object.assign({}, data.result, {
                     title: localSavedPlaylist.name || data.result.title || 'Playlist tersimpan',
@@ -97,7 +113,7 @@ var Album = {
                     var hydrated = getUserPlaylists();
                     var stored = hydrated.find(function(p){ return p.id === localSavedPlaylist.id || p.externalId === id; });
                     if (stored) {
-                        stored.songs = a.songs.map(function(song){ return normalizeTrack({ id:song.videoId, videoId:song.videoId, title:song.title, artist:song.artist, artistId:song.artistId || '', cover:(song.thumbnails && song.thumbnails[0] && (song.thumbnails[0].url || song.thumbnails[0])) || stored.image, ytUrl:'https://youtube.com/watch?v=' + song.videoId }); }).filter(function(song){ return song.videoId; }).slice(0,100);
+                        stored.songs = a.songs.map(function(song){ return normalizeTrack({ id:song.videoId, videoId:song.videoId, title:song.title, artist:song.artist, artistId:song.artistId || '', cover:(song.thumbnails && song.thumbnails[0] && (song.thumbnails[0].url || song.thumbnails[0])) || stored.image, ytUrl:'https://youtube.com/watch?v=' + song.videoId }); }).filter(function(song){ return song.videoId; }).slice(0,500);
                         stored.creator = stored.creator || a.creator || a.artist || '';
                         saveUserPlaylists(hydrated);
                     }
