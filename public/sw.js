@@ -1,4 +1,4 @@
-const CACHE_STATIC_NAME = 'malamusic-static-v139';
+const CACHE_STATIC_NAME = 'malamusic-static-v140';
 const CACHE_DATA_NAME = 'malamusic-api-v52';
 const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1';
 
@@ -57,7 +57,7 @@ const STATIC_ASSETS = [
   '/profile.js?v=139',
   '/streak.js?v=139',
   '/leaderboard.js?v=139',
-  '/stats.js?v=139',
+  '/stats.js?v=140',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
