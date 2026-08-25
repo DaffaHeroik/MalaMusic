@@ -64,8 +64,10 @@ export default {
     if (url.pathname === '/rollover') return Response.json(await rollover(env));
     if (url.pathname === '/listen' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      const seconds = Math.max(1, Math.min(120, Math.round(Number(body.seconds || 0))));
-      if (!body.email || !seconds) return Response.json({ status: false, message: 'Data tidak valid.' }, { status: 400 });
+      const requestedSeconds = Number(body.seconds);
+      if (!body.email || !Number.isFinite(requestedSeconds) || requestedSeconds <= 0) return Response.json({ status: false, message: 'Data tidak valid.' }, { status: 400 });
+      const seconds = Math.min(120, Math.floor(requestedSeconds));
+      if (seconds < 1) return Response.json({ status: false, message: 'Durasi terlalu kecil.' }, { status: 400 });
       const day = DAY(), name = String(body.name || body.email.split('@')[0]).replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 60) || 'Pendengar';
       await env.DB.prepare('INSERT INTO user_daily_stats (email, display_name, day, seconds) VALUES (?, ?, ?, ?) ON CONFLICT(email, day) DO UPDATE SET seconds = seconds + excluded.seconds, display_name = excluded.display_name').bind(body.email, name, day, seconds).run();
       await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, active_days, last_active, updated_at) VALUES (?, ?, ?, 1, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, total_seconds = user_stats.total_seconds + excluded.total_seconds, active_days = (SELECT COUNT(DISTINCT day) FROM user_daily_stats WHERE email = excluded.email), last_active = excluded.last_active, updated_at = excluded.updated_at').bind(body.email, name, seconds, day, new Date().toISOString()).run();

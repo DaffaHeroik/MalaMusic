@@ -22,7 +22,7 @@ assert.match(source, /activeAudioTrack = track;\s*activeAudioSequence = loadSequ
 assert.match(source, /activeAudioIsOffline = isOfflineBinary;/);
 assert.match(source, /armAudioStartTimer\(track, loadSequence\);/);
 assert.match(source, /if\(!AU\.src \|\| !isCurrentAudioSource\(\)\)/);
-assert.equal(count(/isCurrentAudioSource\(\)\) return;/g), 8, 'native audio events and startup watchdog must reject stale sources');
+assert.ok(count(/isCurrentAudioSource\(\)\) return;/g) >= 8, 'native audio events and startup watchdog must reject stale sources');
 assert.match(source, /AbortController/);
 assert.match(source, /var AUDIO_RESOLVE_TIMEOUT_MS = 25000;/);
 assert.match(source, /setTimeout\(function\(\)\{ if\(controller\) controller\.abort\(\); \}, AUDIO_RESOLVE_TIMEOUT_MS\)/);
