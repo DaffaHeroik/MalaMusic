@@ -1168,6 +1168,11 @@ function ensureImageAccessibility(root) {
             var imageFallback = (typeof FI !== 'undefined' && FI) ? FI : '/logo-mark.png';
             img.setAttribute('src', imageFallback);
         }
+        // FIXED: gambar yang sudah complete tetapi naturalWidth 0 perlu dipulihkan sekarang, bukan menunggu event error berikutnya.
+        if (img.complete && img.naturalWidth === 0) {
+            var failedImageFallback = (typeof FI !== 'undefined' && FI) ? FI : '/logo-mark.png';
+            if (img.getAttribute('src') !== failedImageFallback) img.setAttribute('src', failedImageFallback);
+        }
         if (!img.dataset.malaFallbackBound) {
             img.dataset.malaFallbackBound = 'true';
             img.addEventListener('error', function() {

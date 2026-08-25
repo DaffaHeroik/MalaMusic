@@ -142,7 +142,7 @@ var FullPlayer={
                 <div class="flex items-center gap-3 px-1 my-2">
                     <span id="time-curr" class="text-[11px] text-white/70 font-mono shrink-0 w-8 text-right font-semibold">0:00</span>
                     <div class="relative flex-1 h-1.5 bg-white/20 rounded-full flex items-center group cursor-pointer">
-                        <input type="range" id="seek-bar" min="0" max="100" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" oninput="SK(this.value)" />
+                        <input type="range" id="seek-bar" min="0" max="100" value="0" aria-label="Posisi pemutaran lagu" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" oninput="SK(this.value)" />
                         <div id="full-progress" class="relative h-full bg-white rounded-full transition-all duration-75" style="width:0%;">
                             <div class="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
@@ -156,7 +156,7 @@ var FullPlayer={
                         <i id="full-vol-icon" data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </button>
                     <div class="relative flex-1 h-1.5 bg-white/20 rounded-full flex items-center group cursor-pointer">
-                        <input type="range" id="vol-bar" min="0" max="100" value="100" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" oninput="setVolume(this.value)" />
+                        <input type="range" id="vol-bar" min="0" max="100" value="100" aria-label="Volume" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" oninput="setVolume(this.value)" />
                         <div id="full-vol-progress" class="relative h-full bg-white rounded-full transition-all duration-75" style="width:100%;">
                             <div class="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
@@ -173,7 +173,7 @@ var FullPlayer={
                     <button id="full-prev-btn" onclick="PV()" class="text-white/80 hover:text-white active:scale-90 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer" title="Lagu Sebelumnya">
                         <i data-lucide="skip-back" class="w-6 h-6 fill-current"></i>
                     </button>
-                    <button onclick="TP()" id="full-play-btn-wrap" class="relative bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-white/20 cursor-pointer flex items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shrink-0">
+                    <button onclick="TP()" id="full-play-btn-wrap" aria-label="Putar atau jeda lagu" class="relative bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-white/20 cursor-pointer flex items-center justify-center w-16 h-16 sm:w-18 sm:h-18 shrink-0">
                         <div id="full-play-btn" class="flex items-center justify-center">
                             <i data-lucide="play" class="w-8 h-8 fill-current ml-0.5"></i>
                         </div>
