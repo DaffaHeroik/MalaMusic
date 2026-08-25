@@ -152,7 +152,12 @@ var Profile = {
     applyAvatar: function(user) {
         var avatar = document.getElementById('profile-avatar');
         if (!avatar) return;
-        avatar.src = this.avatarSource(user);
+        var source = this.avatarSource(user);
+        avatar.onerror = function() {
+            avatar.onerror = null;
+            avatar.src = '/logo-mark.png';
+        };
+        avatar.src = source || '/logo-mark.png';
         avatar.style.display = 'block';
     },
     chooseAvatar: function() {

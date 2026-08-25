@@ -4,10 +4,10 @@ var Artist={
         <div id="artist-modal" class="fixed inset-0 bg-[#1a1b22] flex flex-col z-30" style="display:none; animation: slideUp 0.3s ease-out forwards;">
             <div class="flex items-center justify-between gap-3 p-4 pt-safe bg-transparent absolute top-0 left-0 w-full z-[100] transition-all" id="artist-header">
                 <div class="flex items-center gap-3 min-w-0">
-                    <button onclick="Artist.close()" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/40 cursor-pointer"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                    <button onclick="Artist.close()" aria-label="Tutup halaman artis" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/40 cursor-pointer"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
                     <h1 id="artist-name" class="text-xl font-black text-white truncate opacity-0 transition-opacity">Artist</h1>
                 </div>
-                <button onclick="Artist.share()" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/40 cursor-pointer" title="Bagikan Artist"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+                <button onclick="Artist.share()" aria-label="Bagikan artis" class="glass glass-hover rounded-full text-white p-3 active:scale-90 shadow-md bg-black/40 cursor-pointer" title="Bagikan Artist"><i data-lucide="share-2" class="w-5 h-5"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto hide-scrollbar pb-36 relative" id="artist-content" onscroll="Artist.handleScroll()">
                 <p class="text-center text-[#a0a5b0] mt-32">Memuat...</p>
