@@ -256,6 +256,9 @@ function markOfflineSongPlaylist(song, options, list) {
 }
 
 var OFFLINE_AUDIO_CACHE = 'malamusic-offline-audio-v1';
+var offlineDownloadControl = null;
+var offlineTrackActiveIds = Object.create(null);
+function waitForOfflineResume(){ return new Promise(function(resolve){ var timer = setInterval(function(){ if (!offlineDownloadControl || !offlineDownloadControl.paused || offlineDownloadControl.stopped){ clearInterval(timer); resolve(); } }, 150); }); }
 function offlineAudioPath(vid){ return '/offline-audio/' + encodeURIComponent(String(vid)); }
 function isLikelyAudioBinary(buffer, contentType) {
     if (!buffer || buffer.byteLength < 65536) return false;
@@ -283,7 +286,7 @@ async function validateOfflineAudioBinary(vid) {
 async function cacheOfflineAudioBinary(vid, rawUrl, onProgress){
     if (!window.caches || !rawUrl) return false;
     try {
-        var response = await fetch('/api/proxy-audio?url=' + encodeURIComponent(rawUrl), { cache: 'no-store' });
+        var response = await fetch('/api/proxy-audio?url=' + encodeURIComponent(rawUrl), { cache: 'no-store', signal: offlineDownloadControl && offlineDownloadControl.controller ? offlineDownloadControl.controller.signal : undefined });
         if (!response.ok || !response.body) return false;
         var total = Number(response.headers.get('content-length') || 0);
         var reader = response.body.getReader();
@@ -330,6 +333,11 @@ async function saveTrackForOffline(track, options) {
     if (!track) return false;
     var vid = track.videoId || track.id;
     if (!vid) return;
+    if (offlineTrackActiveIds[vid]) {
+        if (typeof options.onProgress === 'function') options.onProgress({ status: 'duplicate', track: track });
+        return false;
+    }
+    offlineTrackActiveIds[vid] = true;
 
     var list = getOfflineSongs();
     var existingIndex = list.findIndex(function(s) { return (s.videoId === vid || s.id === vid); });
@@ -343,6 +351,7 @@ async function saveTrackForOffline(track, options) {
                 markOfflineSongPlaylist(songObj, options, list);
                 writeJsonArray('pwa_offline_tracks', list);
                 if (typeof options.onProgress === 'function') options.onProgress({ status: 'already', track: songObj });
+                delete offlineTrackActiveIds[vid];
                 return true;
             }
             // A stale/corrupt cache entry must never block a fresh download.
@@ -355,6 +364,7 @@ async function saveTrackForOffline(track, options) {
             showToast('Lagu dihapus dari Mode Offline PWA');
             updateOfflineButtons();
             if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+            delete offlineTrackActiveIds[vid];
             return false;
         }
     }
@@ -424,8 +434,16 @@ async function saveTrackForOffline(track, options) {
             binarySaved = await cacheOfflineAudioBinary(vid, rawAudioUrl, function(percent, stage, received, total){
                 reportDownloadProgress(10 + Math.round(Number(percent || 0) * 0.88), stage, received, total);
             });
-        } catch(e) { binarySaved = false; }
-        if (!binarySaved && attempts < maxAttempts) {
+        } catch(e) {
+            binarySaved = false;
+            if (offlineDownloadControl && offlineDownloadControl.paused && !offlineDownloadControl.stopped) {
+                attempts--;
+                reportDownloadProgress(Number(songObj.downloadProgress || 0), 'dijeda', songObj.downloadBytes, songObj.downloadTotalBytes);
+                await waitForOfflineResume();
+                if (offlineDownloadControl && offlineDownloadControl.stopped) break;
+            }
+        }
+        if (!binarySaved && attempts < maxAttempts && !(offlineDownloadControl && offlineDownloadControl.paused)) {
             await new Promise(function(resolve){ setTimeout(resolve, 500 * Math.pow(2, attempts - 1)); });
         }
     }
@@ -473,6 +491,7 @@ async function saveTrackForOffline(track, options) {
     if (!options.silent) showToast(binarySaved ? 'Lagu "' + track.title + '" tersimpan untuk Mode Offline!' : 'Metadata tersimpan, tetapi audio offline belum lengkap.');
     updateOfflineButtons();
     if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
+    delete offlineTrackActiveIds[vid];
     return binarySaved;
 }
 var offlinePlaylistJob = null;
@@ -485,8 +504,9 @@ function renderOfflineDownloadStatus(job){
     if (!job || job.status !== 'running') { if (el) el.remove(); return; }
     if (!el) { el = document.createElement('button'); el.id = 'offline-download-status'; el.className = 'fixed right-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-5 z-[460] rounded-2xl border border-cyan-300/30 bg-[#111820]/95 px-3 py-2 text-left text-xs text-white shadow-2xl backdrop-blur-md'; document.body.appendChild(el); }
     var done = Number(job.done || 0), total = Math.max(1, Number(job.total || 1)), pct = Math.round(done / total * 100), current = Number(job.currentPercent || 0);
+    var paused = !!job.paused;
     var currentText = job.currentTitle ? '<br><span class="text-white/45 truncate inline-block max-w-[220px]">' + es(job.currentTitle) + ' • ' + current + '%</span>' : '';
-    el.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="download-cloud" class="w-4 h-4 text-cyan-300"></i><span><b class="text-cyan-200">Download berjalan</b><br><span class="text-white/60">Playlist ' + done + '/' + total + ' • ' + pct + '%</span>' + currentText + '</span></span>';
+    el.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="' + (paused ? 'pause-circle' : 'download-cloud') + '" class="w-4 h-4 ' + (paused ? 'text-amber-300' : 'text-cyan-300') + '"></i><span><b class="' + (paused ? 'text-amber-200' : 'text-cyan-200') + '">' + (paused ? 'Download dijeda' : 'Download berjalan') + '</b><br><span class="text-white/60">Playlist ' + done + '/' + total + ' • ' + pct + '%</span>' + currentText + '</span></span>';
     el.title = 'Lihat status download playlist';
     el.onclick = function(){ var modal = gid('offline-playlist-progress'); if (modal) modal.classList.remove('hidden'); };
     if (window.lucide) lucide.createIcons();
@@ -528,11 +548,12 @@ function downloadOfflinePlaylistItems(playlist) {
     // Binary playlist downloads work in normal browsers and installed PWAs.
     if (!playlist || !Array.isArray(playlist.songs) || !playlist.songs.length) { showToast('Playlist belum memiliki lagu'); return Promise.resolve(false); }
     if (offlinePlaylistJob) { showToast('Download playlist sedang berjalan'); return Promise.resolve(false); }
+    offlineDownloadControl = { paused: false, stopped: false, controller: null };
 
     var modal = document.createElement('div');
     modal.id = 'offline-playlist-progress';
     modal.className = 'fixed inset-0 z-[450] flex items-end sm:items-center justify-end bg-transparent px-3 sm:px-4 pb-[5.5rem] sm:pb-5 pointer-events-none';
-    modal.innerHTML = '<div class="pointer-events-auto w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><div class="pointer-events-auto flex gap-2 mt-4"><button id="offline-playlist-cancel" class="flex-1 rounded-xl bg-white/10 border border-white/10 text-white py-3 text-xs font-bold">Batalkan</button><button id="offline-playlist-minimize" class="flex-1 rounded-xl bg-cyan-500/15 border border-cyan-400/20 text-cyan-100 py-3 text-xs font-bold">Sembunyikan</button></div></div>';
+    modal.innerHTML = '<div class="pointer-events-auto w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl p-5"><div class="flex items-start gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5"></i></div><div class="min-w-0"><h3 class="font-black text-white text-lg">Download Playlist</h3><p class="text-xs text-white/50 truncate">' + es(playlist.name) + '</p></div></div><div class="h-2 rounded-full bg-white/10 overflow-hidden"><div id="offline-playlist-progress-bar" class="h-full rounded-full bg-cyan-400 transition-all" style="width:0%"></div></div><div class="flex justify-between mt-2 text-xs text-white/60"><span id="offline-playlist-progress-text">Menyiapkan...</span><span id="offline-playlist-progress-count">0/' + playlist.songs.length + '</span></div><p id="offline-playlist-progress-detail" class="text-xs text-white/40 mt-3 min-h-4"></p><div class="pointer-events-auto flex gap-2 mt-4"><button id="offline-playlist-pause" class="flex-1 rounded-xl bg-amber-400/15 border border-amber-300/20 text-amber-100 py-3 text-xs font-bold">Jeda</button><button id="offline-playlist-cancel" class="flex-1 rounded-xl bg-rose-400/15 border border-rose-300/20 text-rose-100 py-3 text-xs font-bold">Stop</button><button id="offline-playlist-minimize" class="flex-1 rounded-xl bg-cyan-500/15 border border-cyan-400/20 text-cyan-100 py-3 text-xs font-bold">Sembunyikan</button></div></div>';
     document.body.appendChild(modal); lucide.createIcons();
     offlinePlaylistJob = { status: 'running', cancelled: false, total: playlist.songs.length, done: 0, failed: 0, saved: 0, already: 0, currentTitle: '', currentPercent: 0 };
     var job = offlinePlaylistJob;
@@ -543,24 +564,30 @@ function downloadOfflinePlaylistItems(playlist) {
     var text = modal.querySelector('#offline-playlist-progress-text');
     var count = modal.querySelector('#offline-playlist-progress-count');
     var detail = modal.querySelector('#offline-playlist-progress-detail');
-    modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; this.disabled = true; this.textContent = 'Membatalkan...'; };
+    modal.querySelector('#offline-playlist-pause').onclick = function() { if (!offlineDownloadControl) return; offlineDownloadControl.paused = !offlineDownloadControl.paused; job.paused = offlineDownloadControl.paused; if (offlineDownloadControl.paused) { if (offlineDownloadControl.controller) offlineDownloadControl.controller.abort(); this.textContent = 'Lanjutkan'; detail.textContent = 'Download dijeda'; } else { this.textContent = 'Jeda'; detail.textContent = 'Melanjutkan download...'; } persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: job.done, failed: job.failed, saved: job.saved, already: job.already, currentTitle: job.currentTitle, currentPercent: job.currentPercent, paused: job.paused }); renderOfflineDownloadStatus(job); };
+    modal.querySelector('#offline-playlist-cancel').onclick = function() { job.cancelled = true; if (offlineDownloadControl) { offlineDownloadControl.stopped = true; offlineDownloadControl.paused = false; if (offlineDownloadControl.controller) offlineDownloadControl.controller.abort(); } this.disabled = true; this.textContent = 'Menghentikan...'; };
     modal.querySelector('#offline-playlist-minimize').onclick = function() { modal.classList.add('hidden'); };
 
     return (async function() {
         var done = 0, failed = 0, already = 0, saved = 0;
         for (var i = 0; i < playlist.songs.length; i++) {
             if (job.cancelled) break;
+            while (offlineDownloadControl && offlineDownloadControl.paused && !offlineDownloadControl.stopped) await waitForOfflineResume();
+            if (offlineDownloadControl && offlineDownloadControl.stopped) break;
             var track = playlist.songs[i];
             job.currentTitle = track.title || 'Lagu';
             job.currentPercent = 0;
+            job.paused = false;
             text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • 0%';
             detail.textContent = track.title || 'Lagu';
             try {
                 var vid = track.videoId || track.id;
+                if (offlineDownloadControl) offlineDownloadControl.controller = new AbortController();
                 var before = getOfflineSongs().some(function(s) { return s.videoId === vid || s.id === vid; });
                 var result = await saveTrackForOffline(track, { keepExisting: true, silent: true, playlistId: playlist.id, playlistName: playlist.name, onProgress: function(event){
                     var progress = event && event.track ? Number(event.track.downloadProgress || 0) : 0;
                     job.currentPercent = progress;
+                    job.paused = !!(offlineDownloadControl && offlineDownloadControl.paused);
                     text.textContent = 'Mengunduh ' + (i + 1) + ' dari ' + playlist.songs.length + ' • ' + progress + '%';
                     detail.textContent = (track.title || 'Lagu') + ' • ' + (event.track.downloadStage || 'memproses');
                     renderOfflineDownloadStatus(job);
@@ -573,12 +600,14 @@ function downloadOfflinePlaylistItems(playlist) {
             bar.style.width = Math.round((done / playlist.songs.length) * 100) + '%';
             count.textContent = done + '/' + playlist.songs.length;
             job.done = done; job.failed = failed; job.saved = saved; job.already = already;
-            persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs }, total: job.total, done: done, failed: failed, saved: saved, already: already, currentTitle: job.currentTitle, currentPercent: job.currentPercent });
+            persistOfflineDownloadJob({ status: 'running', playlist: { id: playlist.id, name: playlist.name, image: playlist.image || '', source: playlist.source || 'local', songs: playlist.songs                 }, total: job.total, done: done, failed: failed, saved: saved, already: already, currentTitle: job.currentTitle, currentPercent: job.currentPercent, paused: job.paused });
             renderOfflineDownloadStatus(job);
             upsertOfflinePlaylist(playlist, 'partial');
             if (typeof OfflineView !== 'undefined' && typeof S !== 'undefined' && S.at === 'offline') OfflineView.render();
         }
         offlinePlaylistJob = null;
+        if (offlineDownloadControl) { offlineDownloadControl.stopped = true; offlineDownloadControl.controller = null; }
+        offlineDownloadControl = null;
         clearOfflineDownloadJob();
         renderOfflineDownloadStatus(null);
         upsertOfflinePlaylist(playlist, job.cancelled || failed ? 'partial' : 'ready');
@@ -628,6 +657,8 @@ function updateOfflineButtons() {
 
 async function retryOfflineTrack(track) {
     if (!track) return false;
+    var retryVid = track.videoId || track.id;
+    if (offlinePlaylistJob || offlineTrackActiveIds[retryVid]) { showToast('Download lagu ini sedang berjalan. Tunggu sampai selesai.'); return false; }
     showToast('Mengulang download audio offline...');
     var ok = await saveTrackForOffline(track, { keepExisting: true });
     if (ok) showToast('Audio offline sudah lengkap dan siap diputar.');
