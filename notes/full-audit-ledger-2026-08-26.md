@@ -67,3 +67,13 @@ Status: audit masih berjalan; jangan klaim production-ready sebelum tiga clean s
 - Halaman Disukai menampilkan 5 lagu tersimpan, tombol hapus, opsi lagu, dan Putar Semua.
 - Profil terautentikasi menampilkan akun Gmail, streak 5 hari, aktivitas mendengar 7.2 jam, 2 playlist publik, 5 lagu disukai, dan 14 offline.
 - Audit DOM yang terlihat pada Profil/route aktif: tidak ada horizontal overflow; 3 gambar tanpa alt masih terdeteksi pada DOM aktif; 5 unnamed buttons berasal dari elemen hidden/komponen daftar lagu yang tidak sedang tampil, sehingga perlu audit visible-only terpisah.
+
+## Patch v151-v152 dan clean sessions
+- Commit `b82e17f`: memberi `aria-label` pada tombol header Cari dan Profil; deployment v151 READY.
+- Clean session v151: playback Firasat sukses melalui proxy SaveTube, `paused=false`, `readyState=4`, durasi 247.853 detik, `error=null`; worker v151 aktif.
+- Audit visible-only v151 saat full player terbuka menemukan 1 artwork background dekoratif tanpa penanda dan 4 kontrol ikon tanpa accessible name: volume, shuffle, previous, next.
+- Commit `4b72d7e`: memberi accessible name pada empat kontrol full player dan menandai background artwork sebagai `aria-hidden`; asset/worker dinaikkan ke v152. Seluruh 11 gate test dan syntax check lulus.
+- Deployment v152 READY. Runtime errors Vercel window 30 menit setelah deploy: tidak ada.
+- Clean session v152-final: Home stabil, asset/worker v152 aktif, visible-only menghasilkan `visibleEmptyAlt=0`, `visibleUnnamedButtons=0`, overflow tidak ditemukan; playback sebelumnya tetap sehat.
+- Clean session kedua v152-clean2: Home memuat akun Google, streak, Recently Played, kategori, playlist, dan navigasi utama. Splash sempat terlihat pada transisi awal tetapi selesai pada pemeriksaan berikutnya.
+- Status sign-off sementara: tidak ada blocker runtime baru pada production; masih perlu clean session ketiga dan verifikasi route/viewport final sebelum klaim selesai.

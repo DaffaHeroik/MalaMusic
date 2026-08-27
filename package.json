@@ -18,6 +18,7 @@
     "test:runtime-listening": "node tests/runtime-listening-check.js",
     "test:runtime-listening-behavior": "node tests/runtime-listening-behavior-check.js",
     "test:offline-playlist": "node tests/offline-playlist-check.js",
+    "test:library-history-sync": "node tests/library-history-sync-check.js",
     "start": "node server.js"
   },
   "dependencies": {

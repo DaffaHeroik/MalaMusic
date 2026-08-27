@@ -135,8 +135,9 @@ AU.addEventListener('timeupdate',function(){
         S.pt=AU.currentTime||0;
         S.pd=AU.duration||0;
         renderProgress();
-        if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
+        // Credit real forward playback before refreshing the account-scoped streak.
         if(typeof Stats !== 'undefined' && S.ct) Stats.tick(S.ct, AU.currentTime);
+        if(typeof Streak !== 'undefined' && S.ct && AU.currentTime >= Math.min(30, AU.duration ? AU.duration * 0.25 : 30)) Streak.record(S.ct);
         var mediaNow = Date.now();
         if (mediaNow - lastMediaPositionUpdate >= 1000) { lastMediaPositionUpdate = mediaNow; updateMediaSessionPlaybackState(); }
         checkAndPreloadNext();
@@ -1197,6 +1198,8 @@ function saveRecentTrack(track){
         current = current.filter(function(item){ return (item.videoId || item.id) !== id; });
         current.unshift({ id:id, videoId:id, title:track.title || 'Lagu', artist:track.artist || 'MalaMusic', cover:track.cover || FI, artistId:track.artistId || '', ytUrl:track.ytUrl || ('https://youtube.com/watch?v=' + id), playedAt:Date.now() });
         localStorage.setItem('mala_recent_tracks', JSON.stringify(current.slice(0, 12)));
+        // Keep playback history account-scoped so a second device can restore it after login.
+        if (typeof syncLibraryRemote === 'function') syncLibraryRemote();
     } catch(e) {}
 }
 function getRecentTracks(){
@@ -2020,13 +2023,35 @@ function mergeLibraryCollections(local, remote) {
         });
         return result;
     };
+    var recentBy = function(items) {
+        var newest = Object.create(null);
+        libraryArray(items).forEach(function(item){
+            if (!item || typeof item !== 'object') return;
+            var key = String(item.videoId || item.id || '');
+            if (!key) return;
+            var current = newest[key];
+            var nextAt = Number(item.playedAt || 0);
+            var currentAt = current ? Number(current.playedAt || 0) : -1;
+            if (!current || nextAt > currentAt) newest[key] = item;
+        });
+        return Object.keys(newest).map(function(key){ return newest[key]; })
+            .sort(function(a,b){ return Number(b.playedAt || 0) - Number(a.playedAt || 0); })
+            .slice(0, 50);
+    };
+    var remoteRecent = libraryArray(remote.recentTracks);
+    var localRecent = libraryArray(local.recentTracks);
+    var mergedRecent = recentBy(remoteRecent.concat(localRecent));
     return {
         likedSongs: mergeBy(local.likedSongs, remote.likedSongs, function(x){ return x.videoId || x.id; }),
         likedArtists: mergeBy(local.likedArtists, remote.likedArtists, function(x){ return x.artistId; }),
-        playlists: mergeBy(local.playlists, remote.playlists, function(x){ return x.id; })
+        playlists: mergeBy(local.playlists, remote.playlists, function(x){ return x.id; }),
+        recentTracks: mergedRecent
     };
 }
 function saveMergedLibraryLocal(lib) {
+    if (Array.isArray(lib.recentTracks)) {
+        try { localStorage.setItem('mala_recent_tracks', JSON.stringify(lib.recentTracks.slice(0, 50))); } catch (e) {}
+    }
     if(typeof writeJsonArray==='function'){
         writeJsonArray('malamusic_liked_songs', lib.likedSongs);
         writeJsonArray('malamusic_liked_artists', lib.likedArtists);
@@ -2048,12 +2073,15 @@ function loadLibraryRemote(){
     return fetch('/api/library',{credentials:'same-origin',cache:'no-store',signal:libraryLoadController.signal}).then(function(r){return r.ok?r.json():null;}).then(function(data){
         if (requestId !== libraryLoadSeq) return;
         var lib=data&&data.status&&data.library; if(!lib) return;
-        var local = { likedSongs:getLikedSongs(), likedArtists:getLikedArtists(), playlists:getUserPlaylists() };
+        var local = { likedSongs:getLikedSongs(), likedArtists:getLikedArtists(), playlists:getUserPlaylists(), recentTracks:getRecentTracks() };
         var merged = mergeLibraryCollections(local, lib);
         var changed = JSON.stringify(merged) !== JSON.stringify(local);
         saveMergedLibraryLocal(merged);
         if(typeof Library!=='undefined'&&Library.render && changed) Library.render();
-        if (merged.likedSongs.length || merged.likedArtists.length || merged.playlists.length) syncLibraryRemote();
+        // FIXED: refresh the visible Home/Profile surface after remote history hydration.
+        if (changed && typeof S !== 'undefined' && S.at === 'home' && typeof Home !== 'undefined' && Home.render) Home.render();
+        if (changed && typeof S !== 'undefined' && S.at === 'dev' && typeof Profile !== 'undefined' && Profile.renderRecentList) Profile.renderRecentList();
+        if (merged.likedSongs.length || merged.likedArtists.length || merged.playlists.length || merged.recentTracks.length) syncLibraryRemote();
     }).catch(function(e){ if (e && e.name !== 'AbortError') {} });
 }
 function syncLibraryRemote(){
@@ -2064,7 +2092,7 @@ function syncLibraryRemote(){
         librarySyncInFlight = true;
         fetch('/api/email-auth?action=me',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(me){
             if (!me.authenticated) return null;
-            return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists()})});
+            return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists(),recentTracks:getRecentTracks()})});
         }).then(function(response){
             if (response && !response.ok) throw new Error('library sync failed');
         }).catch(function(){}).finally(function(){

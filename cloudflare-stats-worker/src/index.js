@@ -70,8 +70,23 @@ export default {
       if (seconds < 1) return Response.json({ status: false, message: 'Durasi terlalu kecil.' }, { status: 400 });
       const day = DAY(), name = String(body.name || body.email.split('@')[0]).replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 60) || 'Pendengar';
       await env.DB.prepare('INSERT INTO user_daily_stats (email, display_name, day, seconds) VALUES (?, ?, ?, ?) ON CONFLICT(email, day) DO UPDATE SET seconds = seconds + excluded.seconds, display_name = excluded.display_name').bind(body.email, name, day, seconds).run();
-      await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, active_days, last_active, updated_at) VALUES (?, ?, ?, 1, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, total_seconds = user_stats.total_seconds + excluded.total_seconds, active_days = (SELECT COUNT(DISTINCT day) FROM user_daily_stats WHERE email = excluded.email), last_active = excluded.last_active, updated_at = excluded.updated_at').bind(body.email, name, seconds, day, new Date().toISOString()).run();
-      return Response.json({ status: true, recordedSeconds: seconds });
+      const updatedAt = new Date().toISOString();
+      await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, active_days, last_active, updated_at) VALUES (?, ?, ?, 1, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, total_seconds = user_stats.total_seconds + excluded.total_seconds, active_days = (SELECT COUNT(DISTINCT day) FROM user_daily_stats WHERE email = excluded.email), last_active = excluded.last_active, updated_at = excluded.updated_at').bind(body.email, name, seconds, day, updatedAt).run();
+
+      // Recompute streak immediately so /me is consistent across devices without waiting for cron rollover.
+      const days = (await query(env, 'SELECT day FROM user_daily_stats WHERE email = ? ORDER BY day ASC', body.email)).map(row => row.day);
+      let best = 0, run = 0;
+      for (let i = 0; i < days.length; i++) {
+        const previous = i ? new Date(`${days[i - 1]}T12:00:00+08:00`) : null;
+        const currentDate = new Date(`${days[i]}T12:00:00+08:00`);
+        if (previous && Math.round((currentDate - previous) / 86400000) === 1) run += 1; else run = 1;
+        best = Math.max(best, run);
+      }
+      const last = days[days.length - 1] || null;
+      const daysSinceLast = last ? Math.round((new Date(`${day}T12:00:00+08:00`) - new Date(`${last}T12:00:00+08:00`)) / 86400000) : 999;
+      const current = daysSinceLast <= 1 ? run : 0;
+      await env.DB.prepare('UPDATE user_stats SET streak_current = ?, streak_best = ?, active_days = ?, last_active = ?, updated_at = ? WHERE email = ?').bind(current, best, days.length, last, updatedAt, body.email).run();
+      return Response.json({ status: true, recordedSeconds: seconds, stats: { streak: current, bestStreak: best, activeDays: days.length } });
     }
     if (url.pathname === '/playlist-settings' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));

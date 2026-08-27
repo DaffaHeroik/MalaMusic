@@ -12,10 +12,18 @@ var Streak = {
     },
     load: async function() {
         try {
-            var response = await fetch(this.API + '?action=me', { credentials: 'same-origin' });
+            // The account-scoped stats endpoint is the cross-device source of truth.
+            // The legacy streak cookie is retained only for backward-compatible record calls.
+            var response = await fetch('/api/stats?action=me', { credentials: 'same-origin', cache: 'no-store' });
             if (!response.ok) { this.stats = null; return null; }
             var data = await response.json();
-            this.stats = data && data.streak ? data.streak : null;
+            var remote = data && data.stats ? data.stats : {};
+            this.stats = {
+                current: Number(remote.streak || 0),
+                best: Number(remote.bestStreak || 0),
+                activeDays: Number(remote.activeDays || 0),
+                lastActive: remote.lastActive || null
+            };
             return this.stats;
         } catch (_) { this.stats = null; return null; }
     },
@@ -23,23 +31,25 @@ var Streak = {
         var id = track && (track.videoId || track.id);
         if (!id || this.sentTracks[id]) return this.stats;
         try {
-            var response = await fetch(this.API + '?action=record', {
-                method: 'POST', credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trackId: id, title: track.title || '', artist: track.artist || '' })
-            });
-            if (!response.ok) return this.stats;
+            // Stats is the only writer: it credits actual forward playback seconds.
+            // Wait for any in-flight batch, flush pending runtime, then read account-scoped stats.
             this.sentTracks[id] = true;
-            var data = await response.json();
+            if (typeof Stats !== 'undefined' && typeof Stats.flush === 'function') {
+                var attempts = 0;
+                while (Stats.inFlight && attempts++ < 20) await new Promise(function(resolve){ setTimeout(resolve, 100); });
+                await Stats.flush(true);
+                attempts = 0;
+                while (Stats.inFlight && attempts++ < 20) await new Promise(function(resolve){ setTimeout(resolve, 100); });
+            }
             var previous = this.stats || { current: 0, activeDays: 0 };
-            this.stats = data && data.streak ? data.streak : this.stats;
-            if (this.stats && (Number(this.stats.current || 0) > Number(previous.current || 0) || Number(this.stats.activeDays || 0) > Number(previous.activeDays || 0))) {
+            var next = await this.load();
+            if (next && (Number(next.current || 0) > Number(previous.current || 0) || Number(next.activeDays || 0) > Number(previous.activeDays || 0))) {
                 this.celebrate();
                 if (typeof Home !== 'undefined' && S.at === 'home') this.refreshHomeCard();
                 if (typeof Profile !== 'undefined' && S.at === 'dev') this.refreshProfileCard();
             }
-            return this.stats;
-        } catch (_) { return this.stats; }
+            return next;
+        } catch (_) { delete this.sentTracks[id]; return this.stats; }
     },
     card: function(stats) {
         stats = stats || { current: 0, best: 0, activeDays: 0 };

@@ -60,9 +60,9 @@ assert.match(sw, /const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1'/);
 assert.match(sw, /key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME && key !== CACHE_AUDIO_NAME/);
 
 const scriptUrls = [...index.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
-for (const required of ['/app.js?v=152', '/player.js?v=152', '/library.js?v=152', '/album.js?v=152']) {
+for (const required of ['/app.js?v=153', '/player.js?v=153', '/library.js?v=153', '/album.js?v=153']) {
   assert.ok(scriptUrls.includes(required), `asset marker missing: ${required}`);
 }
-assert.match(index, /sw\.js\?v=152/);
+assert.match(index, /sw\.js\?v=153/);
 
 console.log('offline-playlist-check: PASS');

@@ -1,10 +1,46 @@
 'use strict';
 const crypto = require('crypto');
 const { getDatabase } = require('./firebase-admin.js');
+
 function secret(){return process.env.SESSION_SECRET||(process.env.NODE_ENV==='production'?null:'development-only-change-this-session-secret');}
-function session(value){const currentSecret=secret();if(!currentSecret||!value||!value.includes('.'))return null;const p=value.split('.'),b=p.shift(),s=p.join('.'),e=crypto.createHmac('sha256',currentSecret).update(b).digest('base64url');if(s.length!==e.length)return null; // FIXED: missing production secret now fails closed.
-try{if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(e)))return null;const x=JSON.parse(Buffer.from(b,'base64url').toString('utf8'));return x&&x.uid&&x.exp>Date.now()?x:null;}catch(_){return null;}}
+function session(value){const currentSecret=secret();if(!currentSecret||!value||!value.includes('.'))return null;const p=value.split('.'),b=p.shift(),s=p.join('.'),e=crypto.createHmac('sha256',currentSecret).update(b).digest('base64url');if(s.length!==e.length)return null;try{if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(e)))return null;const x=JSON.parse(Buffer.from(b,'base64url').toString('utf8'));return x&&x.uid&&x.exp>Date.now()?x:null;}catch(_){return null;}}
 function user(req){const raw=String(req.headers&&req.headers.cookie||'');const c={};raw.split(';').forEach(p=>{const i=p.indexOf('=');if(i>=0)c[p.slice(0,i).trim()]=decodeURIComponent(p.slice(i+1).trim());});return session(c.mm_session);}
 function cleanTrack(x){if(!x||typeof x!=='object')return null;const id=String(x.videoId||x.id||'').slice(0,80);return id?{id,videoId:id,title:String(x.title||'Lagu').slice(0,180),artist:String(x.artist||'MalaMusic').slice(0,120),cover:String(x.cover||'').slice(0,600),artistId:String(x.artistId||'').slice(0,120),ytUrl:String(x.ytUrl||'').slice(0,600)}:null;}
-function clean(body){const likedSongs=Array.isArray(body.likedSongs)?body.likedSongs.map(cleanTrack).filter(Boolean).slice(0,500):[];const likedArtists=Array.isArray(body.likedArtists)?body.likedArtists.filter(x=>x&&typeof x==='object').slice(0,200).map(x=>({artistId:String(x.artistId||'').slice(0,120),name:String(x.name||'').slice(0,120),thumbnail:String(x.thumbnail||'').slice(0,600)})).filter(x=>x.artistId):[];const playlists=Array.isArray(body.playlists)?body.playlists.slice(0,100).map(p=>({id:String(p.id||'').slice(0,80),name:String(p.name||'Playlist').slice(0,100),image:String(p.image||'').slice(0,600),creator:String(p.creator||'').slice(0,160),externalId:String(p.externalId||'').slice(0,120),source:String(p.source||'local').slice(0,30),savedAt:Number(p.savedAt||0),isPublic:Boolean(p.isPublic),songs:Array.isArray(p.songs)?p.songs.map(cleanTrack).filter(Boolean).slice(0,500):[]})).filter(p=>p.id):[];return{likedSongs,likedArtists,playlists,updatedAt:Date.now()};}
-module.exports=async function library(req,res){const u=user(req);if(!u)return res.status(401).json({status:false,message:'Login diperlukan.'});const ref=getDatabase().ref('userLibraries/'+u.uid);try{if(req.method==='GET'){const s=await ref.once('value');const v=s.val()||{};return res.json({status:true,library:clean(v)});}if(req.method!=='PUT')return res.status(405).json({status:false,message:'Method tidak didukung.'});let b=req.body||{};if(typeof b==='string'){try{b=JSON.parse(b);}catch(_){b={};}}const value=clean(b);await ref.set(value);return res.json({status:true,library:value});}catch(e){console.error('[library]',e&&e.stack||e);return res.status(500).json({status:false,message:'Koleksi belum dapat disinkronkan.'});}};
+function cleanRecentTrack(x){const track=cleanTrack(x);if(!track)return null;const playedAt=Number(x.playedAt||0);return {...track,playedAt:Number.isFinite(playedAt)&&playedAt>0?playedAt:Date.now()};}
+function cleanRecent(value){const items=Array.isArray(value)?value.map(cleanRecentTrack).filter(Boolean):[];const seen=new Set();return items.sort((a,b)=>b.playedAt-a.playedAt).filter(x=>{if(seen.has(x.videoId))return false;seen.add(x.videoId);return true;}).slice(0,50);}
+function clean(body, existing){
+  const likedSongs=Array.isArray(body.likedSongs)?body.likedSongs.map(cleanTrack).filter(Boolean).slice(0,500):[];
+  const likedArtists=Array.isArray(body.likedArtists)?body.likedArtists.filter(x=>x&&typeof x==='object').slice(0,200).map(x=>({artistId:String(x.artistId||'').slice(0,120),name:String(x.name||'').slice(0,120),thumbnail:String(x.thumbnail||'').slice(0,600)})).filter(x=>x.artistId):[];
+  const playlists=Array.isArray(body.playlists)?body.playlists.slice(0,100).map(p=>({id:String(p.id||'').slice(0,80),name:String(p.name||'Playlist').slice(0,100),image:String(p.image||'').slice(0,600),creator:String(p.creator||'').slice(0,160),externalId:String(p.externalId||'').slice(0,120),source:String(p.source||'local').slice(0,30),savedAt:Number(p.savedAt||0),isPublic:Boolean(p.isPublic),songs:Array.isArray(p.songs)?p.songs.map(cleanTrack).filter(Boolean).slice(0,500):[]})).filter(p=>p.id):[];
+  const hasRecent=Object.prototype.hasOwnProperty.call(body,'recentTracks');
+  const recentTracks=hasRecent?cleanRecent(body.recentTracks):cleanRecent(existing&&existing.recentTracks);
+  return {likedSongs,likedArtists,playlists,recentTracks,updatedAt:Date.now()};
+}
+module.exports=async function library(req,res){
+  const u=user(req);if(!u)return res.status(401).json({status:false,message:'Login diperlukan.'});
+  const ref=getDatabase().ref('userLibraries/'+u.uid);
+  try{
+    if(req.method==='GET'){const s=await ref.once('value');const v=s.val()||{};return res.json({status:true,library:clean(v,v)});}
+    if(req.method!=='PUT')return res.status(405).json({status:false,message:'Method tidak didukung.'});
+    let b=req.body||{};if(typeof b==='string'){try{b=JSON.parse(b);}catch(_){b={};}}
+    const existingSnap=await ref.once('value');
+    const hasRecent=Object.prototype.hasOwnProperty.call(b,'recentTracks');
+    let value;
+    if (hasRecent && typeof ref.transaction === 'function') {
+      // FIXED: merge recent history inside an RTDB transaction so concurrent devices keep newest entries.
+      const tx=await ref.transaction(function(current){
+        const currentValue=current&&typeof current==='object'?current:{};
+        const next=clean(b,currentValue);
+        next.recentTracks=cleanRecent(cleanRecent(currentValue.recentTracks).concat(cleanRecent(b.recentTracks)));
+        return next;
+      });
+      value=clean(tx&&tx.snapshot&&tx.snapshot.val?tx.snapshot.val():{},{});
+    } else {
+      value=clean(b,existingSnap.val()||{});
+      await ref.set(value);
+    }
+    return res.json({status:true,library:value});
+  }catch(e){console.error('[library]',e&&e.stack||e);return res.status(500).json({status:false,message:'Koleksi belum dapat disinkronkan.'});}
+};
+
+module.exports._test={cleanRecent,clean};

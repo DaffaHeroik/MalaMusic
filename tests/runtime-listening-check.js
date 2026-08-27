@@ -34,16 +34,17 @@ assert.doesNotMatch(api, /Math\.round\(Number\(body\(req\)\.seconds\)\)/);
 assert.match(worker, /const requestedSeconds = Number\(body\.seconds\)/);
 assert.match(worker, /!Number\.isFinite\(requestedSeconds\) \|\| requestedSeconds <= 0/);
 assert.match(worker, /Math\.floor\(requestedSeconds\)/);
+assert.match(worker, /Recompute streak immediately/);
 assert.doesNotMatch(worker, /Math\.max\(1, Math\.min\(120, Math\.round\(Number\(body\.seconds/);
 
 const index = fs.readFileSync('public/index.html', 'utf8');
 const sw = fs.readFileSync('public/sw.js', 'utf8');
-assert.match(index, /MALA_SW_VERSION = 'v152'/);
-assert.match(index, /stats\.js\?v=152/);
+assert.match(index, /MALA_SW_VERSION = 'v153'/);
+assert.match(index, /stats\.js\?v=153/);
 assert.match(index, /reg\.addEventListener\('updatefound'/);
 assert.match(index, /installing\.state === 'installed'/);
 assert.match(index, /type: 'SKIP_WAITING'/);
 assert.match(sw, /malamusic-static-v141/);
-assert.match(sw, /stats\.js\?v=152/);
+assert.match(sw, /stats\.js\?v=153/);
 
 console.log('RUNTIME_LISTENING_STATIC_GUARD_PASS');

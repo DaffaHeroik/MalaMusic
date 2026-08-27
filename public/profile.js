@@ -64,13 +64,7 @@ var Profile = {
             </div>
         </div>`;
 
-        var recentEl = document.getElementById('profile-recent-list');
-        if (recentEl) {
-            recentEl.innerHTML = recent.length ? recent.slice(0, 4).map(function(track) {
-                var id = track.id || track.videoId;
-                return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
-            }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru.<button onclick="App.switch(\'home\')" class="block mx-auto mt-3 rounded-full bg-white/10 border border-white/15 px-4 py-2 text-xs font-bold text-white">Buka Beranda</button></div>';
-        }
+        this.renderRecentList();
 
         if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
         EmailAuth.renderAuthActions(false);
@@ -79,6 +73,16 @@ var Profile = {
         EmailAuth.refresh();
         if (typeof Streak !== 'undefined') Streak.refreshProfileCard();
         Profile.startListeningStatsSync();
+    },
+    renderRecentList: function() {
+        var recent = [];
+        try { recent = JSON.parse(localStorage.getItem('mala_recent_tracks') || '[]'); } catch (_) {}
+        var recentEl = document.getElementById('profile-recent-list');
+        if (!recentEl) return;
+        recentEl.innerHTML = recent.length ? recent.slice(0, 4).map(function(track) {
+            var id = track.id || track.videoId;
+            return '<button onclick="App.autoPlayTrack(\'' + String(id || '').replace(/'/g, '') + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-10 h-10 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span></button>';
+        }).join('') : '<div class="p-6 text-center text-sm text-white/50">Belum ada aktivitas terbaru.<button onclick="App.switch(\'home\')" class="block mx-auto mt-3 rounded-full bg-white/10 border border-white/15 px-4 py-2 text-xs font-bold text-white">Buka Beranda</button></div>';
     },
     startListeningStatsSync: function() {
         if (this.listeningSyncTimer) return;
@@ -91,15 +95,12 @@ var Profile = {
         var el = document.getElementById('profile-listening-card'); if (!el) return;
         el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="text-xs text-white/50">Total waktu mendengar</div><div class="h-9 w-28 mt-2 rounded-lg bg-white/10 animate-pulse"></div></div>';
         try {
-            var responses = await Promise.all([
-                fetch('/api/stats?action=me', { credentials: 'same-origin' }),
-                fetch('/api/streak?action=me', { credentials: 'same-origin' })
-            ]);
-            if (!responses[0].ok) throw new Error('stats unavailable');
-            var data = await responses[0].json(), s = data.stats || {};
-            var streakData = responses[1].ok ? await responses[1].json() : null;
-            var streak = streakData && streakData.streak ? streakData.streak : {};
-            var currentStreak = Number(streak.current ?? s.streak ?? 0);
+            var response = await fetch('/api/stats?action=me', { credentials: 'same-origin', cache: 'no-store' });
+            if (!response.ok) throw new Error('stats unavailable');
+            var data = await response.json(), s = data.stats || {};
+            // Use account-scoped stats as the single source of truth across devices.
+            // The legacy /api/streak cookie may be stale or absent on a new device.
+            var currentStreak = Number(s.streak || 0);
             el.innerHTML = '<div class="rounded-2xl bg-gradient-to-br from-amber-500/15 to-rose-500/10 border border-amber-300/15 p-5"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-[.18em] text-amber-200/70 font-black">Aktivitas mendengar</p><strong class="block text-3xl font-black text-white mt-1">'+Number(s.hours || 0).toFixed(1)+' jam</strong><span class="block text-xs text-white/50 mt-1">'+Number(s.activeDays || 0)+' hari aktif · streak '+currentStreak+' hari</span></div><div class="w-14 h-14 rounded-2xl bg-amber-300/15 flex items-center justify-center"><i data-lucide="clock-3" class="w-7 h-7 text-amber-200"></i></div></div></div>'; lucide.createIcons();
         } catch (_) { el.innerHTML = ''; }
     },
