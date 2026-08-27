@@ -13,7 +13,8 @@ function clean(body, existing){
   const likedArtists=Array.isArray(body.likedArtists)?body.likedArtists.filter(x=>x&&typeof x==='object').slice(0,200).map(x=>({artistId:String(x.artistId||'').slice(0,120),name:String(x.name||'').slice(0,120),thumbnail:String(x.thumbnail||'').slice(0,600)})).filter(x=>x.artistId):[];
   const playlists=Array.isArray(body.playlists)?body.playlists.slice(0,100).map(p=>({id:String(p.id||'').slice(0,80),name:String(p.name||'Playlist').slice(0,100),image:String(p.image||'').slice(0,600),creator:String(p.creator||'').slice(0,160),externalId:String(p.externalId||'').slice(0,120),source:String(p.source||'local').slice(0,30),savedAt:Number(p.savedAt||0),isPublic:Boolean(p.isPublic),songs:Array.isArray(p.songs)?p.songs.map(cleanTrack).filter(Boolean).slice(0,500):[]})).filter(p=>p.id):[];
   const hasRecent=Object.prototype.hasOwnProperty.call(body,'recentTracks');
-  const recentTracks=hasRecent?cleanRecent(body.recentTracks):cleanRecent(existing&&existing.recentTracks);
+  const clearRecentTracks=body.clearRecentTracks===true;
+  const recentTracks=clearRecentTracks?[]:(hasRecent?cleanRecent(body.recentTracks):cleanRecent(existing&&existing.recentTracks));
   return {likedSongs,likedArtists,playlists,recentTracks,updatedAt:Date.now()};
 }
 module.exports=async function library(req,res){
@@ -25,18 +26,20 @@ module.exports=async function library(req,res){
     let b=req.body||{};if(typeof b==='string'){try{b=JSON.parse(b);}catch(_){b={};}}
     const existingSnap=await ref.once('value');
     const hasRecent=Object.prototype.hasOwnProperty.call(b,'recentTracks');
+    const clearRecentTracks=b.clearRecentTracks===true;
     let value;
     if (hasRecent && typeof ref.transaction === 'function') {
       // FIXED: merge recent history inside an RTDB transaction so concurrent devices keep newest entries.
       const tx=await ref.transaction(function(current){
         const currentValue=current&&typeof current==='object'?current:{};
         const next=clean(b,currentValue);
-        next.recentTracks=cleanRecent(cleanRecent(currentValue.recentTracks).concat(cleanRecent(b.recentTracks)));
+        next.recentTracks=clearRecentTracks?[]:cleanRecent(cleanRecent(currentValue.recentTracks).concat(cleanRecent(b.recentTracks)));
         return next;
       });
       value=clean(tx&&tx.snapshot&&tx.snapshot.val?tx.snapshot.val():{},{});
     } else {
       value=clean(b,existingSnap.val()||{});
+      if (clearRecentTracks) value.recentTracks=[];
       await ref.set(value);
     }
     return res.json({status:true,library:value});

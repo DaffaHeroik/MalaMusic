@@ -123,6 +123,12 @@ var Profile = {
         var next = !(pl.isPublic || pl.publicId);
         try { var response = await fetch('/api/stats?action=publish-playlist', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:pl.name,image:pl.image||'',songs:pl.songs||[],isPublic:next}) }); var data=await response.json(); if(!response.ok||!data.status) throw new Error(); pl.isPublic=next; if(data.id) pl.publicId=data.id; if(!next) delete pl.publicId; if(typeof saveUserPlaylists==='function') saveUserPlaylists(playlists); Profile.render(); showToast(next?'Playlist sekarang publik':'Playlist disembunyikan'); } catch (_) { showToast('Login diperlukan untuk mengatur playlist publik'); }
     },
+    clearHistory: function() {
+        try { localStorage.removeItem('mala_recent_tracks'); } catch (_) {}
+        if (typeof syncLibraryRemote === 'function') syncLibraryRemote({ clearRecentTracks: true });
+        this.render();
+        showToast('Riwayat dihapus dan sedang disinkronkan ke akun');
+    },
     showHistory: function() {
         var recent = typeof getRecentTracks === 'function' ? getRecentTracks() : [];
         var modal = document.createElement('div');
@@ -132,7 +138,7 @@ var Profile = {
             var id = String(track.id || track.videoId || '').replace(/'/g, '');
             return '<button onclick="App.autoPlayTrack(\'' + id + '\');this.closest(\'.fixed\').remove()" class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/[.06] border-b border-white/5 last:border-0"><img src="' + (track.cover || FI) + '" class="w-11 h-11 rounded-lg object-cover" onerror="this.src=\'' + FI + '\'" /><span class="min-w-0 flex-1"><strong class="block text-sm text-white truncate">' + es(track.title || 'Lagu') + '</strong><span class="block text-xs text-white/50 truncate">' + es(track.artist || 'MalaMusic') + '</span></span><i data-lucide="play" class="w-4 h-4 text-white/60"></i></button>';
         }).join('') : '<div class="p-8 text-center text-white/50 text-sm">Belum ada riwayat pemutaran.</div>';
-        modal.innerHTML = '<div class="w-full sm:max-w-lg max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-white/10"><div><h3 class="font-black text-white text-lg">Riwayat Pemutaran</h3><p class="text-xs text-white/50 mt-1">Lagu yang baru kamu dengarkan</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[55vh] overflow-y-auto">' + rows + '</div><div class="p-4 border-t border-white/10 flex gap-2"><button onclick="localStorage.removeItem(\'mala_recent_tracks\');this.closest(\'.fixed\').remove();Profile.render();showToast(\'Riwayat dihapus\')" class="flex-1 rounded-xl bg-rose-500/15 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat</button><button onclick="this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-white/10 text-white py-3 text-xs font-bold">Tutup</button></div></div>';
+        modal.innerHTML = '<div class="w-full sm:max-w-lg max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 shadow-2xl"><div class="flex items-center justify-between p-5 border-b border-white/10"><div><h3 class="font-black text-white text-lg">Riwayat Pemutaran</h3><p class="text-xs text-white/50 mt-1">Lagu yang baru kamu dengarkan</p></div><button onclick="this.closest(\'.fixed\').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><div class="max-h-[55vh] overflow-y-auto">' + rows + '</div><div class="p-4 border-t border-white/10 flex gap-2"><button onclick="Profile.clearHistory();this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-rose-500/15 border border-rose-400/20 text-rose-200 py-3 text-xs font-bold">Hapus Riwayat</button><button onclick="this.closest(\'.fixed\').remove()" class="flex-1 rounded-xl bg-white/10 text-white py-3 text-xs font-bold">Tutup</button></div></div>';
         document.body.appendChild(modal); lucide.createIcons();
     },
     avatarKey: 'malamusic_profile_avatar',

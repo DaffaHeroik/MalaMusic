@@ -175,6 +175,7 @@
         if (!force && version <= state.lastVersion) {
             state.room = room;
             renderRoomBadge(room);
+            refreshRoomPanel(room);
             return;
         }
         state.lastVersion = version; state.room = room;
@@ -197,6 +198,7 @@
             }
         } finally { state.applying = false; }
         renderRoomBadge(room);
+        refreshRoomPanel(room);
         setTimeout(enforceRemotePlayback, 250);
     }
     function schedulePublish() {
@@ -220,12 +222,19 @@
         badge.textContent = '● Room ' + room.id + ' · ' + Math.max(1, Number(room.members || 1)) + ' peserta' + (isHost() ? ' · Host' : ' · Mengikuti');
         badge.onclick = showRoomPanel;
     }
+    function refreshRoomPanel(room) {
+        if (!state.modal) return;
+        var count = state.modal.querySelector('#lt-member-count');
+        var participants = state.modal.querySelector('#lt-participants');
+        if (count) count.textContent = Math.max(0, Number(room && room.members || 0)) + ' online';
+        if (participants) participants.innerHTML = participantsMarkup(room || {});
+    }
     function showRoomPanel() {
         if (!state.roomId) return openLobby();
         closeModal();
         var modal = el('div', { className: 'fixed inset-0 z-[500] flex items-end sm:items-center justify-center bg-black/75 px-0 sm:px-4' });
         var room = state.room || {};
-        modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 p-5 shadow-2xl"><div class="flex items-center justify-between"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 font-black">Room aktif</p><h2 class="text-xl font-black text-white mt-1">' + state.roomId + '</h2></div><button id="lt-panel-close" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><p class="text-sm text-white/60 mt-4">Bagikan link ini kepada teman:</p><div class="flex gap-2 mt-2"><input readonly class="min-w-0 flex-1 rounded-xl bg-white/10 text-white text-xs px-3" value="' + roomUrl(state.roomId) + '" /><button id="lt-copy" class="rounded-xl bg-white/10 px-3 text-white text-xs font-bold">Salin</button></div><div class="mt-4 rounded-2xl bg-white/[.04] border border-white/10 px-3 py-2"><div class="flex items-center justify-between mb-1"><span class="text-xs font-bold text-white">Peserta</span><span class="text-[10px] text-emerald-300">' + Math.max(0, Number(room.members || 0)) + ' online</span></div>' + participantsMarkup(room) + '</div><p class="text-xs text-white/45 mt-4">' + (isHost() ? 'Kamu adalah host. Kontrol pemutaranmu akan diikuti peserta lain.' : 'Kamu sedang mengikuti pemutaran host. Play, pause, next, previous, dan seek dikendalikan host.') + '</p><button id="lt-leave" class="w-full rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-200 py-3.5 font-black mt-5">Keluar dari Room</button></div>';
+        modal.innerHTML = '<div class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-[#15151b] border border-white/10 p-5 shadow-2xl"><div class="flex items-center justify-between"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 font-black">Room aktif</p><h2 class="text-xl font-black text-white mt-1">' + state.roomId + '</h2></div><button id="lt-panel-close" class="w-9 h-9 rounded-full bg-white/10 text-white">×</button></div><p class="text-sm text-white/60 mt-4">Bagikan link ini kepada teman:</p><div class="flex gap-2 mt-2"><input readonly class="min-w-0 flex-1 rounded-xl bg-white/10 text-white text-xs px-3" value="' + roomUrl(state.roomId) + '" /><button id="lt-copy" class="rounded-xl bg-white/10 px-3 text-white text-xs font-bold">Salin</button></div><div class="mt-4 rounded-2xl bg-white/[.04] border border-white/10 px-3 py-2"><div class="flex items-center justify-between mb-1"><span class="text-xs font-bold text-white">Peserta</span><span id="lt-member-count" class="text-[10px] text-emerald-300">' + Math.max(0, Number(room.members || 0)) + ' online</span></div><div id="lt-participants">' + participantsMarkup(room) + '</div></div><p class="text-xs text-white/45 mt-4">' + (isHost() ? 'Kamu adalah host. Kontrol pemutaranmu akan diikuti peserta lain.' : 'Kamu sedang mengikuti pemutaran host. Play, pause, next, previous, dan seek dikendalikan host.') + '</p><button id="lt-leave" class="w-full rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-200 py-3.5 font-black mt-5">Keluar dari Room</button></div>';
         document.body.appendChild(modal); state.modal = modal;
         modal.querySelector('#lt-panel-close').onclick = closeModal;
         modal.querySelector('#lt-copy').onclick = function () { navigator.clipboard.writeText(roomUrl(state.roomId)).then(function () { showToastSafe('Link room disalin.'); }); };

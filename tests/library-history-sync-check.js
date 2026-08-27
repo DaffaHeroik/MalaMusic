@@ -34,9 +34,16 @@ const streak = fs.readFileSync('public/streak.js', 'utf8');
 assert.match(source, /recentTracks:getRecentTracks\(\)/);
 assert.match(source, /localStorage\.setItem\('mala_recent_tracks'/);
 assert.match(source, /syncLibraryRemote\(\)/);
+assert.match(source, /clearRecentTracks/);
 assert.match(source, /newest\[key\] = item/);
 assert.match(source, /refresh the visible Home\/Profile surface/);
 assert.match(streak, /fetch\('\/api\/stats\?action=me'/);
+const api = fs.readFileSync('api/library.js', 'utf8');
+const profile = fs.readFileSync('public/profile.js', 'utf8');
+assert.match(api, /clearRecentTracks=body\.clearRecentTracks===true/);
+assert.match(api, /next\.recentTracks=clearRecentTracks\?\[\]:/);
+assert.match(profile, /clearHistory: function\(\)/);
+assert.match(profile, /Profile\.clearHistory\(\)/);
 assert.match(streak, /await Stats\.flush\(true\)/);
 assert.doesNotMatch(streak, /fetch\(this\.API \+ '\?action=record'/);
 

@@ -19,7 +19,7 @@ assert.match(app, /path\.startsWith\('\/blend\/'\)/);
 assert.match(backend, /room\.invitedUid !== user\.uid/);
 assert.match(backend, /update\.invitedUid = inviteUid/);
 assert.match(backend, /room\.invitedUid !== user\.uid.*Undangan Blend ini bukan untuk akunmu/);
-assert.match(index, /blend\.js\?v=153/);
+assert.match(index, /blend\.js\?v=154/);
 assert.doesNotMatch(frontend, /idToken|mm_session|firebase.*token/i);
 
 console.log('BLEND_INVITE_LINK_CHECK_PASS');

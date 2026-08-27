@@ -2009,6 +2009,7 @@ var libraryLoadSeq = 0;
 var libraryLoadController = null;
 var librarySyncInFlight = false;
 var librarySyncQueued = false;
+var librarySyncClearRecent = false;
 function libraryArray(value) { return Array.isArray(value) ? value : []; }
 function mergeLibraryCollections(local, remote) {
     var mergeBy = function(localItems, remoteItems, keyFn) {
@@ -2084,7 +2085,8 @@ function loadLibraryRemote(){
         if (merged.likedSongs.length || merged.likedArtists.length || merged.playlists.length || merged.recentTracks.length) syncLibraryRemote();
     }).catch(function(e){ if (e && e.name !== 'AbortError') {} });
 }
-function syncLibraryRemote(){
+function syncLibraryRemote(options){
+    if (options && options.clearRecentTracks) librarySyncClearRecent = true;
     clearTimeout(librarySyncTimer);
     if (librarySyncInFlight) { librarySyncQueued = true; return; }
     librarySyncTimer = setTimeout(function(){
@@ -2092,7 +2094,16 @@ function syncLibraryRemote(){
         librarySyncInFlight = true;
         fetch('/api/email-auth?action=me',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(me){
             if (!me.authenticated) return null;
-            return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists(),recentTracks:getRecentTracks()})});
+            var clearRecent = librarySyncClearRecent;
+            return fetch('/api/library',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({likedSongs:getLikedSongs(),likedArtists:getLikedArtists(),playlists:getUserPlaylists(),recentTracks:clearRecent?[]:getRecentTracks(),clearRecentTracks:clearRecent})}).then(function(response){
+                if (response.ok && clearRecent) {
+                    librarySyncClearRecent = false;
+                    try { localStorage.removeItem('mala_recent_tracks'); } catch (_) {}
+                    if (typeof S !== 'undefined' && S.at === 'home' && typeof Home !== 'undefined' && Home.render) Home.render();
+                    if (typeof S !== 'undefined' && S.at === 'dev' && typeof Profile !== 'undefined' && Profile.renderRecentList) Profile.renderRecentList();
+                }
+                return response;
+            });
         }).then(function(response){
             if (response && !response.ok) throw new Error('library sync failed');
         }).catch(function(){}).finally(function(){

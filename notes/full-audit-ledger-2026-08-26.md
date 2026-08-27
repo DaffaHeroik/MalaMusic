@@ -77,3 +77,9 @@ Status: audit masih berjalan; jangan klaim production-ready sebelum tiga clean s
 - Clean session v152-final: Home stabil, asset/worker v152 aktif, visible-only menghasilkan `visibleEmptyAlt=0`, `visibleUnnamedButtons=0`, overflow tidak ditemukan; playback sebelumnya tetap sehat.
 - Clean session kedua v152-clean2: Home memuat akun Google, streak, Recently Played, kategori, playlist, dan navigasi utama. Splash sempat terlihat pada transisi awal tetapi selesai pada pemeriksaan berikutnya.
 - Status sign-off sementara: tidak ada blocker runtime baru pada production; masih perlu clean session ketiga dan verifikasi route/viewport final sebelum klaim selesai.
+
+## Follow-up audit after cross-device sync
+- Audit source menemukan `CACHE_STATIC_NAME` masih memakai namespace `malamusic-static-v141` sementara asset aktif v153; ini membuat worker baru tidak konsisten dengan bundle terbaru dan berisiko mempertahankan cache static lama. Diperbaiki menjadi `malamusic-static-v154`, seluruh STATIC_ASSETS dinaikkan ke v154, dan guard test diperkuat.
+- Listen Together memiliki gap UI: polling state dengan `room.state.version` yang sama langsung return sehingga panel room yang sedang terbuka tidak memperbarui participant count/list ketika hanya presence berubah. Ditambahkan `refreshRoomPanel(room)` yang mengubah count dan peserta secara incremental tanpa menutup/membuka modal.
+- Tombol `Hapus Riwayat` sebelumnya hanya menghapus `localStorage`; pada akun tersinkron history dapat muncul kembali setelah hydration remote. Ditambahkan flag PUT `clearRecentTracks` yang diproses di transaksi RTDB, callback client menghapus local cache setelah server sukses dan me-refresh Home/Profile.
+- Full syntax check, seluruh regression suite, `git diff --check`, dan `npm audit --omit=dev --audit-level=high` lulus setelah patch. Rilis lanjutan perlu dinaikkan ke v154 dan divalidasi ulang di production.

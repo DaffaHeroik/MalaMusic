@@ -17,6 +17,10 @@ assert.match(lt, /function blockFollowerAction\(\)/);
 assert.match(lt, /syncAfterLocalAction/);
 assert.match(lt, /blockFollowerAction: blockFollowerAction/);
 assert.match(lt, /expectedVersion: Number\(state\.lastVersion \|\| 0\)/);
+assert.match(lt, /function refreshRoomPanel\(room\)/);
+assert.match(lt, /refreshRoomPanel\(room\)/);
+assert.match(lt, /id="lt-member-count"/);
+assert.match(lt, /id="lt-participants"/);
 
 for (const source of [player, library, album, app]) {
     assert.match(source, /ListenTogether\.blockFollowerAction/);
