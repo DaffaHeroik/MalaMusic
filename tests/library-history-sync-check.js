@@ -28,6 +28,8 @@ assert.equal(cleanRecent(Array.from({ length: 60 }, (_, i) => ({ videoId: 'track
 
 const legacyPut = clean({ likedSongs: [], likedArtists: [], playlists: [] }, { recentTracks: [{ videoId: 'legacy', title: 'Legacy', playedAt: now }] });
 assert.deepEqual(legacyPut.recentTracks.map(x => x.videoId), ['legacy']);
+const cleared = clean({ clearRecentTracks: true, recentTracks: [] }, { recentTracks: [{ videoId: 'legacy', playedAt: now }] });
+assert.deepEqual(cleared.recentTracks, []);
 
 const source = fs.readFileSync('public/player.js', 'utf8');
 const streak = fs.readFileSync('public/streak.js', 'utf8');
