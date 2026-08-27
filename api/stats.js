@@ -56,8 +56,32 @@ function previousDateKey(value) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(date);
 }
 function userKey(currentUser) {
-    const source = String(currentUser.uid || currentUser.email || '').trim().toLowerCase();
+    const source = String(currentUser.email || currentUser.uid || '').trim().toLowerCase();
     return crypto.createHash('sha256').update(source).digest('hex').slice(0, 40);
+}
+function legacyUserKey(currentUser) {
+    const email = String(currentUser.email || '').trim().toLowerCase();
+    const uid = String(currentUser.uid || '').trim().toLowerCase();
+    if (!uid || uid === email) return null;
+    return crypto.createHash('sha256').update(uid).digest('hex').slice(0, 40);
+}
+async function readLocalStats(currentUser) {
+    const primaryRef = localRoot().child('stats').child(userKey(currentUser));
+    const primarySnap = await primaryRef.get();
+    const primary = normalizeStats(primarySnap.exists() ? primarySnap.val() : null, currentUser);
+    const fallbackKey = legacyUserKey(currentUser);
+    if (!fallbackKey) return { ref: primaryRef, stats: primary, migrated: false };
+    const fallbackSnap = await localRoot().child('stats').child(fallbackKey).get();
+    if (!fallbackSnap.exists()) return { ref: primaryRef, stats: primary, migrated: false };
+    const fallback = normalizeStats(fallbackSnap.val(), currentUser);
+    const merged = { ...primary,
+        totalSeconds: Math.max(primary.totalSeconds, fallback.totalSeconds),
+        activeDays: Math.max(primary.activeDays, fallback.activeDays),
+        currentStreak: Math.max(primary.currentStreak, fallback.currentStreak),
+        bestStreak: Math.max(primary.bestStreak, fallback.bestStreak),
+        lastListenDate: primary.lastListenDate > fallback.lastListenDate ? primary.lastListenDate : fallback.lastListenDate
+    };
+    return { ref: primaryRef, stats: merged, migrated: !primarySnap.exists() || JSON.stringify(primary) !== JSON.stringify(merged) };
 }
 function cleanName(value, fallback) { return String(value || fallback || 'Pengguna').trim().slice(0, 80); }
 function normalizeStats(value, currentUser) {
@@ -86,9 +110,9 @@ function publicStats(data) {
 }
 function localRoot() { return getDatabase().ref(LOCAL_ROOT); }
 async function localMe(currentUser, legacy, includeMeta) {
-    const ref = localRoot().child('stats').child(userKey(currentUser));
-    const snapshot = await ref.get();
-    const stats = normalizeStats(snapshot.exists() ? snapshot.val() : null, currentUser);
+    const local = await readLocalStats(currentUser);
+    const ref = local.ref;
+    const stats = local.stats;
     if (legacy) {
         stats.activeDays = Math.max(stats.activeDays, Number(legacy.activeDays || 0));
         stats.bestStreak = Math.max(stats.bestStreak, Number(legacy.best || 0));
@@ -96,6 +120,8 @@ async function localMe(currentUser, legacy, includeMeta) {
         if (recent) stats.currentStreak = Math.max(stats.currentStreak, Number(legacy.current || 0));
         if (legacy.lastActive && (!stats.lastListenDate || legacy.lastActive > stats.lastListenDate)) stats.lastListenDate = legacy.lastActive;
         stats.updatedAt = Date.now();
+        await ref.set(stats);
+    } else if (local.migrated) {
         await ref.set(stats);
     }
     const result = { status: true, stats: publicStats(stats) };
@@ -118,9 +144,9 @@ function mergeStatsMirror(result, mirror) {
     return result;
 }
 async function localListen(currentUser, seconds) {
-    const ref = localRoot().child('stats').child(userKey(currentUser));
-    const snapshot = await ref.get();
-    const stats = normalizeStats(snapshot.exists() ? snapshot.val() : null, currentUser);
+    const local = await readLocalStats(currentUser);
+    const ref = local.ref;
+    const stats = local.stats;
     const today = dateKey();
     if (stats.lastListenDate !== today) {
         stats.activeDays += 1;
