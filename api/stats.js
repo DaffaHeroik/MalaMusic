@@ -132,7 +132,9 @@ function mergeStatsMirror(result, mirror) {
     if (!result || !result.stats || !mirror || !mirror.stats) return result;
     const remote = result.stats;
     const local = mirror.stats;
-    const totalSeconds = Math.max(Number(remote.totalSeconds || 0), Number(local.totalSeconds || 0));
+    const remoteSeconds = Number.isFinite(Number(remote.totalSeconds)) && Number(remote.totalSeconds) > 0 ? Number(remote.totalSeconds) : Math.max(0, Number(remote.hours || 0) * 3600);
+    const localSeconds = Math.max(0, Number(local.totalSeconds || 0));
+    const totalSeconds = Math.max(remoteSeconds, localSeconds);
     const mirrorRecent = mirror.lastListenDate === dateKey() || mirror.lastListenDate === previousDateKey(dateKey());
     result.stats = { ...remote,
         hours: Number((totalSeconds / 3600).toFixed(1)),

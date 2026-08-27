@@ -37,7 +37,7 @@ async function schema(env) {
 }
 
 function output(row, rank) {
-  return { rank: rank || row.rank, name: row.display_name || 'Pendengar MalaMusic', hours: Math.round((Number(row.total_seconds || 0) / 3600) * 10) / 10, streak: Number(row.streak_current || 0), bestStreak: Number(row.streak_best || 0), activeDays: Number(row.active_days || 0) };
+  return { rank: rank || row.rank, name: row.display_name || 'Pendengar MalaMusic', hours: Math.round((Number(row.total_seconds || 0) / 3600) * 10) / 10, totalSeconds: Math.max(0, Number(row.total_seconds || 0)), streak: Number(row.streak_current || 0), bestStreak: Number(row.streak_best || 0), activeDays: Number(row.active_days || 0) };
 }
 function authorized(request, env) { return env.INTERNAL_SECRET && request.headers.get('x-malamusic-secret') === env.INTERNAL_SECRET; }
 

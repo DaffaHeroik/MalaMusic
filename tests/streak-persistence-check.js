@@ -19,6 +19,13 @@ assert.equal(merged.stats.activeDays, 6);
 assert.equal(merged.stats.bestStreak, 6);
 assert.equal(merged.stats.streak, 0);
 
+const legacyWorkerShape = stats.mergeStatsMirror({
+  status: true,
+  stats: { hours: 8.4, activeDays: 6, streak: 0, bestStreak: 0 }
+}, { lastListenDate: null, stats: { totalSeconds: 0, activeDays: 0, streak: 0, bestStreak: 0 } });
+assert.equal(legacyWorkerShape.stats.totalSeconds, 30240);
+assert.equal(legacyWorkerShape.stats.hours, 8.4);
+
 const preserved = stats.applyLegacyStreak({
   status: true,
   stats: { hours: 0, totalSeconds: 1, activeDays: 1, streak: 0, bestStreak: 0 }
