@@ -54,6 +54,8 @@ var Profile = {
                     <div id="profile-recent-list" class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden"></div>
                 </section>
 
+                <div id="pwa-install-action" class="mb-8"></div>
+
                 <section class="rounded-2xl bg-white/[.04] border border-white/10 overflow-hidden mb-8">
                     <div id="profile-account-panel-secondary"></div>
                     <div id="profile-auth-secondary-action"></div>
@@ -65,6 +67,7 @@ var Profile = {
         </div>`;
 
         this.renderRecentList();
+        this.renderPwaInstallAction();
 
         if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
         EmailAuth.renderAuthActions(false);
@@ -73,6 +76,14 @@ var Profile = {
         EmailAuth.refresh();
         if (typeof Streak !== 'undefined') Streak.refreshProfileCard();
         Profile.startListeningStatsSync();
+    },
+    renderPwaInstallAction: function() {
+        var target = document.getElementById('pwa-install-action');
+        if (!target) return;
+        if (typeof isPwaInstalled === 'function' && isPwaInstalled()) { target.innerHTML = ''; return; }
+        target.innerHTML = '<button id="pwa-install-btn" onclick="installPWA()" class="w-full flex items-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 border border-cyan-300/25 px-4 py-4 text-left hover:bg-cyan-400/15 transition-colors" aria-label="Install MalaMusic sebagai aplikasi"><span class="w-11 h-11 rounded-xl bg-cyan-300/15 border border-cyan-200/20 flex items-center justify-center shrink-0"><i data-lucide="download-cloud" class="w-5 h-5 text-cyan-200"></i></span><span class="min-w-0 flex-1"><strong class="block text-sm text-white">Install MalaMusic</strong><span class="block text-xs text-white/55 mt-1">Tambahkan aplikasi musik ini ke layar utama perangkat</span></span><i data-lucide="chevron-right" class="w-4 h-4 text-white/45"></i></button>';
+        if (typeof refreshPwaInstallButton === 'function') refreshPwaInstallButton();
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
     },
     renderRecentList: function() {
         var recent = [];

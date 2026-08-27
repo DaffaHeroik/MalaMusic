@@ -77,20 +77,25 @@ window.addEventListener('online', function() {
 window.addEventListener('offline', function() {
     updateOnlineOfflineStatus();
 });
-document.addEventListener('DOMContentLoaded', updateOnlineOfflineStatus);
+document.addEventListener('DOMContentLoaded', function(){ updateOnlineOfflineStatus(); refreshPwaInstallButton(); });
 
+function refreshPwaInstallButton(){
+    var btn=document.getElementById('pwa-install-btn');
+    if(!btn) return;
+    var installed = isPwaInstalled();
+    btn.classList.toggle('hidden', installed);
+    btn.setAttribute('aria-label', installed ? 'MalaMusic sudah terpasang' : 'Install MalaMusic sebagai aplikasi');
+}
 window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
     deferredInstallPrompt=e;
-    var btn=document.getElementById('pwa-install-btn');
-    if(btn&&!isStandaloneApp)btn.classList.remove('hidden');
+    refreshPwaInstallButton();
 });
 window.addEventListener('appinstalled',function(){
     deferredInstallPrompt=null;
     try { localStorage.setItem('pwa_installed', 'true'); } catch(e){}
     isStandaloneApp = true;
-    var btn=document.getElementById('pwa-install-btn');
-    if(btn)btn.classList.add('hidden');
+    refreshPwaInstallButton();
     showToast('MalaMusic berhasil diinstall!');
 });
 
@@ -140,8 +145,7 @@ function installPWA(){
                 showToast('Menginstall MalaMusic...');
             }
             deferredInstallPrompt=null;
-            var btn=document.getElementById('pwa-install-btn');
-            if(btn)btn.classList.add('hidden');
+            refreshPwaInstallButton();
         });
     }else if(isIOSDevice){
         showToast('Tap ikon Bagikan lalu pilih "Add to Home Screen"');
