@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { getDatabase } = require('./firebase-admin.js');
+const streakHelpers = require('./streak.js')._test;
 
 const WORKER_URL = process.env.MALAMUSIC_STATS_WORKER_URL || 'https://malamusic-stats.daffaheroik2020.workers.dev';
 const WORKER_SECRET = String(process.env.MALAMUSIC_INTERNAL_SECRET || '').trim();
@@ -26,6 +27,24 @@ function cookies(req) {
 function user(req) {
     const u = decode(cookies(req).mm_session);
     return u && u.email && u.exp > Date.now() ? u : null;
+}
+function legacyStreak(req, currentUser) {
+    const value = decode(cookies(req).mm_streak);
+    if (!value || String(value.email || '').toLowerCase() !== String(currentUser.email || '').toLowerCase() || !Array.isArray(value.dates)) return null;
+    const dates = value.dates.filter(day => /^\d{4}-\d{2}-\d{2}$/.test(String(day))).slice(-180);
+    if (!dates.length) return null;
+    return { dates, ...streakHelpers.calculate(dates) };
+}
+function applyLegacyStreak(result, legacy) {
+    if (!legacy || !result || !result.stats) return result;
+    const stats = result.stats;
+    const recent = legacy.lastActive === dateKey() || legacy.lastActive === previousDateKey(dateKey());
+    result.stats = { ...stats,
+        activeDays: Math.max(Number(stats.activeDays || 0), Number(legacy.activeDays || 0)),
+        bestStreak: Math.max(Number(stats.bestStreak || 0), Number(legacy.best || 0)),
+        streak: recent ? Math.max(Number(stats.streak || 0), Number(legacy.current || 0)) : Number(stats.streak || 0)
+    };
+    return result;
 }
 function body(req) { return req.body && typeof req.body === 'object' ? req.body : {}; }
 function dateKey() {
@@ -66,10 +85,37 @@ function publicStats(data) {
     };
 }
 function localRoot() { return getDatabase().ref(LOCAL_ROOT); }
-async function localMe(currentUser) {
-    const snapshot = await localRoot().child('stats').child(userKey(currentUser)).get();
+async function localMe(currentUser, legacy, includeMeta) {
+    const ref = localRoot().child('stats').child(userKey(currentUser));
+    const snapshot = await ref.get();
     const stats = normalizeStats(snapshot.exists() ? snapshot.val() : null, currentUser);
-    return { status: true, stats: publicStats(stats) };
+    if (legacy) {
+        stats.activeDays = Math.max(stats.activeDays, Number(legacy.activeDays || 0));
+        stats.bestStreak = Math.max(stats.bestStreak, Number(legacy.best || 0));
+        const recent = legacy.lastActive === dateKey() || legacy.lastActive === previousDateKey(dateKey());
+        if (recent) stats.currentStreak = Math.max(stats.currentStreak, Number(legacy.current || 0));
+        if (legacy.lastActive && (!stats.lastListenDate || legacy.lastActive > stats.lastListenDate)) stats.lastListenDate = legacy.lastActive;
+        stats.updatedAt = Date.now();
+        await ref.set(stats);
+    }
+    const result = { status: true, stats: publicStats(stats) };
+    if (includeMeta) result.lastListenDate = stats.lastListenDate || null;
+    return result;
+}
+function mergeStatsMirror(result, mirror) {
+    if (!result || !result.stats || !mirror || !mirror.stats) return result;
+    const remote = result.stats;
+    const local = mirror.stats;
+    const totalSeconds = Math.max(Number(remote.totalSeconds || 0), Number(local.totalSeconds || 0));
+    const mirrorRecent = mirror.lastListenDate === dateKey() || mirror.lastListenDate === previousDateKey(dateKey());
+    result.stats = { ...remote,
+        hours: Number((totalSeconds / 3600).toFixed(1)),
+        totalSeconds,
+        activeDays: Math.max(Number(remote.activeDays || 0), Number(local.activeDays || 0)),
+        bestStreak: Math.max(Number(remote.bestStreak || 0), Number(local.bestStreak || 0)),
+        streak: mirrorRecent ? Math.max(Number(remote.streak || 0), Number(local.streak || 0)) : Number(remote.streak || 0)
+    };
+    return result;
 }
 async function localListen(currentUser, seconds) {
     const ref = localRoot().child('stats').child(userKey(currentUser));
@@ -155,7 +201,18 @@ module.exports = async function stats(req, res) {
         }
         const currentUser = user(req);
         if (!currentUser) return res.status(401).json({ status: false, authenticated: false, message: 'Login diperlukan.' });
-        if (action === 'me') return res.status(200).json(await withLocalFallback(() => workerCall('/me', { method: 'POST', body: JSON.stringify({ email: currentUser.email }) }), () => localMe(currentUser)));
+        if (action === 'me') {
+            const legacy = legacyStreak(req, currentUser);
+            let mirror = null;
+            if (WORKER_SECRET) {
+                try { mirror = await localMe(currentUser, legacy, true); } catch (_) {}
+            }
+            const result = await withLocalFallback(
+                () => workerCall('/me', { method: 'POST', body: JSON.stringify({ email: currentUser.email, name: currentUser.name, legacyDates: legacy ? legacy.dates : [] }) }),
+                () => mirror || localMe(currentUser, legacy)
+            );
+            return res.status(200).json(applyLegacyStreak(mergeStatsMirror(result, mirror), legacy));
+        }
         if (action === 'listen') {
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method tidak didukung.' });
             const requestedSeconds = Number(body(req).seconds);
@@ -181,7 +238,7 @@ module.exports = async function stats(req, res) {
     }
 };
 
-module.exports._test = { dateKey, previousDateKey, validatePlaylist, publicStats };
+module.exports._test = { dateKey, previousDateKey, validatePlaylist, publicStats, legacyStreak, applyLegacyStreak, mergeStatsMirror };
 
 // Local fallback uses Firebase Admin only when the external statistics worker is unavailable.
 // No client credential or private key is exposed by this module.

@@ -90,3 +90,5 @@ module.exports = async function streak(req, res) {
 
     return res.status(200).json({ status: true, authenticated: true, streak: calculate(dates) });
 };
+
+module.exports._test = { calculate, dayKey, previousDay };

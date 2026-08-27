@@ -1,4 +1,26 @@
 const DAY = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
+function streakFromDates(values) {
+  const dates = Array.from(new Set(Array.isArray(values) ? values.map(String).filter(day => /^\d{4}-\d{2}-\d{2}$/.test(day)) : [])).sort();
+  if (!dates.length) return { current: 0, best: 0, activeDays: 0, lastActive: null };
+  const atNoon = day => new Date(`${day}T12:00:00+08:00`);
+  let best = 1, run = 1;
+  for (let i = 1; i < dates.length; i++) {
+    if (Math.round((atNoon(dates[i]) - atNoon(dates[i - 1])) / 86400000) === 1) run += 1;
+    else run = 1;
+    best = Math.max(best, run);
+  }
+  const lastActive = dates[dates.length - 1];
+  const daysSinceLast = Math.round((atNoon(DAY()) - atNoon(lastActive)) / 86400000);
+  let current = 0;
+  if (daysSinceLast <= 1) {
+    current = 1;
+    for (let i = dates.length - 1; i > 0; i--) {
+      if (Math.round((atNoon(dates[i]) - atNoon(dates[i - 1])) / 86400000) === 1) current += 1;
+      else break;
+    }
+  }
+  return { current, best, activeDays: dates.length, lastActive };
+}
 
 async function query(env, sql, params = []) {
   const result = await env.DB.prepare(sql).bind(...params).all();
@@ -21,10 +43,10 @@ function authorized(request, env) { return env.INTERNAL_SECRET && request.header
 
 async function rollover(env) {
   await schema(env);
-  const rows = await query(env, 'SELECT email, display_name, total_seconds, active_days FROM user_stats');
+  const rows = await query(env, 'SELECT email, display_name, total_seconds, active_days, streak_best FROM user_stats');
   for (const row of rows) {
     const days = (await query(env, 'SELECT day FROM user_daily_stats WHERE email = ? ORDER BY day ASC', row.email)).map(x => x.day);
-    let current = 0, best = 0, run = 0;
+    let current = 0, best = Number(row.streak_best || 0), run = 0;
     for (let i = 0; i < days.length; i++) {
       const previous = i ? new Date(`${days[i - 1]}T12:00:00+08:00`) : null;
       const currentDate = new Date(`${days[i]}T12:00:00+08:00`);
@@ -58,7 +80,26 @@ export default {
     if (url.pathname === '/me' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const rows = await query(env, 'SELECT display_name, total_seconds, streak_current, streak_best, active_days, last_active FROM user_stats WHERE email = ? LIMIT 1', [body.email]);
-      const row = rows[0];
+      let row = rows[0];
+      const legacy = streakFromDates(body.legacyDates);
+      if (body.email && legacy.activeDays > 0) {
+        for (const day of legacy.dates) {
+          await env.DB.prepare('INSERT INTO user_daily_stats (email, display_name, day, seconds) VALUES (?, ?, ?, 0) ON CONFLICT(email, day) DO NOTHING').bind(body.email, String(body.name || body.email.split('@')[0]).slice(0, 60), day).run();
+        }
+      }
+      if (body.email && legacy.activeDays > 0 && (!row || legacy.best > Number(row.streak_best || 0) || legacy.activeDays > Number(row.active_days || 0) || legacy.current > Number(row.streak_current || 0))) {
+        const merged = {
+          display_name: String(body.name || (row && row.display_name) || body.email.split('@')[0]).slice(0, 60),
+          total_seconds: Number(row && row.total_seconds || 0),
+          streak_current: Math.max(Number(row && row.streak_current || 0), legacy.current),
+          streak_best: Math.max(Number(row && row.streak_best || 0), legacy.best),
+          active_days: Math.max(Number(row && row.active_days || 0), legacy.activeDays),
+          last_active: (row && row.last_active && row.last_active > legacy.lastActive) ? row.last_active : legacy.lastActive,
+          updated_at: new Date().toISOString()
+        };
+        await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, streak_current, streak_best, active_days, last_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, streak_current = MAX(user_stats.streak_current, excluded.streak_current), streak_best = MAX(user_stats.streak_best, excluded.streak_best), active_days = MAX(user_stats.active_days, excluded.active_days), last_active = CASE WHEN user_stats.last_active > excluded.last_active THEN user_stats.last_active ELSE excluded.last_active END, updated_at = excluded.updated_at').bind(body.email, merged.display_name, merged.total_seconds, merged.streak_current, merged.streak_best, merged.active_days, merged.last_active, merged.updated_at).run();
+        row = merged;
+      }
       return Response.json({ status: true, authenticated: true, stats: row ? output(row) : { hours: 0, streak: 0, bestStreak: 0, activeDays: 0 } });
     }
     if (url.pathname === '/rollover') return Response.json(await rollover(env));
@@ -69,13 +110,15 @@ export default {
       const seconds = Math.min(120, Math.floor(requestedSeconds));
       if (seconds < 1) return Response.json({ status: false, message: 'Durasi terlalu kecil.' }, { status: 400 });
       const day = DAY(), name = String(body.name || body.email.split('@')[0]).replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 60) || 'Pendengar';
+      const priorRows = await query(env, 'SELECT streak_best FROM user_stats WHERE email = ? LIMIT 1', [body.email]);
+      const priorBest = Number(priorRows[0]?.streak_best || 0);
       await env.DB.prepare('INSERT INTO user_daily_stats (email, display_name, day, seconds) VALUES (?, ?, ?, ?) ON CONFLICT(email, day) DO UPDATE SET seconds = seconds + excluded.seconds, display_name = excluded.display_name').bind(body.email, name, day, seconds).run();
       const updatedAt = new Date().toISOString();
       await env.DB.prepare('INSERT INTO user_stats (email, display_name, total_seconds, active_days, last_active, updated_at) VALUES (?, ?, ?, 1, ?, ?) ON CONFLICT(email) DO UPDATE SET display_name = excluded.display_name, total_seconds = user_stats.total_seconds + excluded.total_seconds, active_days = (SELECT COUNT(DISTINCT day) FROM user_daily_stats WHERE email = excluded.email), last_active = excluded.last_active, updated_at = excluded.updated_at').bind(body.email, name, seconds, day, updatedAt).run();
 
       // Recompute streak immediately so /me is consistent across devices without waiting for cron rollover.
       const days = (await query(env, 'SELECT day FROM user_daily_stats WHERE email = ? ORDER BY day ASC', body.email)).map(row => row.day);
-      let best = 0, run = 0;
+      let best = priorBest, run = 0;
       for (let i = 0; i < days.length; i++) {
         const previous = i ? new Date(`${days[i - 1]}T12:00:00+08:00`) : null;
         const currentDate = new Date(`${days[i]}T12:00:00+08:00`);
