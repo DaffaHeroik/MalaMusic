@@ -56,14 +56,14 @@ assert.match(sw, /Content-Range/);
 assert.match(sw, /status: 206/);
 assert.match(sw, /fetch\(url, \{ cache: 'no-store' \}\)/);
 assert.match(sw, /fetch\(new Request\(request, \{ cache: 'no-store' \}\)\)/);
-assert.match(sw, /const CACHE_STATIC_NAME = 'malamusic-static-v156'/);
+assert.match(sw, /const CACHE_STATIC_NAME = 'malamusic-static-v157'/);
 assert.match(sw, /const CACHE_AUDIO_NAME = 'malamusic-offline-audio-v1'/);
 assert.match(sw, /key !== CACHE_STATIC_NAME && key !== CACHE_DATA_NAME && key !== CACHE_AUDIO_NAME/);
 
 const scriptUrls = [...index.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
-for (const required of ['/app.js?v=156', '/player.js?v=156', '/library.js?v=156', '/album.js?v=156']) {
+for (const required of ['/app.js?v=157', '/player.js?v=157', '/library.js?v=157', '/album.js?v=157']) {
   assert.ok(scriptUrls.includes(required), `asset marker missing: ${required}`);
 }
-assert.match(index, /sw\.js\?v=156/);
+assert.match(index, /sw\.js\?v=157/);
 
 console.log('offline-playlist-check: PASS');

@@ -694,15 +694,13 @@ var OfflineView = {
                 );
                 var isPlay = isCur && S.ip;
                 var isLoad = isCur && S.il;
-                var isIncomplete = s.offlineStatus === 'partial' || s.offlineStatus === 'pending';
-
-                var playIconHtml = '';
+                var isIncomplete = s.offlineStatus === 'partial' || s.offlineStatus === 'pending';                    var playIconHtml = '';
                 if (isLoad) {
-                    playIconHtml = '<div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>';
+                    playIconHtml = '<div class="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin"></div>';
                 } else if (isPlay) {
-                    playIconHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5"><span class="w-[2px] bg-black rounded-full animate-eq-1"></span><span class="w-[2px] bg-black rounded-full animate-eq-2"></span><span class="w-[2px] bg-black rounded-full animate-eq-3"></span></div>';
+                    playIconHtml = '<div class="flex items-end justify-center gap-[2px] w-4 h-4 pb-0.5"><span class="w-[2px] bg-white rounded-full animate-eq-1"></span><span class="w-[2px] bg-white rounded-full animate-eq-2"></span><span class="w-[2px] bg-white rounded-full animate-eq-3"></span></div>';
                 } else {
-                    playIconHtml = '<i data-lucide="play" class="w-4 h-4 text-black fill-current ml-0.5"></i>';
+                    playIconHtml = '<i data-lucide="play" class="w-4 h-4 text-white fill-current ml-0.5"></i>';
                 }
 
                 var cardBg = isPlay ? 'bg-white/15 border-white/30 shadow-lg' : (isCur ? 'bg-white/10 border-white/20' : 'bg-white/[0.04] border-white/10 hover:bg-white/[0.08]');
@@ -732,40 +730,48 @@ var OfflineView = {
             }).join('');
         } else {
             songsHtml = `
-            <div class="text-center py-14 rounded-2xl bg-white/[0.03] border border-white/10 px-4">
-                <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center mx-auto mb-3 text-white">
-                    <i data-lucide="wifi-off" class="w-6 h-6"></i>
+            <div class="text-center py-16 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] px-6 mt-4">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400/15 to-cyan-600/10 border border-cyan-400/20 flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="wifi-off" class="w-7 h-7 text-cyan-300"></i>
                 </div>
-                <h3 class="text-white font-bold text-sm mb-1">Belum Ada Lagu Offline</h3>
-                <p class="text-white/60 text-xs max-w-xs mx-auto mb-3">Simpan lagu favoritmu untuk diputar tanpa koneksi internet.</p>
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/80 text-xs font-semibold">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                    <span>Klik ikon Download di pemutar lagu</span>
+                <h3 class="text-white font-bold text-base mb-2">Belum Ada Lagu Offline</h3>
+                <p class="text-white/50 text-sm max-w-[280px] mx-auto mb-5 leading-relaxed">Simpan lagu favoritmu untuk diputar tanpa koneksi internet, kapan saja.</p>
+                <div class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs font-medium mb-6 max-w-xs mx-auto">
+                    <i data-lucide="download" class="w-4 h-4 text-cyan-300/70 shrink-0"></i>
+                    <span>Klik ikon <span class="font-bold text-white/70">Download</span> di pemutar lagu</span>
                 </div>
-            </div><button onclick="App.switch('search')" class="mt-3 rounded-full bg-white/10 border border-white/15 px-5 py-2.5 text-xs font-bold text-white"><i data-lucide="search" class="w-4 h-4 inline mr-1"></i>Cari Lagu</button></div>`;
+                <button onclick="App.switch('search')" class="rounded-full bg-white text-black px-6 py-3 text-sm font-bold hover:bg-white/90 active:scale-95 transition-all shadow-lg shadow-white/10">
+                    <i data-lucide="search" class="w-4 h-4 inline mr-1.5"></i>Cari Lagu Sekarang
+                </button>
+            </div>`;
         }
         var offlinePlaylists = typeof getOfflinePlaylists === 'function' ? getOfflinePlaylists() : [];
         var playlistSummary = offlinePlaylists.length ? '<div class="rounded-2xl border border-cyan-400/15 bg-cyan-500/[.06] p-3"><div class="flex items-center gap-2 text-xs font-bold text-cyan-200 mb-2"><i data-lucide="list-music" class="w-4 h-4"></i><span>Playlist Offline</span></div>' + offlinePlaylists.slice(0, 10).map(function(p){ var readyCount = (p.songIds || []).filter(function(id){ return offlineSongs.some(function(s){ return (s.videoId || s.id) === id && s.offlineStatus === 'ready'; }); }).length; var state = p.status === 'ready' && readyCount === (p.songIds || []).length ? 'Siap diputar' : readyCount + '/' + (p.songIds || []).length + ' lagu siap'; return '<div class="flex items-center justify-between gap-3 py-1 text-xs"><span class="text-white/80 truncate">' + es(p.name) + '</span><span class="text-cyan-200/70 shrink-0">' + state + '</span></div>'; }).join('') + '</div>' : '';
         el.innerHTML = `
-        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all flex justify-between items-center bg-black/80 backdrop-blur-md">
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Mode Offline</h1>
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border ${isOnline ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-white/20 text-white/60 bg-white/5'}">${isOnline ? 'Online' : 'Offline'}</span>
+        <div class="pt-8 pb-3.5 px-4 sticky top-0 z-30 border-b border-white/10 shadow-2xl transition-all" style="background: linear-gradient(180deg, rgba(8, 9, 13, 0.4) 0%, rgba(8, 9, 13, 0.75) 100%), url('/banner.png') center/cover no-repeat; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-cyan-600/10 border border-cyan-400/25 flex items-center justify-center shadow-lg">
+                            <i data-lucide="wifi-off" class="w-5 h-5 text-cyan-300"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-black text-white tracking-tight drop-shadow-md">Mode Offline</h1>
+                        </div>
+                    </div>
+                    <p class="text-xs text-white/50 mt-2 ml-[52px]">Penyimpanan perangkat dan audio offline</p>
+                    <p id="offline-storage-summary" class="text-[11px] text-cyan-300/70 mt-1 ml-[52px]">Menghitung penyimpanan...</p>
                 </div>
-                <p class="text-xs text-white/50 mt-0.5">Penyimpanan perangkat dan audio offline</p><p id="offline-storage-summary" class="text-[11px] text-cyan-300/70 mt-1">Menghitung penyimpanan...</p>
-            </div>
-            <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-md">
-                <i data-lucide="wifi-off" class="w-4 h-4"></i>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${isOnline ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-rose-400/30 text-rose-300 bg-rose-500/10'}">${isOnline ? 'Online' : 'Offline'}</span>
             </div>
         </div>
 
         <div class="px-4 mt-4 space-y-3">
             ${playlistSummary}
             ${offlineSongs.length > 0 ? `
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-white/60 uppercase tracking-wider">${offlineSongs.length} Lagu Tersimpan</span>
-                    <div class="flex items-center gap-2"><button onclick="PK('offline',0)" class="text-xs text-white hover:text-white/80 font-bold hover:underline flex items-center gap-1"><i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Putar Semua</button><button onclick="clearOfflineDownloads()" class="text-xs text-rose-300 hover:text-rose-200 font-bold">Hapus semua</button></div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-white/50 uppercase tracking-wider">${offlineSongs.length} Lagu Tersimpan</span>
+                    <div class="flex items-center gap-3"><button onclick="PK('offline',0)" class="text-xs text-cyan-300 hover:text-cyan-200 font-bold flex items-center gap-1.5 transition-colors"><i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Putar Semua</button><span class="w-px h-3 bg-white/15"></span><button onclick="clearOfflineDownloads()" class="text-xs text-rose-400/80 hover:text-rose-300 font-bold transition-colors">Hapus semua</button></div>
                 </div>
             ` : ''}
 

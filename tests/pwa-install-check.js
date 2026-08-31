@@ -20,10 +20,10 @@ assert.match(profile, /onclick="installPWA\(\)"/);
 assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.scope, '/');
 assert.match(index, /<link rel="manifest" href="\/manifest\.json">/);
-assert.match(index, /app\.js\?v=156/);
-assert.match(index, /profile\.js\?v=156/);
-assert.match(sw, /malamusic-static-v156/);
-assert.match(sw, /app\.js\?v=156/);
-assert.match(sw, /profile\.js\?v=156/);
+assert.match(index, /app\.js\?v=157/);
+assert.match(index, /profile\.js\?v=157/);
+assert.match(sw, /malamusic-static-v157/);
+assert.match(sw, /app\.js\?v=157/);
+assert.match(sw, /profile\.js\?v=157/);
 
 console.log('PWA_INSTALL_CHECK_PASS');

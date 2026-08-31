@@ -1,33 +1,53 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-SDK="/home/ubuntu/android-sdk"
-BT="/usr/lib/android-sdk/build-tools/debian"
-ANDROID_JAR="/usr/lib/android-sdk/platforms/android-23/android.jar"
-R8="/home/ubuntu/android-build-tools/r8.jar"
-BUILD="$ROOT/build"
-rm -rf "$BUILD/classes" "$BUILD/dex" "$BUILD/generated" "$BUILD/res" "$BUILD/base.apk" "$BUILD/aligned.apk" "$BUILD/MalaMusic-debug.apk"
-mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/generated" "$BUILD/res"
-"$BT/aapt2" compile --dir "$ROOT/res" -o "$BUILD/res/resources.zip"
-"$BT/aapt2" link -o "$BUILD/base.apk" \
-  --manifest "$ROOT/AndroidManifest.xml" \
-  -I "$ANDROID_JAR" \
-  --java "$BUILD/generated" \
-  --min-sdk-version 24 \
-  --target-sdk-version 35 \
-  --version-code 1 \
-  --version-name 1.0-debug \
-  "$BUILD/res/resources.zip"
-find "$ROOT/src" "$BUILD/generated" -name '*.java' -print0 | xargs -0 javac -source 8 -target 8 -cp "$ANDROID_JAR" -d "$BUILD/classes"
-jar cf "$BUILD/classes.jar" -C "$BUILD/classes" .
-java -cp "$R8" com.android.tools.r8.D8 --min-api 23 --lib "$ANDROID_JAR" --output "$BUILD/dex" "$BUILD/classes.jar"
-mkdir -p "$BUILD/apkroot"
-unzip -q -o "$BUILD/base.apk" -d "$BUILD/apkroot"
-cp "$BUILD/dex/classes.dex" "$BUILD/apkroot/classes.dex"
-(cd "$BUILD/apkroot" && zip -q -r -0 "$BUILD/unsigned.apk" .)
-"$BT/zipalign" -f 4 "$BUILD/unsigned.apk" "$BUILD/aligned.apk"
-KEYSTORE="$ROOT/debug.keystore"
-if [ ! -f "$KEYSTORE" ]; then keytool -genkeypair -v -keystore "$KEYSTORE" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=MalaMusic,C=ID' -keyalg RSA -keysize 2048 -validity 10000 >/dev/null 2>&1; fi
-"$BT/apksigner" sign --ks "$KEYSTORE" --ks-pass pass:android --key-pass pass:android --out "$BUILD/MalaMusic-debug.apk" "$BUILD/aligned.apk"
-"$BT/apksigner" verify --verbose "$BUILD/MalaMusic-debug.apk" | tail -8
-ls -lh "$BUILD/MalaMusic-debug.apk"
+cd "$ROOT"
+
+echo "🎵 MalaMusic Android Build"
+echo "=========================="
+
+# Check for Java
+if ! command -v java &>/dev/null; then
+    echo "❌ Java not found. Install JDK 17:"
+    echo "   sudo apt install openjdk-17-jdk"
+    exit 1
+fi
+
+echo "☕ Java: $(java -version 2>&1 | head -1)"
+
+# Use Gradle wrapper if available, otherwise system Gradle
+if [ -f "./gradlew" ]; then
+    chmod +x ./gradlew
+    GRADLE="./gradlew"
+elif command -v gradle &>/dev/null; then
+    GRADLE="gradle"
+else
+    echo "❌ Gradle not found. Options:"
+    echo "   1. Install: sudo snap install gradle --classic"
+    echo "   2. Download wrapper: gradle wrapper --gradle-version 8.11.1"
+    exit 1
+fi
+
+echo "🔨 Building with: $GRADLE"
+echo ""
+
+# Clean and build debug APK
+$GRADLE clean assembleDebug --no-daemon --stacktrace
+
+APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+
+if [ -f "$APK_PATH" ]; then
+    APK_SIZE=$(ls -lh "$APK_PATH" | awk '{print $5}')
+    echo ""
+    echo "✅ Build successful!"
+    echo "📱 APK: $ROOT/$APK_PATH"
+    echo "📦 Size: $APK_SIZE"
+    echo ""
+    echo "Install on device:"
+    echo "   adb install -r $APK_PATH"
+else
+    echo ""
+    echo "❌ Build failed. Check output above."
+    exit 1
+fi
