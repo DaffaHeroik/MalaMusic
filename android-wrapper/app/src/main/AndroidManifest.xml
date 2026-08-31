@@ -1,18 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Network -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Audio -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-
-    <!-- PWA install prompt -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".MalaMusicApp"
@@ -22,10 +15,8 @@
         android:label="MalaMusic"
         android:supportsRtl="true"
         android:theme="@style/Theme.MalaMusic"
-        android:usesCleartextTraffic="false"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:usesCleartextTraffic="false">
 
-        <!-- Splash Screen -->
         <activity
             android:name=".ui.SplashActivity"
             android:exported="true"
@@ -37,31 +28,22 @@
             </intent-filter>
         </activity>
 
-        <!-- Main WebView Activity -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:launchMode="singleTask"
             android:theme="@style/Theme.MalaMusic">
-            <!-- Deep link handling -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="music.malawalipayment.web.id" />
             </intent-filter>
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="malamusic.app" />
-            </intent-filter>
         </activity>
 
-        <!-- Background Audio Service -->
         <service
-            android:name=".audio.MalaMediaService"
+            android:name=".audio.MusicPlayerService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="false">
             <intent-filter>
