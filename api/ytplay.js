@@ -21,6 +21,31 @@ const saveTubeBreakers = new Map(SAVE_TUBE_CDNS.map(cdn => [
 function getSaveTubeBreaker(cdn) {
   return saveTubeBreakers.get(cdn);
 }
+
+// SaveTube sometimes returns a redirect to an HTML landing page while still
+// reporting HTTP 200. Never hand that URL to ExoPlayer as if it were audio.
+async function probeAudioUrl(audioUrl) {
+  try {
+    const response = await axios.get(audioUrl, {
+      responseType: 'arraybuffer',
+      timeout: 6500,
+      maxContentLength: 64 * 1024,
+      maxBodyLength: 64 * 1024,
+      headers: {
+        Range: 'bytes=0-1023',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36'
+      },
+      validateStatus: status => status >= 200 && status < 300
+    });
+    const contentType = String(response.headers['content-type'] || '').toLowerCase();
+    const sample = Buffer.from(response.data || []).subarray(0, 512).toString('utf8').trimStart().toLowerCase();
+    const looksHtml = contentType.includes('text/html') || sample.startsWith('<!doctype html') || sample.startsWith('<html') || sample.startsWith('<script');
+    const looksAudio = contentType.startsWith('audio/') || contentType === 'application/octet-stream' || contentType === 'video/mp4';
+    return !looksHtml && looksAudio && Buffer.from(response.data || []).length > 0;
+  } catch (_) {
+    return false;
+  }
+}
 function pruneAudioCache(now) {
   for (const [key, value] of ytCache) {
     if (!value || value.expireAt <= now) ytCache.delete(key);
@@ -126,6 +151,7 @@ async function getDownload(url) {
 
       const audioUrl = downloadRes.data?.data?.downloadUrl || downloadRes.data?.downloadUrl;
       if (!audioUrl) throw new Error(`No audio URL from ${cdn}`);
+      if (!(await probeAudioUrl(audioUrl))) throw new Error(`Invalid audio response from ${cdn}`);
 
       const result = {
         duration: `${Math.floor(decrypted.duration / 60)}:${(decrypted.duration % 60).toString().padStart(2, "0")}`,
