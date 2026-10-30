@@ -4,11 +4,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// MalaMusic Dark Theme Colors
+// MalaMusic Dark Theme Colors (matched to the web app palette)
 val DarkBackground = Color(0xFF08090D)
-val DarkSurface = Color(0xFF121318)
-val DarkCard = Color(0xFF20222C)
+val DarkSurface = Color(0xFF14151B)
+val DarkCard = Color(0xFF1C1E26)
 val DarkCardHover = Color(0xFF282B38)
+val DarkCardElevated = Color(0xFF20222C)
 val DarkBorder = Color(0x1AFFFFFF)
 val TextPrimary = Color(0xFFFFFFFF)
 val TextSecondary = Color(0xFFA0A5B0)

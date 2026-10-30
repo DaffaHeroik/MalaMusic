@@ -55,6 +55,21 @@ data class Suggestion(
     val text: String = ""
 )
 
+/** Web-parity user search (/api/users?query=) */
+data class UserEntry(
+    val id: String = "",
+    val name: String = "",
+    val picture: String = ""
+)
+
+/** Web-parity search recommendations (S.rec0..2: "baru rilis" / "barat Top" / "Rapp Top"). */
+data class SearchRecs(
+    val rec0: List<Track> = emptyList(),
+    val rec1: List<Track> = emptyList(),
+    val rec2: List<Track> = emptyList(),
+    val loaded: Boolean = false
+)
+
 data class LyricsResult(
     val type: String = "none",
     val lines: List<LyricLine> = emptyList()
@@ -75,6 +90,26 @@ data class LeaderboardEntry(
     val activeDays: Int = 0,
     val streak: Int = 0,
     val bestStreak: Int = 0
+)
+
+data class StreakStats(
+    val current: Int = 0,
+    val best: Int = 0,
+    val activeDays: Int = 0
+)
+
+/** Mirrors the web Streak card: null = stats not loaded / logged out. */
+data class StreakState(
+    val loaded: Boolean = false,
+    val hasAccount: Boolean = false,
+    val stats: StreakStats = StreakStats()
+)
+
+data class HomeCategoryResults(
+    val category: String = "",
+    val songs: List<Track> = emptyList(),
+    val playlists: List<Playlist> = emptyList(),
+    val artists: List<Artist> = emptyList()
 )
 
 data class ListenTogetherRoom(
@@ -110,4 +145,13 @@ data class BlendRoom(
     val name: String = "",
     val inviteUrl: String = "",
     val songs: List<Track> = emptyList()
+)
+
+
+data class AuthUser(
+    val uid: String = "",
+    val email: String = "",
+    val name: String = "",
+    val picture: String = "",
+    val emailVerified: Boolean = false
 )

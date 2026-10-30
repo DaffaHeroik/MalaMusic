@@ -5,7 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.malamusic.app.data.repository.MusicRepository
+import com.malamusic.app.data.api.MusicApi
+import com.malamusic.app.data.cache.AudioCacheManager
+import androidx.media3.common.util.UnstableApi
 
+@UnstableApi
 class MalaMusicApp : Application() {
 
     companion object {
@@ -15,11 +19,13 @@ class MalaMusicApp : Application() {
             private set
     }
 
-    val repository by lazy { MusicRepository() }
+    val audioCache by lazy { AudioCacheManager(this) }
+    val repository by lazy { MusicRepository(this, audioCache) }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
+        MusicApi.initialize(this)
         createNotificationChannel()
     }
 

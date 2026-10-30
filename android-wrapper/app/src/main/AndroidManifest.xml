@@ -10,8 +10,8 @@
     <application
         android:name=".MalaMusicApp"
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher_round"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="MalaMusic"
         android:supportsRtl="true"
         android:theme="@style/Theme.MalaMusic"
@@ -34,6 +34,12 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:launchMode="singleTask"
             android:theme="@style/Theme.MalaMusic">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="malamusic" android:host="auth" />
+            </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

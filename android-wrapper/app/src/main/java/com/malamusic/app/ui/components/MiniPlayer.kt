@@ -10,7 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,9 +25,11 @@ fun MiniPlayer(
     track: Track?,
     repository: MusicRepository,
     onClick: () -> Unit,
-    onPlayPause: () -> Unit
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit
 ) {
     val isPlaying by repository.isPlaying.collectAsState()
+    val isBuffering by repository.isBuffering.collectAsState()
     val position by repository.position.collectAsState()
     val duration by repository.duration.collectAsState()
 
@@ -36,12 +38,15 @@ fun MiniPlayer(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(DarkCard)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .background(
+                brush = Brush.linearGradient(listOf(Color(0xFF22242F), Color(0xFF191A22))),
+                shape = RoundedCornerShape(14.dp)
+            )
             .clickable(onClick = onClick)
     ) {
-        // Progress indicator
         LinearProgressIndicator(
-            progress = { (position / duration.coerceAtLeast(1.0)).toFloat() },
+            progress = { (position / duration.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp),
@@ -52,23 +57,17 @@ fun MiniPlayer(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Track cover
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(DarkBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.MusicNote, null, tint = AccentRose, modifier = Modifier.size(20.dp))
-            }
+            TrackArtwork(
+                track = track,
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(10.dp)
+            )
 
             Spacer(Modifier.width(12.dp))
 
-            // Track info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     track.title,
@@ -87,19 +86,25 @@ fun MiniPlayer(
                 )
             }
 
-            // Play/Pause
             IconButton(onClick = onPlayPause) {
-                Icon(
-                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Jeda" else "Putar",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(28.dp)
-                )
+                if (isBuffering) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = TextPrimary
+                    )
+                } else {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Jeda" else "Putar",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
 
-            // Next
-            IconButton(onClick = { }) {
-                Icon(Icons.Filled.SkipNext, "Selanjutnya", tint = TextSecondary, modifier = Modifier.size(24.dp))
+            IconButton(onClick = onNext) {
+                Icon(Icons.Filled.SkipNext, "Selanjutnya", tint = TextPrimary, modifier = Modifier.size(24.dp))
             }
         }
     }

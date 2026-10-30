@@ -1,9 +1,9 @@
 const crypto = require('crypto');
-const { getAuth } = require('./firebase-admin.js');
+const { getAuth, getDatabase } = require('./firebase-admin.js');
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
-const AUTH_RATE_LIMITS = { register: 4, login: 8, 'google-login': 8, 'password-reset': 3, 'send-verification': 3 };
+const AUTH_RATE_LIMITS = { register: 4, login: 8, 'google-login': 8, 'mobile-google-bridge': 8, 'mobile-google-exchange': 8, 'password-reset': 3, 'send-verification': 3 };
 const authRateBuckets = new Map();
 const FIREBASE_SIGN_IN_ENDPOINT = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 
@@ -188,7 +188,7 @@ module.exports = async function emailAuth(req, res) {
 
     const action = (req.query && req.query.action) || 'me';
     cleanupAuthRateBuckets();
-    if (['register', 'login', 'google-login', 'password-reset', 'send-verification'].includes(action) && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
+    if (['register', 'login', 'google-login', 'mobile-google-bridge', 'mobile-google-exchange', 'password-reset', 'send-verification'].includes(action) && !requestOriginAllowed(req)) return res.status(403).json({ status: false, message: 'Origin permintaan tidak diizinkan.' });
     const cookies = parseCookies(req);
     const now = Date.now();
 
@@ -228,6 +228,50 @@ module.exports = async function emailAuth(req, res) {
             return res.status(401).json({ status: false, message: 'Google Login gagal. Silakan coba lagi.' });
         }
     }
+    if (action === 'mobile-google-bridge') {
+        const rate = enforceAuthRateLimit(req, action, 'google-provider');
+        if (!rate.allowed) { res.setHeader('Retry-After', String(rate.retryAfter)); return res.status(429).json({ status: false, message: 'Terlalu banyak percobaan Google Login. Coba lagi nanti.' }); }
+        try {
+            const decoded = await verifyFirebaseToken(body.idToken);
+            const provider = String(decoded.firebase && decoded.firebase.sign_in_provider || '');
+            if (provider !== 'google.com') return res.status(401).json({ status: false, message: 'Token bukan berasal dari Google Sign-In.' });
+            const firebaseUser = await getAuth().getUser(decoded.uid);
+            const session = { ...safeUser(firebaseUser), exp: Date.now() + SESSION_TTL_SECONDS * 1000 };
+            const sessionToken = encode(session);
+            if (!sessionToken) throw new Error('Session signing is unavailable.');
+            const code = crypto.randomBytes(32).toString('base64url');
+            const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+            await getDatabase().ref('mobileAuthCodes').child(codeHash).set({ sessionToken, expiresAt: Date.now() + 120000 });
+            return res.status(200).json({ status: true, code, expiresIn: 120 });
+        } catch (error) {
+            console.error('[email-auth/mobile-google-bridge]', error && error.stack ? error.stack : error);
+            return res.status(401).json({ status: false, message: 'Google Login gagal. Silakan coba lagi.' });
+        }
+    }
+
+    if (action === 'mobile-google-exchange') {
+        const rate = enforceAuthRateLimit(req, action, 'mobile-client');
+        if (!rate.allowed) { res.setHeader('Retry-After', String(rate.retryAfter)); return res.status(429).json({ status: false, message: 'Terlalu banyak permintaan. Coba lagi nanti.' }); }
+        const code = String(body.code || '');
+        if (!/^[A-Za-z0-9_-]{40,60}$/.test(code)) return res.status(400).json({ status: false, message: 'Kode login tidak valid.' });
+        try {
+            const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+            let consumedToken = '';
+            const result = await getDatabase().ref('mobileAuthCodes').child(codeHash).transaction(current => {
+                if (!current || current.used || Number(current.expiresAt || 0) < Date.now() || !current.sessionToken) return;
+                consumedToken = String(current.sessionToken);
+                return null;
+            }, undefined, false);
+            if (!result.committed || !consumedToken) return res.status(401).json({ status: false, message: 'Kode login sudah kedaluwarsa atau telah digunakan. Silakan ulangi Google Login.' });
+            const session = decode(consumedToken);
+            if (!session || !session.email || !session.exp || session.exp < Date.now()) return res.status(401).json({ status: false, message: 'Sesi Google tidak valid. Silakan login kembali.' });
+            return res.status(200).json({ status: true, authenticated: true, sessionToken: consumedToken, user: session });
+        } catch (error) {
+            console.error('[email-auth/mobile-google-exchange]', error && error.stack ? error.stack : error);
+            return res.status(500).json({ status: false, message: 'Tidak dapat menyelesaikan login Google di perangkat ini.' });
+        }
+    }
+
     const email = normalizeEmail(body.email);
     const password = body.password;
     if (!isGmail(email)) return res.status(400).json({ status: false, message: 'Gunakan alamat Gmail yang valid (@gmail.com).' });

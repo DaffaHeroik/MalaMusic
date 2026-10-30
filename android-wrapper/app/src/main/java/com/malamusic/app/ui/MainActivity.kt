@@ -3,6 +3,8 @@ package com.malamusic.app.ui
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
@@ -28,19 +30,23 @@ import com.malamusic.app.ui.components.MiniPlayer
 import com.malamusic.app.ui.navigation.Screen
 import com.malamusic.app.ui.navigation.bottomNavItems
 import com.malamusic.app.ui.screens.*
+import androidx.media3.common.util.UnstableApi
 import com.malamusic.app.ui.theme.DarkBackground
 import com.malamusic.app.ui.theme.MalaMusicTheme
 import com.malamusic.app.ui.theme.TextPrimary
 import com.malamusic.app.ui.theme.TextSecondary
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
+@UnstableApi
 class MainActivity : ComponentActivity() {
 
-    private var playerService: MusicPlayerService? = null
+    private var playerService by mutableStateOf<MusicPlayerService?>(null)
     private var bound = false
     private val repository by lazy { MalaMusicApp.instance.repository }
     private val scope = MainScope()
+    private var googleAuthFinished by mutableStateOf(false)
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -61,9 +67,36 @@ class MainActivity : ComponentActivity() {
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
 
+        handleGoogleAuthIntent(intent)
+
         setContent {
             MalaMusicTheme {
                 MalaMusicAppContent()
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleGoogleAuthIntent(intent)
+    }
+
+    private fun handleGoogleAuthIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (uri.scheme != "malamusic" || uri.host != "auth") return
+        val code = uri.getQueryParameter("code").orEmpty()
+        if (code.isBlank()) {
+            Toast.makeText(this, "Kode Google Login tidak ditemukan.", Toast.LENGTH_LONG).show()
+            return
+        }
+        scope.launch {
+            try {
+                repository.authenticateWithGoogleCode(code)
+                googleAuthFinished = true
+                Toast.makeText(this@MainActivity, "Berhasil masuk ke MalaMusic.", Toast.LENGTH_SHORT).show()
+            } catch (error: Exception) {
+                Toast.makeText(this@MainActivity, error.message ?: "Google Login gagal.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -81,38 +114,61 @@ class MainActivity : ComponentActivity() {
     fun MalaMusicAppContent() {
         var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
         var showFullPlayer by remember { mutableStateOf(false) }
+        var showAuth by remember { mutableStateOf(false) }
         val currentTrack by repository.currentTrack.collectAsState()
-
-        val onTrackClick: (Track) -> Unit = { track ->
-            playerService?.let { svc ->
-                scope.launch {
-                    svc.playTrack(track)
-                    repository.loadLyrics(track)
-                }
+        LaunchedEffect(googleAuthFinished) {
+            if (googleAuthFinished) {
+                showAuth = false
+                currentScreen = Screen.Profile
+                googleAuthFinished = false
             }
+        }
+
+        val onTrackClick: (Track, List<Track>) -> Unit = { track, queue ->
+            playerService?.playTrack(track, queue)
+            scope.launch { repository.loadLyrics(track) }
         }
 
         val onPlayPause: () -> Unit = { playerService?.togglePlayPause() }
-        val onNext: () -> Unit = {
-            playerService?.let {
-                scope.launch { repository.playNext() }
-            }
-        }
-        val onPrevious: () -> Unit = {
-            playerService?.let {
-                scope.launch { repository.playPrevious() }
-            }
-        }
+        val onNext: () -> Unit = { playerService?.next() }
+        val onPrevious: () -> Unit = { playerService?.previous() }
 
-        Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
+        if (showAuth) {
+            AuthScreen(
+                repository,
+                onBack = { showAuth = false },
+                onAuthenticated = { showAuth = false; currentScreen = Screen.Profile },
+                onGoogleLogin = {
+                    runCatching {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://music.malawalipayment.web.id/mobile-auth.html")))
+                    }.onFailure { Toast.makeText(this, "Tidak dapat membuka Google Login.", Toast.LENGTH_SHORT).show() }
+                }
+            )
+        } else Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f)) {
                     when (currentScreen) {
-                        Screen.Home -> HomeScreen(repository, onTrackClick)
+                        Screen.Home -> HomeScreen(
+                            repository,
+                            onTrackClick,
+                            onOpenSearch = { currentScreen = Screen.Search },
+                            onOpenProfile = { currentScreen = Screen.Profile },
+                            onOpenLibrary = { currentScreen = Screen.Library }
+                        )
                         Screen.Search -> SearchScreen(repository, onTrackClick)
-                        Screen.Library -> LibraryScreen(repository, onTrackClick)
-                        Screen.Profile -> ProfileScreen(repository)
-                        else -> HomeScreen(repository, onTrackClick)
+                        Screen.Library -> LibraryScreen(repository, onTrackClick, onOpenSearch = { currentScreen = Screen.Search })
+                        Screen.Profile -> ProfileScreen(
+                            repository,
+                            onOpenAuth = { showAuth = true },
+                            onLogout = { scope.launch { repository.logout() } }
+                        )
+                        else -> HomeScreen(
+                            repository,
+                            onTrackClick,
+                            onOpenSearch = { currentScreen = Screen.Search },
+                            onOpenProfile = { currentScreen = Screen.Profile },
+                            onOpenLibrary = { currentScreen = Screen.Library }
+                        )
                     }
                 }
 
@@ -121,7 +177,8 @@ class MainActivity : ComponentActivity() {
                         track = currentTrack,
                         repository = repository,
                         onClick = { showFullPlayer = true },
-                        onPlayPause = onPlayPause
+                        onPlayPause = onPlayPause,
+                        onNext = onNext
                     )
                 }
 

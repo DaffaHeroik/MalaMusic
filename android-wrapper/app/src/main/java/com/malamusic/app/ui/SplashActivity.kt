@@ -32,23 +32,11 @@ class SplashActivity : Activity() {
 
         // Logo
         val logoSize = dpToPx(120)
-        val logo = LinearLayout(this).apply {
-            gravity = android.view.Gravity.CENTER
+        val logo = ImageView(this).apply {
+            setImageResource(R.drawable.logo)
+            scaleType = ImageView.ScaleType.CENTER_CROP
             layoutParams = LinearLayout.LayoutParams(logoSize, logoSize)
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(android.graphics.Color.parseColor("#CC000000"))
-                setStroke(2, android.graphics.Color.parseColor("#4DFFFFFF"))
-            }
         }
-
-        val icon = TextView(this).apply {
-            text = "♪"
-            setTextColor(android.graphics.Color.parseColor("#F43F5E"))
-            textSize = 48f
-            gravity = android.view.Gravity.CENTER
-        }
-        logo.addView(icon)
 
         // Title
         val title = TextView(this).apply {

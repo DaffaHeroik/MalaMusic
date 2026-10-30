@@ -3,6 +3,7 @@ package com.malamusic.app.data.api
 import com.malamusic.app.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -17,6 +18,74 @@ object MusicApi {
 
     private const val BASE_URL = "https://music.malawalipayment.web.id"
     private const val TIMEOUT = 15_000
+    @Volatile private var appContext: Context? = null
+    @Volatile private var sessionCookie: String = ""
+    @Volatile private var cachedPlaylists = JSONArray()
+    @Volatile private var cachedLikedArtists = JSONArray()
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+        sessionCookie = appContext?.getSharedPreferences("malamusic_auth", Context.MODE_PRIVATE)?.getString("session_cookie", "") ?: ""
+    }
+
+    private fun persistSessionCookie(value: String) {
+        sessionCookie = value
+        appContext?.getSharedPreferences("malamusic_auth", Context.MODE_PRIVATE)?.edit()?.putString("session_cookie", value)?.apply()
+    }
+
+    suspend fun getSession(): AuthUser? = withContext(Dispatchers.IO) {
+        try {
+            val json = httpGet("$BASE_URL/api/email-auth?action=me")
+            val user = json.optJSONObject("user")
+            if (json.optBoolean("authenticated") && user != null) AuthUser(user.optString("uid"), user.optString("email"), user.optString("name"), user.optString("picture"), user.optBoolean("emailVerified")) else null
+        } catch (_: Exception) { null }
+    }
+
+    suspend fun login(email: String, password: String): AuthUser = authAction("login", JSONObject().put("email", email).put("password", password))
+    suspend fun register(name: String, email: String, password: String): AuthUser = authAction("register", JSONObject().put("name", name).put("email", email).put("password", password))
+    suspend fun exchangeMobileGoogleCode(code: String): AuthUser = withContext(Dispatchers.IO) {
+        val json = httpPost("$BASE_URL/api/email-auth?action=mobile-google-exchange", JSONObject().put("code", code).toString())
+        if (!json.optBoolean("status") || !json.optBoolean("authenticated")) throw IllegalStateException(json.optString("message", "Google Login gagal."))
+        val token = json.optString("sessionToken")
+        if (token.isBlank()) throw IllegalStateException("Sesi Google tidak diterima.")
+        persistSessionCookie(token)
+        val u = json.optJSONObject("user") ?: throw IllegalStateException("Data akun tidak lengkap.")
+        AuthUser(u.optString("uid"), u.optString("email"), u.optString("name"), u.optString("picture"), u.optBoolean("emailVerified"))
+    }
+
+    suspend fun resetPassword(email: String): String = withContext(Dispatchers.IO) {
+        val json = httpPost("$BASE_URL/api/email-auth?action=password-reset", JSONObject().put("email", email.trim()).toString())
+        if (json.optBoolean("status")) json.optString("message", "Jika akun terdaftar, link reset password dikirim.") else throw IllegalStateException(json.optString("message", "Reset password gagal."))
+    }
+
+    private suspend fun authAction(action: String, body: JSONObject): AuthUser = withContext(Dispatchers.IO) {
+        val json = httpPost("$BASE_URL/api/email-auth?action=$action", body.toString())
+        if (!json.optBoolean("status") || !json.optBoolean("authenticated")) throw IllegalStateException(json.optString("message", "Autentikasi gagal."))
+        val u = json.optJSONObject("user") ?: throw IllegalStateException("Respons akun tidak lengkap.")
+        AuthUser(u.optString("uid"), u.optString("email"), u.optString("name"), u.optString("picture"), u.optBoolean("emailVerified"))
+    }
+
+    suspend fun logout() = withContext(Dispatchers.IO) {
+        try { httpGet("$BASE_URL/api/email-auth?action=logout") } finally { persistSessionCookie("") }
+    }
+
+    suspend fun getProfile(): JSONObject = withContext(Dispatchers.IO) { httpGet("$BASE_URL/api/profile") }
+
+    suspend fun getLibrary(): Pair<List<Track>, List<Track>> = withContext(Dispatchers.IO) {
+        val json = httpGet("$BASE_URL/api/library")
+        val library = json.optJSONObject("library") ?: JSONObject()
+        cachedPlaylists = library.optJSONArray("playlists") ?: JSONArray()
+        cachedLikedArtists = library.optJSONArray("likedArtists") ?: JSONArray()
+        Pair(parseTracks(library.optJSONArray("likedSongs")), parseTracks(library.optJSONArray("recentTracks")))
+    }
+
+    suspend fun putLibrary(likedSongs: List<Track>, recentTracks: List<Track>) = withContext(Dispatchers.IO) {
+        val liked = JSONArray(); likedSongs.forEach { liked.put(trackJson(it)) }
+        val recent = JSONArray(); recentTracks.forEach { recent.put(trackJson(it)) }
+        httpPut("$BASE_URL/api/library", JSONObject().put("likedSongs", liked).put("recentTracks", recent).put("playlists", cachedPlaylists).put("likedArtists", cachedLikedArtists).toString())
+    }
+
+    private fun trackJson(t: Track) = JSONObject().put("videoId", t.videoId).put("id", t.id).put("title", t.title).put("artist", t.artist).put("cover", t.cover).put("artistId", t.artistId).put("ytUrl", t.ytUrl).put("duration", t.duration).put("albumName", t.albumName)
 
     suspend fun search(query: String, type: String = "all"): SearchResults = withContext(Dispatchers.IO) {
         try {
@@ -32,6 +101,21 @@ object MusicApi {
                 )
             } else SearchResults()
         } catch (e: Exception) { SearchResults() }
+    }
+
+    /** Same as [search] but propagates network errors so callers can show the web's "Pencarian gagal" state. */
+    suspend fun searchThrows(query: String, type: String = "all"): SearchResults = withContext(Dispatchers.IO) {
+        val url = "$BASE_URL/api/search?query=${URLEncoder.encode(query, "UTF-8")}&type=$type"
+        val json = httpGet(url)
+        if (json.optBoolean("status", false)) {
+            val result = json.optJSONObject("result") ?: JSONObject()
+            SearchResults(
+                songs = parseTracks(result.optJSONArray("songs")),
+                playlists = parsePlaylists(result.optJSONArray("playlists")),
+                artists = parseArtists(result.optJSONArray("artists")),
+                albums = parseAlbums(result.optJSONArray("albums"))
+            )
+        } else SearchResults()
     }
 
     suspend fun getSuggestions(query: String): List<Suggestion> = withContext(Dispatchers.IO) {
@@ -115,6 +199,70 @@ object MusicApi {
         } catch (e: Exception) { null }
     }
 
+    /** Web parity: account-scoped stats for the home streak card. */
+    suspend fun getMyStats(): StreakStats? = withContext(Dispatchers.IO) {
+        try {
+            val json = httpGet("$BASE_URL/api/stats?action=me")
+            if (json.optBoolean("status", false)) {
+                val s = json.optJSONObject("stats") ?: JSONObject()
+                StreakStats(
+                    current = s.optInt("streak", 0),
+                    best = s.optInt("bestStreak", 0),
+                    activeDays = s.optInt("activeDays", 0)
+                )
+            } else null
+        } catch (e: Exception) { null }
+    }
+
+    /** Web parity: user search (/api/users?query=) for the "Pengguna" filter tab. */
+    suspend fun searchUsers(query: String): List<UserEntry> = withContext(Dispatchers.IO) {
+        try {
+            val json = httpGet("$BASE_URL/api/users?query=${URLEncoder.encode(query, "UTF-8")}")
+            if (json.optBoolean("status", false)) {
+                val arr = json.optJSONArray("users") ?: JSONArray()
+                (0 until arr.length()).mapNotNull { i ->
+                    val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                    UserEntry(
+                        id = o.optString("id", ""),
+                        name = o.optString("name", ""),
+                        picture = o.optString("picture", "")
+                    )
+                }
+            } else emptyList()
+        } catch (e: Exception) { emptyList() }
+    }
+
+    /** Web parity: public user profile modal (/api/users?uid=). */
+    suspend fun getUserProfile(uid: String): Pair<UserEntry, List<Playlist>> = withContext(Dispatchers.IO) {
+        try {
+            val json = httpGet("$BASE_URL/api/users?uid=${URLEncoder.encode(uid, "UTF-8")}")
+            if (json.optBoolean("status", false)) {
+                val profile = json.optJSONObject("profile") ?: JSONObject()
+                val user = UserEntry(
+                    id = profile.optString("id", uid),
+                    name = profile.optString("name", ""),
+                    picture = profile.optString("picture", "")
+                )
+                val playlists = parseUserPlaylists(json.optJSONArray("playlists"))
+                Pair(user, playlists)
+            } else Pair(UserEntry(id = uid), emptyList())
+        } catch (e: Exception) { Pair(UserEntry(id = uid), emptyList()) }
+    }
+
+    private fun parseUserPlaylists(arr: JSONArray?): List<Playlist> {
+        if (arr == null) return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            Playlist(
+                id = o.optString("id", ""),
+                name = o.optString("name", o.optString("title", "")),
+                image = o.optString("image", o.optString("cover", "")),
+                songs = parseTracks(o.optJSONArray("songs")),
+                creator = o.optString("creator", o.optString("author", ""))
+            )
+        }
+    }
+
     suspend fun getLeaderboard(): List<LeaderboardEntry> = withContext(Dispatchers.IO) {
         try {
             val json = httpGet("$BASE_URL/api/stats?action=leaderboard")
@@ -143,10 +291,30 @@ object MusicApi {
             connectTimeout = TIMEOUT
             readTimeout = TIMEOUT
             setRequestProperty("Accept", "application/json")
+            sessionCookie.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", "mm_session=$it") }
         }
         return try {
-            val body = conn.inputStream.bufferedReader().readText()
-            JSONObject(body)
+            val body = (if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.readText().orEmpty()
+            JSONObject(body).also { captureSessionCookie(conn) }.also { if (conn.responseCode !in 200..299) throw IllegalStateException(it.optString("message", "Permintaan gagal (${conn.responseCode}).")) }
+        } finally { conn.disconnect() }
+    }
+
+    private fun captureSessionCookie(conn: HttpURLConnection) {
+        val raw = conn.getHeaderField("Set-Cookie") ?: return
+        val value = raw.split(';').firstOrNull()?.takeIf { it.startsWith("mm_session=") }?.substringAfter('=') ?: return
+        persistSessionCookie(value)
+    }
+
+    private fun httpPut(urlStr: String, jsonBody: String): JSONObject {
+        val conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
+            requestMethod = "PUT"; connectTimeout = TIMEOUT; readTimeout = TIMEOUT; doOutput = true
+            setRequestProperty("Content-Type", "application/json"); setRequestProperty("Accept", "application/json")
+            sessionCookie.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", "mm_session=$it") }
+            outputStream.use { it.write(jsonBody.toByteArray(Charsets.UTF_8)) }
+        }
+        return try {
+            val body = (if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.readText().orEmpty()
+            JSONObject(body).also { captureSessionCookie(conn) }.also { if (conn.responseCode !in 200..299) throw IllegalStateException(it.optString("message", "Permintaan gagal (${conn.responseCode}).")) }
         } finally { conn.disconnect() }
     }
 
@@ -167,11 +335,13 @@ object MusicApi {
             readTimeout = TIMEOUT
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Accept", "application/json")
+            sessionCookie.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", "mm_session=$it") }
             outputStream.write(jsonBody.toByteArray())
         }
         return try {
-            val body = conn.inputStream.bufferedReader().readText()
-            JSONObject(body)
+            val body = (if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.readText().orEmpty()
+            JSONObject(body).also { captureSessionCookie(conn) }.also { if (conn.responseCode !in 200..299) throw IllegalStateException(it.optString("message", "Permintaan gagal (${conn.responseCode}).")) }
         } finally { conn.disconnect() }
     }
 
