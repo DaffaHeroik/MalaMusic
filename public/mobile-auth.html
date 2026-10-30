@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#08090d"><title>Google Login — MalaMusic</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 0,#2b1730,#08090d 62%);color:#f8fafc;font:15px system-ui,sans-serif;padding:24px}.card{width:min(100%,420px);background:#15151f;border:1px solid #ffffff18;border-radius:24px;padding:28px;text-align:center;box-shadow:0 24px 80px #0008}.logo{font-size:42px;color:#fb477f}.muted{color:#a1a1aa;line-height:1.55}.button{width:100%;padding:14px;border:1px solid #ffffff25;border-radius:14px;background:#fff;color:#171717;font-weight:700;font-size:15px;margin-top:18px}.status{font-size:13px;color:#fb8aa8;min-height:22px;margin-top:14px}
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
+  <script src="/firebase.js?v=158"></script>
+</head>
+<body><main class="card"><div class="logo">♫</div><h1>Masuk ke MalaMusic</h1><p class="muted">Gunakan akun Google untuk menghubungkan koleksi musik ke aplikasi Android MalaMusic.</p><button id="google" class="button">Lanjutkan dengan Google</button><div id="status" class="status" role="status"></div></main>
+<script>
+(function(){
+  const button=document.getElementById('google'), status=document.getElementById('status');
+  function say(message){status.textContent=message;}
+  if(!window.MalaFirebase||!window.MalaFirebase.auth){button.disabled=true;say('Layanan Google Login belum siap. Muat ulang halaman.');return;}
+  const auth=window.MalaFirebase.auth;
+  let exchanging=false;
+  async function finish(user){
+    if(!user||exchanging)return;
+    exchanging=true;button.disabled=true;say('Menghubungkan akun ke aplikasi…');
+    try{
+      const idToken=await user.getIdToken(true);
+      const response=await fetch('/api/email-auth?action=mobile-google-bridge',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({idToken})});
+      const data=await response.json();
+      if(!response.ok||!data.status||!data.code)throw new Error(data.message||'Google Login gagal.');
+      say('Berhasil. Kembali ke aplikasi MalaMusic…');
+      window.location.href='malamusic://auth?code='+encodeURIComponent(data.code);
+    }catch(error){exchanging=false;button.disabled=false;say(error.message||'Tidak dapat menghubungkan akun.');}
+  }
+  auth.getRedirectResult().then(result=>{if(result&&result.user)finish(result.user);}).catch(error=>say(error.message||'Google Login gagal.'));
+  button.addEventListener('click',async()=>{
+    button.disabled=true;say('Membuka akun Google…');
+    try{const provider=new firebase.auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});await auth.signInWithRedirect(provider);}
+    catch(error){button.disabled=false;say(error.message||'Tidak dapat membuka Google Login.');}
+  });
+})();
+</script></body></html>
