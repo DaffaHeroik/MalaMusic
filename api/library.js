@@ -2,9 +2,11 @@
 const crypto = require('crypto');
 const { getDatabase } = require('./firebase-admin.js');
 
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function secret(){return process.env.SESSION_SECRET||(process.env.NODE_ENV==='production'?null:'development-only-change-this-session-secret');}
 function session(value){const currentSecret=secret();if(!currentSecret||!value||!value.includes('.'))return null;const p=value.split('.'),b=p.shift(),s=p.join('.'),e=crypto.createHmac('sha256',currentSecret).update(b).digest('base64url');if(s.length!==e.length)return null;try{if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(e)))return null;const x=JSON.parse(Buffer.from(b,'base64url').toString('utf8'));return x&&x.uid&&x.exp>Date.now()?x:null;}catch(_){return null;}}
-function user(req){const raw=String(req.headers&&req.headers.cookie||'');const c={};raw.split(';').forEach(p=>{const i=p.indexOf('=');if(i>=0)c[p.slice(0,i).trim()]=decodeURIComponent(p.slice(i+1).trim());});return session(c.mm_session);}
+function user(req){const raw=String(req.headers&&req.headers.cookie||'');const c={};raw.split(';').forEach(p=>{const i=p.indexOf('=');if(i>=0)c[p.slice(0,i).trim()]=safeDecodeCookie(p.slice(i+1).trim());});return session(c.mm_session);}
 function cleanTrack(x){if(!x||typeof x!=='object')return null;const id=String(x.videoId||x.id||'').slice(0,80);return id?{id,videoId:id,title:String(x.title||'Lagu').slice(0,180),artist:String(x.artist||'MalaMusic').slice(0,120),cover:String(x.cover||'').slice(0,600),artistId:String(x.artistId||'').slice(0,120),ytUrl:String(x.ytUrl||'').slice(0,600)}:null;}
 function cleanRecentTrack(x){const track=cleanTrack(x);if(!track)return null;const playedAt=Number(x.playedAt||0);return {...track,playedAt:Number.isFinite(playedAt)&&playedAt>0?playedAt:Date.now()};}
 function cleanRecent(value){const items=Array.isArray(value)?value.map(cleanRecentTrack).filter(Boolean):[];const seen=new Set();return items.sort((a,b)=>b.playedAt-a.playedAt).filter(x=>{if(seen.has(x.videoId))return false;seen.add(x.videoId);return true;}).slice(0,50);}

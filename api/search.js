@@ -68,9 +68,13 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') return res.status(405).json({ status: false, creator: 'MalaMusic', message: 'Method tidak didukung.' });
 
     const query = String(req.query.query || '').trim();
-    const type = String(req.query.type || 'all').trim(); // all, songs, playlists
+    const type = String(req.query.type || 'all').trim().toLowerCase(); // all, songs, playlists, artists
 
     if (!query) return res.status(400).json({ status: false, creator: 'MalaMusic', message: 'Parameter query diperlukan' });
+    if (query.length > 160) return res.status(400).json({ status: false, creator: 'MalaMusic', message: 'Query terlalu panjang.' });
+    if (!['all', 'songs', 'playlists', 'artists'].includes(type)) {
+        return res.status(400).json({ status: false, creator: 'MalaMusic', message: 'Tipe pencarian tidak didukung.' });
+    }
 
     let urlVid = '';
     if (query.includes('youtube.com/') || query.includes('youtu.be/')) {
@@ -126,7 +130,14 @@ module.exports = async (req, res) => {
         if (type === 'all' || type === 'playlists') tasks.push(fetchYoutube(query, 'playlists').then(data => ({ type: 'playlists', data })));
         if (type === 'all' || type === 'artists') tasks.push(fetchYoutube(query, 'artists').then(data => ({ type: 'artists', data })));
 
-        const results = await Promise.all(tasks);
+        // A failed category should not discard successful categories. This is
+        // especially important because WEB_REMIX search is an undocumented upstream.
+        const settled = await Promise.allSettled(tasks);
+        const results = settled.filter(x => x.status === 'fulfilled').map(x => x.value);
+        const failures = settled.filter(x => x.status === 'rejected').length;
+        if (results.length === 0 && failures > 0) {
+            throw new Error('All YouTube Music search categories failed');
+        }
 
         for (const resObj of results) {
             const data = resObj.data;
@@ -241,7 +252,7 @@ module.exports = async (req, res) => {
                             const t = subRuns[0]?.text || '';
                             if (t === 'Video') continue;
 
-                            const videoId = r?.playlistItemData?.videoId || '';
+                            const videoId = r?.playlistItemData?.videoId || titleRuns.find(x => x?.navigationEndpoint?.watchEndpoint?.videoId)?.navigationEndpoint?.watchEndpoint?.videoId || '';
                             const thumbs = r?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
                             const rawSongThumb = thumbs.length ? thumbs[thumbs.length - 1].url : '';
                             const thumbnail = toHDThumbnail(rawSongThumb, videoId);
@@ -257,6 +268,7 @@ module.exports = async (req, res) => {
         return res.json({
             status: true,
             creator: 'MalaMusic',
+            partial: failures > 0,
             result: { query, totalSongs: songs.length, songs, albums, playlists, artists }
         });
 

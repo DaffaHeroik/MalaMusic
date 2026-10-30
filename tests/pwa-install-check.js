@@ -21,7 +21,7 @@ assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.scope, '/');
 assert.match(index, /<link rel="manifest" href="\/manifest\.json">/);
 assert.match(index, /app\.js\?v=157/);
-assert.match(index, /profile\.js\?v=157/);
+assert.ok(index.includes('/profile.js?v=158'));
 assert.match(sw, /malamusic-static-v157/);
 assert.match(sw, /app\.js\?v=157/);
 assert.match(sw, /profile\.js\?v=157/);

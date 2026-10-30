@@ -8,3 +8,10 @@ graphify-out/
 
 android-wrapper/build/
 android-wrapper/debug.keystore
+
+# Android local SDK/build state and generated release bundles
+android-wrapper/.gradle/
+android-wrapper/app/build/
+android-wrapper/local.properties
+/*.aab
+/*.apk

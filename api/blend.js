@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { getDatabase, getAuth } = require('./firebase-admin.js');
 
 const MAX_SONGS = 50;
+
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
 const ROOM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function secret() { return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret'); }
@@ -16,7 +18,7 @@ function decode(value) {
 }
 function currentUser(req) {
     const raw = req.headers && (req.headers.cookie || req.headers.Cookie) || '';
-    const cookies = raw.split(';').reduce((out, part) => { const i = part.indexOf('='); if (i >= 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim()); return out; }, {});
+    const cookies = raw.split(';').reduce((out, part) => { const i = part.indexOf('='); if (i >= 0) out[part.slice(0, i).trim()] = safeDecodeCookie(part.slice(i + 1).trim()); return out; }, {});
     return decode(cookies.mm_session);
 }
 function bodyOf(req) { if (req.body && typeof req.body === 'object') return req.body; try { return JSON.parse(req.body || '{}'); } catch (_) { return {}; } }

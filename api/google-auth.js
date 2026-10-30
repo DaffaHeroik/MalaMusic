@@ -4,13 +4,16 @@ const SESSION_COOKIE = 'mm_google_session';
 const STATE_COOKIE = 'mm_google_oauth_state';
 const YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
 
+
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function parseCookies(req) {
     const raw = req.headers.cookie || '';
     return raw.split(';').reduce((out, item) => {
         const index = item.indexOf('=');
         if (index < 0) return out;
         const key = item.slice(0, index).trim();
-        out[key] = decodeURIComponent(item.slice(index + 1));
+        out[key] = safeDecodeCookie(item.slice(index + 1));
         return out;
     }, {});
 }

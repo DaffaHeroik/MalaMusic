@@ -5,6 +5,8 @@ const MAX_QUEUE = 50;
 const ROOM_TTL_MS = 12 * 60 * 60 * 1000;
 const PRESENCE_TTL_MS = 30 * 1000;
 
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function secret() {
     return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
 }
@@ -27,7 +29,7 @@ function currentUser(req) {
     const raw = req.headers && (req.headers.cookie || req.headers.Cookie) || '';
     const cookies = raw.split(';').reduce((out, part) => {
         const i = part.indexOf('=');
-        if (i >= 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+        if (i >= 0) out[part.slice(0, i).trim()] = safeDecodeCookie(part.slice(i + 1).trim());
         return out;
     }, {});
     return decode(cookies.mm_session);

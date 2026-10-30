@@ -7,6 +7,8 @@ const AUTH_RATE_LIMITS = { register: 4, login: 8, 'google-login': 8, 'mobile-goo
 const authRateBuckets = new Map();
 const FIREBASE_SIGN_IN_ENDPOINT = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function secret() {
     return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
 }
@@ -40,7 +42,7 @@ function parseCookies(req) {
         if (index < 0) return cookies;
         const key = part.slice(0, index).trim();
         const value = part.slice(index + 1).trim();
-        if (key) cookies[key] = decodeURIComponent(value);
+        if (key) cookies[key] = safeDecodeCookie(value);
         return cookies;
     }, {});
 }

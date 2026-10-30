@@ -3,6 +3,8 @@
 const crypto = require('crypto');
 const { getDatabase } = require('./firebase-admin.js');
 
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function secret() {
     return process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'development-only-change-this-session-secret');
 }
@@ -27,7 +29,7 @@ function currentUser(req) {
     const raw = req.headers && (req.headers.cookie || req.headers.Cookie) || '';
     const cookies = raw.split(';').reduce((out, part) => {
         const index = part.indexOf('=');
-        if (index >= 0) out[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+        if (index >= 0) out[part.slice(0, index).trim()] = safeDecodeCookie(part.slice(index + 1).trim());
         return out;
     }, {});
     return decodeSession(cookies.mm_session);

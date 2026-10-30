@@ -6,6 +6,9 @@ const WORKER_URL = process.env.MALAMUSIC_STATS_WORKER_URL || 'https://malamusic-
 const WORKER_SECRET = String(process.env.MALAMUSIC_INTERNAL_SECRET || '').trim();
 const LOCAL_ROOT = 'malamusic';
 
+
+function safeDecodeCookie(value) { try { return decodeURIComponent(value); } catch (_) { return String(value || ''); } }
+
 function secret() { return process.env.SESSION_SECRET || ''; }
 function decode(value) {
     if (!value || !value.includes('.') || !secret()) return null;
@@ -20,7 +23,7 @@ function decode(value) {
 function cookies(req) {
     return String(req.headers.cookie || '').split(';').reduce((out, item) => {
         const i = item.indexOf('=');
-        if (i > -1) out[item.slice(0, i).trim()] = decodeURIComponent(item.slice(i + 1).trim());
+        if (i > -1) out[item.slice(0, i).trim()] = safeDecodeCookie(item.slice(i + 1).trim());
         return out;
     }, {});
 }
