@@ -22,8 +22,8 @@ android {
         applicationId = "com.malamusic.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "2.1.4"
+        versionCode = 8
+        versionName = "2.1.5"
     }
 
     signingConfigs {
