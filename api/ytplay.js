@@ -2,10 +2,11 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { CircuitBreaker } = require('./savetube-circuit-breaker');
 const { resolveSiputzxAudio } = require('./siputzx-audio');
+const { resolveMusifyNodeAudio } = require('./musify-node-resolver');
 
 // Memory cache for audio stream URLs (valid 1.5 hours)
 const ytCache = new Map();
-const CACHE_TTL = 90 * 60 * 1000;
+const CACHE_TTL = 25 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 500;
 const rateBuckets = new Map();
 const SAVE_TUBE_FAILURE_THRESHOLD = 3;
@@ -104,6 +105,22 @@ async function getDownload(url) {
   }
 
   const fullUrl = "https://www.youtube.com/watch?v=" + idMatch;
+
+  // Primary resolver: Node.js equivalent of Musify's YouTube client strategy.
+  // Existing providers remain as bounded fallbacks during rollout.
+  try {
+    const nativeResult = await resolveMusifyNodeAudio(idMatch);
+    if (nativeResult?.audio) {
+      console.info('[ytplay] native YouTube client resolver succeeded');
+      ytCache.set(idMatch, { data: nativeResult, expireAt: Date.now() + CACHE_TTL });
+      pruneAudioCache(Date.now());
+      return nativeResult;
+    }
+  } catch (error) {
+    if (error?.code === 'YOUTUBE_ACCESS_RESTRICTED') throw error;
+    console.warn('[ytplay] native YouTube client resolver unavailable; trying fallback providers');
+  }
+
   const cdns = SAVE_TUBE_CDNS.filter(cdn => getSaveTubeBreaker(cdn).canRequest());
 
   // Race all CDNs in parallel instead of looping sequentially.
@@ -241,6 +258,14 @@ module.exports = async (req, res) => {
               : 'Media extraction services are currently overloaded. Please try another track.'
         });
     } catch (err) {
+        if (err?.code === 'YOUTUBE_ACCESS_RESTRICTED') {
+            console.warn(`[ytplay] YouTube playback unavailable status=${String(err.playabilityStatus || 'restricted')}`);
+            return res.status(403).json({
+                status: false,
+                code: 'YOUTUBE_ACCESS_RESTRICTED',
+                error: 'Video ini tidak dapat diputar melalui resolver MalaMusic. Coba pilih versi resmi lain atau buka di YouTube.'
+            });
+        }
         console.error('[ytplay] extraction failed');
         res.status(500).json({ status: false, error: "Internal server error during extraction" });
     }
