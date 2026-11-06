@@ -137,7 +137,12 @@ class MusicPlayerService : MediaSessionService() {
     }
 
     private fun playNextFromQueue() {
-        val next = repository.advance(1)
+        val repeatAll = repeatAllEnabled && repository.queue.value.size > 1
+        val next = if (repeatAll && repository.currentIndex.value >= repository.queue.value.lastIndex) {
+            repository.jumpTo(0)
+        } else {
+            repository.advance(1)
+        }
         if (next != null) loadAndPlay(next)
     }
 
@@ -157,6 +162,12 @@ class MusicPlayerService : MediaSessionService() {
 
     fun previous() {
         val track = repository.advance(-1) ?: return
+        loadAndPlay(track)
+    }
+
+    /** Plays the queue track at the given index directly (queue sheet). */
+    fun playQueueIndex(index: Int) {
+        val track = repository.jumpTo(index) ?: return
         loadAndPlay(track)
     }
 
@@ -203,6 +214,43 @@ class MusicPlayerService : MediaSessionService() {
     fun seekTo(positionMs: Long) {
         exoPlayer?.seekTo(positionMs)
         repository.setPosition(positionMs / 1000.0)
+    }
+
+    // ---- Web-parity transport options (full player options sheet) ----
+
+    private var repeatAllEnabled = false
+    private var sleepTimerJob: Job? = null
+
+    fun setShuffle(enabled: Boolean) {
+        exoPlayer?.let { it.setShuffleModeEnabled(enabled) }
+    }
+
+    /** mode: 0 = off, 1 = repeat one, 2 = repeat all (loop the queue) */
+    fun applyRepeat(mode: Int) {
+        repeatAllEnabled = mode == 2
+        exoPlayer?.repeatMode = when (mode) {
+            1 -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
+    }
+
+    fun setPlaybackSpeed(rate: Float) {
+        exoPlayer?.setPlaybackSpeed(rate.coerceIn(0.5f, 2f))
+    }
+
+    fun setVolume(v: Float) {
+        exoPlayer?.volume = v.coerceIn(0f, 1f)
+    }
+
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        if (minutes <= 0) return
+        sleepTimerJob = scope.launch {
+            delay(minutes * 60_000L)
+            exoPlayer?.pause()
+            Log.d(TAG, "Sleep timer fired, paused player")
+        }
     }
 
     fun getCurrentPosition(): Long = exoPlayer?.currentPosition ?: 0

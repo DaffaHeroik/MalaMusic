@@ -360,6 +360,21 @@ class MusicRepository(context: Context? = null, val audioCache: AudioCacheManage
         )
     }
 
+    /** Jumps directly to a queue index (used by the queue sheet). */
+    fun jumpTo(index: Int): Track? {
+        val q = _queue.value
+        if (q.isEmpty() || index !in q.indices) return null
+        val track = q[index]
+        _currentIndex.value = index
+        _currentTrack.value = track
+        _isPlaying.value = true
+        _position.value = 0.0
+        _duration.value = 0.0
+        _lyrics.value = LyricsResult()
+        addToRecent(track)
+        return track
+    }
+
     /** Web-parity home category selection: null/empty resets, otherwise fetches that mood. */
     suspend fun selectHomeCategory(category: String?, query: String?) {
         val seq = ++categorySeq

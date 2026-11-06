@@ -193,7 +193,8 @@ class MainActivity : ComponentActivity() {
                     onPlayPause = onPlayPause,
                     onNext = onNext,
                     onPrevious = onPrevious,
-                    onSeek = { playerService?.seekTo(it) }
+                    onSeek = { playerService?.seekTo(it) },
+                    onQueueIndex = { idx -> playerService?.playQueueIndex(idx) }
                 )
             }
         }

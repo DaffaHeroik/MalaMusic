@@ -194,7 +194,10 @@ object MusicApi {
             val body = JSONObject().put("query", ytUrl)
             val json = httpPost("$BASE_URL/api/ytplay", body.toString())
             if (json.optBoolean("status", false)) {
-                json.optJSONObject("result")?.optJSONObject("download")?.optString("audio", null)
+                json.optJSONObject("result")
+                    ?.optJSONObject("download")
+                    ?.optString("audio", "")
+                    ?.takeIf { it.startsWith("https://") && it.length <= 4096 }
             } else null
         } catch (e: Exception) { null }
     }
