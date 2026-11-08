@@ -46,6 +46,9 @@ const { createMusifyNodeResolver, isTrustedMediaUrl, formatDuration } = require(
   assert.equal(calls.length, 2, 'cache should avoid a second upstream resolution');
   assert.equal(await resolver.resolve('invalid'), null);
 
+  // LOGIN_REQUIRED (bot-check / IP noise) is NOT a hard stop: it must fall
+  // through so the saveTube/siputzx extractor fallback in ytplay.js can try,
+  // rather than rejecting the resolution up front.
   const restrictedResolver = createMusifyNodeResolver({
     createClient: async () => ({
       async getStreamingData() { throw new Error('Streaming data not available'); },
@@ -54,7 +57,20 @@ const { createMusifyNodeResolver, isTrustedMediaUrl, formatDuration } = require(
   });
   await assert.rejects(
     restrictedResolver.resolve('E7kHvjvU6JY'),
-    error => error.code === 'YOUTUBE_ACCESS_RESTRICTED' && error.playabilityStatus === 'LOGIN_REQUIRED'
+    error => error.message === 'Streaming data not available' && error.code === undefined
+  );
+
+  // A genuine playability block (LIVE / ERROR / UNPLAYABLE) is still a hard
+  // stop that no extractor can bypass.
+  const hardRestricted = createMusifyNodeResolver({
+    createClient: async () => ({
+      async getStreamingData() { throw new Error('Streaming data not available'); },
+      async getInfo() { return { playability_status: { status: 'LIVE' } }; }
+    })
+  });
+  await assert.rejects(
+    hardRestricted.resolve('E7kHvjvU6JY'),
+    error => error.code === 'YOUTUBE_ACCESS_RESTRICTED' && error.playabilityStatus === 'LIVE'
   );
 
   console.log('MUSIFY_NODE_RESOLVER_CHECK_PASS');

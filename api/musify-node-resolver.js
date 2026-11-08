@@ -7,7 +7,9 @@
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 300;
 const REQUEST_TIMEOUT_MS = 12_000;
-const CLIENTS = ['VISIONOS', 'ANDROID'];
+// Order matters: VISIONOS is the most reliable unauthenticated client from
+// data-center IPs; keep broader clients as fallbacks, not as hard stops.
+const CLIENTS = ['VISIONOS', 'ANDROID', 'ANDROID_VR', 'IOS', 'WEB', 'MWEB'];
 const YOUTUBE_VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
 function formatDuration(milliseconds) {
@@ -44,11 +46,14 @@ function createMusifyNodeResolver(options = {}) {
 
   const createClient = options.createClient || (async () => {
     const { Innertube } = await import('youtubei.js');
-    return Innertube.create({
+    // youtubei.js v18 returns a thenable from Innertube.create(); always
+    // await it before calling client methods.
+    const created = await Innertube.create({
       retrieve_player: true,
       enable_session_cache: true,
       fetch: createBoundedFetch()
     });
+    return created?.client ?? created;
   });
 
   async function getClient() {
@@ -113,14 +118,20 @@ function createMusifyNodeResolver(options = {}) {
         }
       }
 
-      // Never hand a YouTube-restricted video to third-party fallback extractors.
-      // Detect login/availability restrictions explicitly so the caller can stop.
+      // VPS data-center IPs are flagged by YouTube's WEB/ANDROID clients as
+      // "Sign in to confirm you're not a bot", which is NOT a real region lock
+      // on the video — the saveTube/siputzx CDN fallbacks in ytplay.js still
+      // resolve the stream fine. Only stop early for a genuine unavailability
+      // signal that no extractor can honor; otherwise fall through so the
+      // downstream providers can try.
       if (lastError && typeof client.getInfo === 'function') {
         for (const clientName of CLIENTS) {
           try {
             const info = await client.getInfo(id, { client: clientName });
             const status = info?.playability_status?.status;
-            if (status && status !== 'OK') {
+            // LIVE, ERROR, or a hard playability block that extractors can't
+            // bypass. LOGIN_REQUIRED / bot-check are treated as IP noise.
+            if (status && (status === 'LIVE' || status === 'ERROR' || status === 'UNPLAYABLE')) {
               const error = new Error('YouTube playback is restricted for this video');
               error.code = 'YOUTUBE_ACCESS_RESTRICTED';
               error.playabilityStatus = status;

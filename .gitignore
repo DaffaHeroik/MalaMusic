@@ -15,3 +15,5 @@ android-wrapper/app/build/
 android-wrapper/local.properties
 /*.aab
 /*.apk
+dist/
+.vercel
